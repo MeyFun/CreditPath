@@ -1,0 +1,226 @@
+{
+  "9900000017": {
+    "current_debt": 9500000,
+    "active_overdue": false,
+    "current_overdue_amount": 0,
+    "max_overdue_days": 0,
+    "closed_overdue_12m": false,
+    "closed_overdue_last": null,
+    "credit_history_years": 11,
+    "contracts_paid": 9,
+    "contracts_active": 1,
+    "inn": "9900000017",
+    "company_name": "ООО «Северный Ветер»",
+    "credit_history_found": true,
+    "history": [
+      {
+        "date": "2024-03-12",
+        "type": "Кредит",
+        "amount": 4750000,
+        "status": "Закрыт"
+      },
+      {
+        "date": "2025-11-05",
+        "type": "Кредитная линия",
+        "amount": 9500000,
+        "status": "Действует"
+      }
+    ]
+  },
+  "9900000024": {
+    "current_debt": 12000000,
+    "active_overdue": true,
+    "current_overdue_amount": 2400000,
+    "max_overdue_days": 46,
+    "closed_overdue_12m": true,
+    "closed_overdue_last": "2026-02-11",
+    "credit_history_years": 7,
+    "contracts_paid": 4,
+    "contracts_active": 2,
+    "inn": "9900000024",
+    "company_name": "ООО «Гранит-Снаб»",
+    "credit_history_found": true,
+    "history": [
+      {
+        "date": "2024-03-12",
+        "type": "Кредит",
+        "amount": 6000000,
+        "status": "Закрыт"
+      },
+      {
+        "date": "2025-11-05",
+        "type": "Кредитная линия",
+        "amount": 12000000,
+        "status": "Действует"
+      }
+    ]
+  },
+  "9900000031": {
+    "current_debt": 6000000,
+    "active_overdue": false,
+    "current_overdue_amount": 0,
+    "max_overdue_days": 0,
+    "closed_overdue_12m": false,
+    "closed_overdue_last": null,
+    "credit_history_years": 6,
+    "contracts_paid": 5,
+    "contracts_active": 1,
+    "inn": "9900000031",
+    "company_name": "ООО «Торговый Дом Волга»",
+    "credit_history_found": true,
+    "history": [
+      {
+        "date": "2024-03-12",
+        "type": "Кредит",
+        "amount": 3000000,
+        "status": "Закрыт"
+      },
+      {
+        "date": "2025-11-05",
+        "type": "Кредитная линия",
+        "amount": 6000000,
+        "status": "Действует"
+      }
+    ]
+  },
+  "9900000049": {
+    "current_debt": 0,
+    "active_overdue": false,
+    "current_overdue_amount": 0,
+    "max_overdue_days": 0,
+    "closed_overdue_12m": false,
+    "closed_overdue_last": null,
+    "credit_history_years": 4,
+    "contracts_paid": 2,
+    "contracts_active": 0,
+    "inn": "9900000049",
+    "company_name": "ООО «Тихий Двор»",
+    "credit_history_found": true,
+    "history": [
+      {
+        "date": "2024-03-12",
+        "type": "Кредит",
+        "amount": 500000,
+        "status": "Закрыт"
+      },
+      {
+        "date": "2025-11-05",
+        "type": "Кредитная линия",
+        "amount": 0,
+        "status": "Действует"
+      }
+    ]
+  },
+  "9900000056": {
+    "current_debt": 0,
+    "active_overdue": false,
+    "current_overdue_amount": 0,
+    "max_overdue_days": 0,
+    "closed_overdue_12m": false,
+    "closed_overdue_last": null,
+    "credit_history_years": 10,
+    "contracts_paid": 7,
+    "contracts_active": 0,
+    "inn": "9900000056",
+    "company_name": "ООО «Архив-Строй»",
+    "credit_history_found": true,
+    "history": [
+      {
+        "date": "2024-03-12",
+        "type": "Кредит",
+        "amount": 500000,
+        "status": "Закрыт"
+      },
+      {
+        "date": "2025-11-05",
+        "type": "Кредитная линия",
+        "amount": 0,
+        "status": "Действует"
+      }
+    ]
+  },
+  "990000001246": {
+    "current_debt": 2000000,
+    "active_overdue": false,
+    "current_overdue_amount": 0,
+    "max_overdue_days": 0,
+    "closed_overdue_12m": false,
+    "closed_overdue_last": null,
+    "credit_history_years": 6,
+    "contracts_paid": 3,
+    "contracts_active": 1,
+    "inn": "990000001246",
+    "company_name": "ИП Кузнецова Мария Сергеевна",
+    "credit_history_found": true,
+    "history": [
+      {
+        "date": "2024-03-12",
+        "type": "Кредит",
+        "amount": 1000000,
+        "status": "Закрыт"
+      },
+      {
+        "date": "2025-11-05",
+        "type": "Кредитная линия",
+        "amount": 2000000,
+        "status": "Действует"
+      }
+    ]
+  },
+  "9900000063": {
+    "current_debt": 200000,
+    "active_overdue": false,
+    "current_overdue_amount": 0,
+    "max_overdue_days": 0,
+    "closed_overdue_12m": false,
+    "closed_overdue_last": null,
+    "credit_history_years": 1,
+    "contracts_paid": 1,
+    "contracts_active": 0,
+    "inn": "9900000063",
+    "company_name": "ООО «Старт Логистик»",
+    "credit_history_found": true,
+    "history": [
+      {
+        "date": "2024-03-12",
+        "type": "Кредит",
+        "amount": 500000,
+        "status": "Закрыт"
+      },
+      {
+        "date": "2025-11-05",
+        "type": "Кредитная линия",
+        "amount": 200000,
+        "status": "Действует"
+      }
+    ]
+  },
+  "9900000070": {
+    "current_debt": 1600000,
+    "active_overdue": false,
+    "current_overdue_amount": 0,
+    "max_overdue_days": 0,
+    "closed_overdue_12m": true,
+    "closed_overdue_last": "2026-01-20",
+    "credit_history_years": 5,
+    "contracts_paid": 2,
+    "contracts_active": 1,
+    "inn": "9900000070",
+    "company_name": "ООО «Удача Плюс»",
+    "credit_history_found": true,
+    "history": [
+      {
+        "date": "2024-03-12",
+        "type": "Кредит",
+        "amount": 800000,
+        "status": "Закрыт"
+      },
+      {
+        "date": "2025-11-05",
+        "type": "Кредитная линия",
+        "amount": 1600000,
+        "status": "Действует"
+      }
+    ]
+  }
+}

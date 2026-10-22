@@ -1,0 +1,190 @@
+{
+  "9900000017": {
+    "inn": "9900000017",
+    "name": "ООО «Северный Ветер»",
+    "legal_form": "Общество с ограниченной ответственностью",
+    "registration_date": "2012-04-18",
+    "status": "Действующая",
+    "okved": "46.73",
+    "okved_name": "Торговля оптовая лесоматериалами, строительными материалами",
+    "director": "Смирнов Артём Владимирович",
+    "address": "г. Москва, ул. Примерная, д. 12, офис 304",
+    "founders": [
+      {
+        "name": "Смирнов Артём Владимирович",
+        "share": 100
+      }
+    ],
+    "authorized_capital": 1500000,
+    "revenue": 120000000,
+    "profit": 18000000,
+    "employees": 84,
+    "financial_year": 2025,
+    "is_financial_data_available": true
+  },
+  "9900000024": {
+    "inn": "9900000024",
+    "name": "ООО «Гранит-Снаб»",
+    "legal_form": "Общество с ограниченной ответственностью",
+    "registration_date": "2015-09-03",
+    "status": "Действующая",
+    "okved": "47.52",
+    "okved_name": "Торговля розничная строительными материалами",
+    "director": "Мельников Олег Иванович",
+    "address": "г. Екатеринбург, ул. Промышленная, д. 8",
+    "founders": [
+      {
+        "name": "Мельников Олег Иванович",
+        "share": 70
+      },
+      {
+        "name": "Мельникова Анна Олеговна",
+        "share": 30
+      }
+    ],
+    "authorized_capital": 800000,
+    "revenue": 80000000,
+    "profit": 7000000,
+    "employees": 42,
+    "financial_year": 2025,
+    "is_financial_data_available": true
+  },
+  "9900000031": {
+    "inn": "9900000031",
+    "name": "ООО «Торговый Дом Волга»",
+    "legal_form": "Общество с ограниченной ответственностью",
+    "registration_date": "2014-06-27",
+    "status": "Действующая",
+    "okved": "46.49",
+    "okved_name": "Торговля оптовая прочими потребительскими товарами",
+    "director": "Орлов Денис Павлович",
+    "address": "г. Нижний Новгород, ул. Речная, д. 21",
+    "founders": [
+      {
+        "name": "Орлов Денис Павлович",
+        "share": 100
+      }
+    ],
+    "authorized_capital": 1000000,
+    "revenue": 10000000,
+    "profit": 1300000,
+    "employees": 18,
+    "financial_year": 2025,
+    "is_financial_data_available": true
+  },
+  "9900000049": {
+    "inn": "9900000049",
+    "name": "ООО «Тихий Двор»",
+    "legal_form": "Общество с ограниченной ответственностью",
+    "registration_date": "2016-02-11",
+    "status": "Действующая",
+    "okved": "55.10",
+    "okved_name": "Деятельность гостиниц и прочих мест для временного проживания",
+    "director": "Лебедева Ирина Сергеевна",
+    "address": "г. Казань, ул. Садовая, д. 5",
+    "founders": [
+      {
+        "name": "Лебедева Ирина Сергеевна",
+        "share": 100
+      }
+    ],
+    "authorized_capital": 500000,
+    "revenue": null,
+    "profit": null,
+    "employees": 12,
+    "financial_year": 2025,
+    "is_financial_data_available": false
+  },
+  "9900000056": {
+    "inn": "9900000056",
+    "name": "ООО «Архив-Строй»",
+    "legal_form": "Общество с ограниченной ответственностью",
+    "registration_date": "2013-11-08",
+    "status": "Ликвидирована",
+    "okved": "41.20",
+    "okved_name": "Строительство жилых и нежилых зданий",
+    "director": "Ковалёв Пётр Андреевич",
+    "address": "г. Самара, ул. Заводская, д. 3",
+    "founders": [
+      {
+        "name": "Ковалёв Пётр Андреевич",
+        "share": 100
+      }
+    ],
+    "authorized_capital": 300000,
+    "revenue": 15000000,
+    "profit": 400000,
+    "employees": 0,
+    "financial_year": 2024,
+    "is_financial_data_available": true
+  },
+  "990000001246": {
+    "inn": "990000001246",
+    "name": "ИП Кузнецова Мария Сергеевна",
+    "legal_form": "Индивидуальный предприниматель",
+    "registration_date": "2019-07-16",
+    "status": "Действующая",
+    "okved": "62.01",
+    "okved_name": "Разработка компьютерного программного обеспечения",
+    "director": "Кузнецова Мария Сергеевна",
+    "address": "г. Санкт-Петербург, ул. Невская, д. 44",
+    "founders": [
+      {
+        "name": "Кузнецова Мария Сергеевна",
+        "share": 100
+      }
+    ],
+    "authorized_capital": 0,
+    "revenue": 25000000,
+    "profit": 3000000,
+    "employees": 6,
+    "financial_year": 2025,
+    "is_financial_data_available": true
+  },
+  "9900000063": {
+    "inn": "9900000063",
+    "name": "ООО «Старт Логистик»",
+    "legal_form": "Общество с ограниченной ответственностью",
+    "registration_date": "2025-12-10",
+    "status": "Действующая",
+    "okved": "49.41",
+    "okved_name": "Деятельность автомобильного грузового транспорта",
+    "director": "Громов Никита Андреевич",
+    "address": "г. Новосибирск, ул. Транспортная, д. 17",
+    "founders": [
+      {
+        "name": "Громов Никита Андреевич",
+        "share": 100
+      }
+    ],
+    "authorized_capital": 200000,
+    "revenue": 5000000,
+    "profit": 400000,
+    "employees": 4,
+    "financial_year": 2025,
+    "is_financial_data_available": true
+  },
+  "9900000070": {
+    "inn": "9900000070",
+    "name": "ООО «Удача Плюс»",
+    "legal_form": "Общество с ограниченной ответственностью",
+    "registration_date": "2018-08-22",
+    "status": "Действующая",
+    "okved": "92.00",
+    "okved_name": "Деятельность по организации и проведению азартных игр и заключению пари",
+    "director": "Азаров Виктор Львович",
+    "address": "г. Сочи, ул. Курортная, д. 7",
+    "founders": [
+      {
+        "name": "Азаров Виктор Львович",
+        "share": 100
+      }
+    ],
+    "authorized_capital": 100000,
+    "revenue": 2000000,
+    "profit": -200000,
+    "employees": 3,
+    "financial_year": 2025,
+    "is_financial_data_available": true
+  }
+}
