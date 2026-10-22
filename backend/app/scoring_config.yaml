@@ -1,0 +1,35 @@
+version: 1
+base_score: 50
+age:
+  lt_1_year: -15
+  from_3_to_7_years: 8
+  gt_7_years: 15
+amount_to_revenue:
+  high_threshold: 0.5
+  high_penalty: -15
+  low_threshold: 0.2
+  low_bonus: 10
+profit:
+  loss_penalty: -20
+  margin_threshold_percent: 10
+  margin_bonus: 10
+bki:
+  active_overdue_penalty: -35
+  closed_overdue_recent_penalty: -15
+  recent_months: 12
+  no_overdue_bonus: 10
+debt_load:
+  high_threshold: 0.5
+  high_penalty: -15
+  low_threshold: 0.2
+  low_bonus: 5
+okved:
+  risky_prefixes: ["92", "93"]
+  penalty: -10
+collateral:
+  bonus: 5
+decision:
+  approve_threshold: 70
+  changed_threshold: 40
+  changed_term_cap_months: 24
+  offer_valid_days: 5
