@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+.python-deps/
+.pip-cache/
+.tmp/
+.npm-cache/
+.visual/
+.swagger-tmp/
+.acl-reports/
+.local_uploads/
+.test_uploads/
+.pg_uploads/
+.pgtest/
+*.pgtest.log
+*.tgz
+.coverage
+htmlcov/
+*.db
+*.sqlite3
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/vite.config.js
+frontend/vite.config.d.ts
+*.tsbuildinfo
+npm-debug.log*
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Runtime data
+uploads/
+data/
+*.log
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

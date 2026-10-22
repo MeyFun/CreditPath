@@ -1,0 +1,103 @@
+name: creditpath
+
+services:
+  db:
+    image: postgres:16.6-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-creditpath}
+      POSTGRES_USER: ${POSTGRES_USER:-creditpath}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-creditpath_demo}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-creditpath} -d ${POSTGRES_DB:-creditpath}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: [creditpath]
+
+  registry-mock:
+    build:
+      context: ./mocks/registry
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: [creditpath]
+
+  bki-mock:
+    build:
+      context: ./mocks/bki
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: [creditpath]
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://creditpath:creditpath_demo@db:5432/creditpath}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-production}
+      ACCESS_TOKEN_MINUTES: ${ACCESS_TOKEN_MINUTES:-60}
+      LOGIN_RATE_LIMIT: ${LOGIN_RATE_LIMIT:-5}
+      LOGIN_RATE_WINDOW_SECONDS: ${LOGIN_RATE_WINDOW_SECONDS:-300}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-DemoPass123!}
+      SEED_DEMO: ${SEED_DEMO:-true}
+      REGISTRY_URL: ${REGISTRY_URL:-http://registry-mock:8000}
+      BKI_URL: ${BKI_URL:-http://bki-mock:8000}
+      EXTERNAL_TIMEOUT_SECONDS: ${EXTERNAL_TIMEOUT_SECONDS:-4}
+      EXTERNAL_RETRIES: ${EXTERNAL_RETRIES:-2}
+      UPLOAD_DIR: ${UPLOAD_DIR:-/data/uploads}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - uploads_data:/data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      registry-mock:
+        condition: service_healthy
+      bki-mock:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks: [creditpath]
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks: [creditpath]
+
+volumes:
+  postgres_data:
+  uploads_data:
+
+networks:
+  creditpath:
+    driver: bridge
