@@ -59,6 +59,34 @@ def test_employee_cannot_manage_users(client):
     assert response.status_code == 403
 
 
+def test_admin_changes_role_and_action_is_audited(client, db):
+    employee = user_by_name(db, "employee3")
+    admin_headers = login(client, "admin")
+    response = client.patch(
+        f"/api/admin/users/{employee.id}/role",
+        headers=admin_headers,
+        json={"role": "client"},
+    )
+    assert response.status_code == 200
+    assert response.json()["role"] == "client"
+    audit = client.get("/api/admin/audit?action=user.role_changed", headers=admin_headers)
+    assert audit.status_code == 200
+    assert any(str(item["entity_id"]) == str(employee.id) for item in audit.json())
+    restore = client.patch(
+        f"/api/admin/users/{employee.id}/role",
+        headers=admin_headers,
+        json={"role": "employee"},
+    )
+    assert restore.status_code == 200
+
+
+def test_swagger_docs_use_only_local_assets(client):
+    response = client.get("/docs")
+    assert response.status_code == 200
+    assert "/static/swagger/swagger-ui-bundle.js" in response.text
+    assert "cdn.jsdelivr.net" not in response.text
+
+
 def test_client_cannot_manage_users(client):
     response = client.get("/api/admin/users", headers=login(client, "client1"))
     assert response.status_code == 403

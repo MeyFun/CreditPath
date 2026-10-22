@@ -3,4 +3,7 @@ dist
 .vite
 .npm-cache
 .swagger-tmp
+vite.config.js
+vite.config.d.ts
+*.tsbuildinfo
 *.log
