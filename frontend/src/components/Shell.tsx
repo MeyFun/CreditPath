@@ -16,40 +16,82 @@ import {
   Users,
   X
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { Logo } from "./ui";
+import type { Role } from "../types";
 
-const NAV = {
-  client: [
-    { to: "/app", label: "Главная", icon: LayoutDashboard, end: true },
-    { to: "/app/applications", label: "Мои заявки", icon: ClipboardList, end: true },
-    { to: "/app/applications/new", label: "Новая заявка", icon: Plus, end: true },
-    { to: "/app/products", label: "Продукты", icon: FolderKanban },
-    { to: "/app/company", label: "Профиль компании", icon: Building2 },
-    { to: "/app/notifications", label: "Уведомления", icon: Bell }
-  ],
-  employee: [
-    { to: "/staff", label: "Очередь заявок", icon: ClipboardList, end: true },
-    { to: "/staff?scope=mine", label: "Мои заявки", icon: FileClock }
-  ],
-  admin: [
-    { to: "/admin/users", label: "Пользователи и роли", icon: Users },
-    { to: "/admin/applications", label: "Все заявки", icon: ClipboardList },
-    { to: "/admin/audit", label: "Журнал аудита", icon: ScrollText },
-    { to: "/admin/dictionaries", label: "Справочники", icon: Settings2 }
-  ]
-};
+type Area = "client" | "employee" | "admin";
 
-const ROLE_LABEL = {
+interface NavItem {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  end?: boolean;
+}
+
+interface NavGroup {
+  title?: string;
+  items: NavItem[];
+}
+
+const CLIENT_NAV: NavItem[] = [
+  { to: "/app", label: "Главная", icon: LayoutDashboard, end: true },
+  { to: "/app/applications", label: "Мои заявки", icon: ClipboardList, end: true },
+  { to: "/app/applications/new", label: "Новая заявка", icon: Plus, end: true },
+  { to: "/app/products", label: "Продукты", icon: FolderKanban },
+  { to: "/app/company", label: "Профиль компании", icon: Building2 },
+  { to: "/app/notifications", label: "Уведомления", icon: Bell }
+];
+
+const STAFF_NAV: NavItem[] = [
+  { to: "/staff", label: "Очередь заявок", icon: ClipboardList, end: true },
+  { to: "/staff?scope=mine", label: "Назначенные заявки", icon: FileClock }
+];
+
+const ADMIN_NAV: NavItem[] = [
+  { to: "/admin/users", label: "Пользователи и роли", icon: Users },
+  { to: "/admin/applications", label: "Все заявки", icon: ClipboardList },
+  { to: "/admin/audit", label: "Журнал аудита", icon: ScrollText },
+  { to: "/admin/dictionaries", label: "Справочники", icon: Settings2 }
+];
+
+const AREA_LABEL: Record<Area, string> = {
   client: "Кабинет предпринимателя",
   employee: "Рабочее место сотрудника",
   admin: "Администрирование"
 };
 
-export function AppShell({ role }: { role: "client" | "employee" | "admin" }) {
+const ROLE_LABEL: Record<Role, string> = {
+  client: "Клиент",
+  employee: "Сотрудник банка",
+  admin: "Администратор"
+};
+
+function navGroups(area: Area, role: Role): NavGroup[] {
+  if (role === "client") return [{ items: CLIENT_NAV }];
+  if (area === "client") {
+    const service = role === "employee"
+      ? { title: "Служебный контур", items: STAFF_NAV }
+      : { title: "Администрирование", items: ADMIN_NAV };
+    return [{ title: "Кабинет предпринимателя", items: CLIENT_NAV }, service];
+  }
+  if (area === "employee") {
+    return [
+      { title: "Рабочее место банка", items: STAFF_NAV },
+      { title: "Кабинет предпринимателя", items: CLIENT_NAV }
+    ];
+  }
+  return [
+    { title: "Администрирование", items: ADMIN_NAV },
+    { title: "Кабинет предпринимателя", items: CLIENT_NAV }
+  ];
+}
+
+export function AppShell({ role }: { role: Area }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -66,6 +108,9 @@ export function AppShell({ role }: { role: "client" | "employee" | "admin" }) {
 
   if (!user) return null;
 
+  const groups = navGroups(role, user.role);
+  const notificationPath = role === "client" ? "/app/notifications" : role === "employee" ? "/staff/notifications" : "/admin/notifications";
+
   function handleLogout() {
     logout();
     navigate("/login");
@@ -78,7 +123,7 @@ export function AppShell({ role }: { role: "client" | "employee" | "admin" }) {
           <Menu size={22} />
         </button>
         <Logo compact />
-        <Link className="icon-button badge-host" to={`/${role === "client" ? "app" : role === "employee" ? "staff" : "admin"}/notifications`} aria-label="Уведомления">
+        <Link className="icon-button badge-host" to={notificationPath} aria-label="Уведомления">
           <Bell size={20} />
           {(notifications.data?.unread ?? 0) > 0 && <span className="badge-count">{notifications.data?.unread}</span>}
         </Link>
@@ -93,18 +138,23 @@ export function AppShell({ role }: { role: "client" | "employee" | "admin" }) {
             <X size={20} />
           </button>
         </div>
-        <div className="role-chip">{ROLE_LABEL[role]}</div>
+        <div className="role-chip">{AREA_LABEL[role]}</div>
         <nav className="side-nav" aria-label="Основная навигация">
-          {NAV[role].map((item) => {
-            const Icon = item.icon;
-            const active = isNavActive(item, location.pathname, location.search);
-            return (
-              <Link key={item.to} to={item.to} className={active ? "active" : ""}>
-                <Icon size={19} />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
+          {groups.map((group, groupIndex) => (
+            <div className="side-nav-group" key={group.title ?? `group-${groupIndex}`}>
+              {group.title && <span className="side-nav-label">{group.title}</span>}
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const active = isNavActive(item, location.pathname, location.search);
+                return (
+                  <Link key={`${groupIndex}-${item.to}`} to={item.to} className={active ? "active" : ""}>
+                    <Icon size={19} />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
         {role === "client" && (
           <div className="sidebar-note">
@@ -119,8 +169,17 @@ export function AppShell({ role }: { role: "client" | "employee" | "admin" }) {
           <div className="sidebar-note">
             <ShieldCheck size={18} />
             <div>
-              <strong>Только администрирование</strong>
-              <p>Кредитные решения принимают сотрудники банка. Журнал аудита неизменяем.</p>
+              <strong>Кредитные решения — только у сотрудников</strong>
+              <p>Администратор управляет доступами, но не может одобрить заявку. Журнал аудита неизменяем.</p>
+            </div>
+          </div>
+        )}
+        {role === "employee" && (
+          <div className="sidebar-note">
+            <ShieldCheck size={18} />
+            <div>
+              <strong>Свои заявки — только в клиентском кабинете</strong>
+              <p>Служебная очередь не показывает заявки, поданные с вашей учётной записи.</p>
             </div>
           </div>
         )}
@@ -140,18 +199,18 @@ export function AppShell({ role }: { role: "client" | "employee" | "admin" }) {
       <div className="app-main">
         <header className="topbar">
           <div className="breadcrumbs">
-            <span>{ROLE_LABEL[role]}</span>
-            {user.company_inn && role === "client" && <span className="muted">ИНН {user.company_inn}</span>}
+            <span>{AREA_LABEL[role]}</span>
+            {user.company_inn && <span className="muted">ИНН {user.company_inn}</span>}
           </div>
           <div className="topbar-actions">
-            <Link className="topbar-bell" to={role === "client" ? "/app/notifications" : role === "employee" ? "/staff/notifications" : "/admin/notifications"} aria-label="Центр уведомлений">
+            <Link className="topbar-bell" to={notificationPath} aria-label="Центр уведомлений">
               <Bell size={19} />
               {(notifications.data?.unread ?? 0) > 0 && <span className="badge-count">{notifications.data?.unread}</span>}
             </Link>
             <span className="avatar avatar-small">{initials(user.full_name)}</span>
             <div className="topbar-user">
               <strong>{user.full_name}</strong>
-              <small>{role === "client" ? "Клиент" : role === "employee" ? "Сотрудник банка" : "Администратор"}</small>
+              <small>{ROLE_LABEL[user.role]}{role !== user.role ? ` · ${AREA_LABEL[role]}` : ""}</small>
             </div>
             <button className="icon-button" onClick={handleLogout} title="Выйти" aria-label="Выйти">
               <LogOut size={18} />

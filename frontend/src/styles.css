@@ -412,6 +412,9 @@ img { max-width: 100%; }
 .sidebar-close { display: none; }
 .role-chip { margin: 0 4px 14px; padding: 7px 10px; border-radius: 7px; background: #f7f8fa; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
 .side-nav { display: flex; flex-direction: column; gap: 2px; }
+.side-nav-group { display: flex; flex-direction: column; gap: 2px; }
+.side-nav-group + .side-nav-group { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.side-nav-label { padding: 2px 11px 6px; color: var(--muted); font-size: 9.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
 .side-nav a { display: flex; align-items: center; gap: 10px; color: var(--muted-dark); padding: 10px 11px; border-radius: 8px; font-size: 13px; font-weight: 500; }
 .side-nav a:hover { background: #f5f6f8; color: var(--text); }
 .side-nav a.active { background: var(--accent); color: #fff; box-shadow: 0 4px 12px rgba(215, 25, 32, 0.17); }

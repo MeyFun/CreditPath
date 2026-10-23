@@ -17,15 +17,15 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { api, ApiError } from "../api";
 import { homeForRole, useAuth } from "../auth";
-import { Alert, Button, Field, Input, Logo, Spinner } from "../components/ui";
+import { Alert, Button, Field, Input, Logo } from "../components/ui";
 
 type Tab = "login" | "register";
 
 const DEMO_ACCOUNTS = [
   { username: "client1", title: "Клиент", text: "Кабинет предпринимателя", icon: UserRound, tone: "red" },
   { username: "client2", title: "Клиент", text: "Другая компания", icon: Building2, tone: "blue" },
-  { username: "employee1", title: "Сотрудник банка", text: "Очередь и решения", icon: BadgeCheck, tone: "green" },
-  { username: "admin", title: "Администратор", text: "Роли, аудит, справочники", icon: ShieldCheck, tone: "dark" }
+  { username: "employee1", title: "Сотрудник банка", text: "Очередь, решения и клиентский кабинет", icon: BadgeCheck, tone: "green" },
+  { username: "admin", title: "Администратор", text: "Роли, аудит и клиентский кабинет", icon: ShieldCheck, tone: "dark" }
 ];
 
 export default function AuthPage({ initialTab = "login" }: { initialTab?: Tab }) {

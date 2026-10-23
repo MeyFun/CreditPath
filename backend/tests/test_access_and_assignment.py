@@ -92,16 +92,82 @@ def test_client_cannot_manage_users(client):
     assert response.status_code == 403
 
 
-def test_employee_cannot_decide_own_application(client, db):
+def test_employee_cannot_access_own_application_in_service_workspace(client, db):
     employee = user_by_name(db, "employee1")
     application = make_application(db, user=employee, status="IN_REVIEW", assigned=employee)
-    response = client.post(
+    headers = login(client, "employee1")
+
+    detail = client.get(f"/api/employee/applications/{application.id}", headers=headers)
+    assert detail.status_code == 404
+
+    queue = client.get("/api/employee/applications?scope=mine", headers=headers)
+    assert queue.status_code == 200
+    assert all(item["id"] != application.id for item in queue.json())
+
+    decision = client.post(
         f"/api/employee/applications/{application.id}/decision",
-        headers=login(client, "employee1"),
+        headers=headers,
         json={"action": "approve"},
     )
-    assert response.status_code == 403
-    assert "собственную" in response.json()["detail"].lower()
+    assert decision.status_code == 404
+    assert "назначенных" in decision.json()["detail"].lower()
+
+
+def test_employee_and_admin_have_client_cabinet(client, db):
+    product = client.get("/api/public/products").json()[0]
+    for username in ("employee1", "admin"):
+        headers = login(client, username)
+        dashboard = client.get("/api/client/dashboard", headers=headers)
+        assert dashboard.status_code == 200, dashboard.text
+
+        created = client.post(
+            "/api/client/applications",
+            headers=headers,
+            json={
+                "product_id": product["id"],
+                "amount": 1_000_000,
+                "term_months": 12,
+                "purpose": product["purposes"][0]["code"],
+                "company_inn": "9900000017",
+                "company_name": "ООО «Северный Ветер»",
+                "collateral": False,
+            },
+        )
+        assert created.status_code == 201, created.text
+        application_id = created.json()["id"]
+
+        detail = client.get(f"/api/client/applications/{application_id}", headers=headers)
+        assert detail.status_code == 200
+        assert detail.json()["company_name"] == "ООО «Северный Ветер»"
+
+        mine = client.get("/api/client/applications", headers=headers)
+        assert mine.status_code == 200
+        assert any(item["id"] == application_id for item in mine.json())
+        expected_user = user_by_name(db, username)
+        assert all(
+            db.get(Application, item["id"]).user_id == expected_user.id for item in mine.json()
+        )
+
+
+def test_admin_cannot_approve_own_client_application(client, db):
+    admin = user_by_name(db, "admin")
+    employee = user_by_name(db, "employee2")
+    application = make_application(db, user=admin, status="IN_REVIEW", assigned=employee)
+
+    forbidden = client.post(
+        f"/api/employee/applications/{application.id}/decision",
+        headers=login(client, "admin"),
+        json={"action": "approve"},
+    )
+    assert forbidden.status_code == 403
+
+    allowed = client.post(
+        f"/api/employee/applications/{application.id}/decision",
+        headers=login(client, "employee2"),
+        json={"action": "approve", "comment": "Проверено сотрудником"},
+    )
+    assert allowed.status_code == 200, allowed.text
+    assert allowed.json()["status"] == "APPROVED"
 
 
 def test_fresh_look_rule_blocks_chain_reviewer(client, db):

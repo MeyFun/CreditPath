@@ -1,12 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, CheckCheck, ExternalLink } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { api } from "../api";
-import { useAuth } from "../auth";
 import { Button, Card, EmptyState, formatDateTime, LoadingBlock, PageHeader, useToast } from "../components/ui";
 
 export default function NotificationsPage() {
-  const { user } = useAuth();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const { push } = useToast();
   const query = useQuery({ queryKey: ["notifications"], queryFn: api.notifications.list });
@@ -22,7 +21,11 @@ export default function NotificationsPage() {
     }
   });
 
-  const appPath = user?.role === "employee" ? "/staff/applications" : user?.role === "admin" ? "/admin/applications" : "/app/applications";
+  const appPath = location.pathname.startsWith("/staff")
+    ? "/staff/applications"
+    : location.pathname.startsWith("/admin")
+      ? "/admin/applications"
+      : "/app/applications";
 
   return (
     <div className="page-stack">

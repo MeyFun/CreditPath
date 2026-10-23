@@ -150,11 +150,17 @@ class Client:
         self.http.close()
 
 
-def wait_for(client: Client, application_id: int, statuses: set[str], timeout: float = TIMEOUT) -> dict:
+def wait_for(
+    client: Client,
+    application_id: int,
+    statuses: set[str],
+    username: str = "client1",
+    timeout: float = TIMEOUT,
+) -> dict:
     deadline = time.time() + timeout
     last_status = "?"
     while time.time() < deadline:
-        detail = client.get(f"/client/applications/{application_id}", "client1")
+        detail = client.get(f"/client/applications/{application_id}", username)
         last_status = detail["status"]
         if last_status in statuses:
             return detail
@@ -332,7 +338,69 @@ def run() -> None:
             json={"action": "approve"},
         )
         check(forbidden.status_code == 403, "Администратор не должен иметь доступ к кредитным решениям")
-        print("✓ RBAC: администратор не может принять кредитное решение")
+
+        # Администратор и сотрудник тоже являются клиентами продукта.
+        for username in ("admin", "employee1"):
+            dashboard = client.get("/client/dashboard", username)
+            check("counts" in dashboard, f"{username} не получил клиентский дашборд")
+            print(f"✓ {username}: клиентский кабинет доступен")
+
+        admin_application = client.post(
+            "/client/applications",
+            "admin",
+            {
+                "product_id": by_code["OBOROT"]["id"],
+                "amount": 1_000_000,
+                "term_months": 12,
+                "purpose": "working_capital",
+                "company_inn": "9900000017",
+                "company_name": "ООО «Северный Ветер»",
+                "collateral": False,
+            },
+        )
+        admin_detail = client.get(f"/client/applications/{admin_application['id']}", "admin")
+        check(admin_detail["id"] == admin_application["id"], "Администратор не видит собственную заявку в клиентском кабинете")
+        admin_decision = client.http.post(
+            f"/employee/applications/{admin_application['id']}/decision",
+            headers=client.headers("admin"),
+            json={"action": "approve"},
+        )
+        check(admin_decision.status_code == 403, "Администратор не должен одобрять собственную заявку")
+        print("✓ Администратор: клиентская заявка создана, кредитное решение недоступно")
+
+        employee_application = client.post(
+            "/client/applications",
+            "employee1",
+            {
+                "product_id": by_code["OBOROT"]["id"],
+                "amount": 1_200_000,
+                "term_months": 12,
+                "purpose": "working_capital",
+                "company_inn": "9900000017",
+                "company_name": "ООО «Северный Ветер»",
+                "collateral": False,
+            },
+        )
+        client.post(
+            f"/client/applications/{employee_application['id']}/submit",
+            "employee1",
+            headers={"Idempotency-Key": uuid.uuid4().hex},
+        )
+        employee_own_status = wait_for(
+            client,
+            employee_application["id"],
+            {"IN_REVIEW", "NEED_INFO", "REJECTED"},
+            username="employee1",
+        )
+        check(employee_own_status["status"] == "IN_REVIEW", "Заявка сотрудника не дошла до рассмотрения")
+        own_service = client.http.get(
+            f"/employee/applications/{employee_application['id']}",
+            headers=client.headers("employee1"),
+        )
+        check(own_service.status_code == 404, "Сотрудник не должен открывать собственную заявку в служебном контуре")
+        assigned_to, _ = find_employee(client, employee_application["id"])
+        check(assigned_to != "employee1", "Собственная заявка сотрудника не должна назначаться ему")
+        print(f"✓ Сотрудник: своя заявка доступна как клиентская, в служебном контуре скрыта; назначена {assigned_to}")
 
         print("\nE2E успешно завершён: все четыре исхода и служебные проверки пройдены.")
     finally:

@@ -28,7 +28,6 @@ from ..models import (
     IdempotencyRecord,
     Notification,
     Product,
-    ROLE_CLIENT,
     User,
 )
 from ..schemas import (
@@ -44,7 +43,7 @@ from ..schemas import (
     RespondInfoRequest,
     UserOut,
 )
-from ..security import require_client
+from ..security import get_current_user
 from ..services.audit import write_audit
 from ..services.external import ExternalServiceError, fetch_registry
 from ..services.inn import validate_inn
@@ -102,7 +101,7 @@ def _event_payload(application: Application) -> dict:
 
 
 @router.get("/dashboard", response_model=DashboardOut)
-def dashboard(db: Session = Depends(get_db), user: User = Depends(require_client)) -> dict:
+def dashboard(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> dict:
     rows = db.scalars(
         select(Application).where(Application.user_id == user.id).order_by(Application.created_at.desc())
     ).all()
@@ -167,7 +166,7 @@ def dashboard(db: Session = Depends(get_db), user: User = Depends(require_client
 
 
 @router.get("/company")
-def company_profile(db: Session = Depends(get_db), user: User = Depends(require_client)) -> dict:
+def company_profile(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> dict:
     snapshot = db.scalar(
         select(EnrichmentSnapshot)
         .join(Application, Application.id == EnrichmentSnapshot.application_id)
@@ -196,7 +195,7 @@ def company_profile(db: Session = Depends(get_db), user: User = Depends(require_
 def update_profile(
     payload: ProfileUpdateRequest,
     db: Session = Depends(get_db),
-    user: User = Depends(require_client),
+    user: User = Depends(get_current_user),
 ) -> User:
     name = payload.full_name.strip()
     if len(name) < 2 or len(name) > 160:
@@ -221,7 +220,7 @@ def list_applications(
     status_group: str = "all",
     search: str | None = None,
     db: Session = Depends(get_db),
-    user: User = Depends(require_client),
+    user: User = Depends(get_current_user),
 ) -> list[dict]:
     query = select(Application).where(Application.user_id == user.id)
     if status_group == "draft":
@@ -260,7 +259,7 @@ def list_applications(
 def create_application(
     payload: ApplicationCreate,
     db: Session = Depends(get_db),
-    user: User = Depends(require_client),
+    user: User = Depends(get_current_user),
 ) -> dict:
     product = _product(db, payload.product_id)
     if payload.company_inn:
@@ -323,7 +322,7 @@ def create_application(
 def get_application(
     application_id: int,
     db: Session = Depends(get_db),
-    user: User = Depends(require_client),
+    user: User = Depends(get_current_user),
 ) -> dict:
     application = _owned(db, application_id, user)
     product = _product(db, application.product_id, allow_inactive=True)
@@ -336,7 +335,7 @@ def update_application(
     application_id: int,
     payload: ApplicationUpdate,
     db: Session = Depends(get_db),
-    user: User = Depends(require_client),
+    user: User = Depends(get_current_user),
 ) -> dict:
     application = _owned(db, application_id, user)
     if application.status != DRAFT:
@@ -380,7 +379,7 @@ def submit_application(
     background_tasks: BackgroundTasks,
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     db: Session = Depends(get_db),
-    user: User = Depends(require_client),
+    user: User = Depends(get_current_user),
 ) -> dict:
     application = _owned(db, application_id, user)
     if idempotency_key:
@@ -476,7 +475,7 @@ def respond_info(
     payload: RespondInfoRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    user: User = Depends(require_client),
+    user: User = Depends(get_current_user),
 ) -> dict:
     application = _owned(db, application_id, user)
     if application.status != NEED_INFO:
@@ -531,7 +530,7 @@ def respond_offer(
     application_id: int,
     payload: OfferRequest,
     db: Session = Depends(get_db),
-    user: User = Depends(require_client),
+    user: User = Depends(get_current_user),
 ) -> dict:
     application = _owned(db, application_id, user)
     if application.status not in {APPROVED, APPROVED_CHANGED}:
@@ -591,7 +590,7 @@ def respond_offer(
 def sign_offer(
     application_id: int,
     db: Session = Depends(get_db),
-    user: User = Depends(require_client),
+    user: User = Depends(get_current_user),
 ) -> dict:
     application = _owned(db, application_id, user)
     if application.status != OFFER_ACCEPTED:
@@ -629,7 +628,7 @@ def sign_offer(
 def disburse(
     application_id: int,
     db: Session = Depends(get_db),
-    user: User = Depends(require_client),
+    user: User = Depends(get_current_user),
 ) -> dict:
     application = _owned(db, application_id, user)
     if application.status != SIGNED:
@@ -667,7 +666,7 @@ def disburse(
 def resubmit(
     application_id: int,
     db: Session = Depends(get_db),
-    user: User = Depends(require_client),
+    user: User = Depends(get_current_user),
 ) -> dict:
     source = _owned(db, application_id, user)
     if source.status != REJECTED:
@@ -713,7 +712,7 @@ async def upload_document(
     application_id: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    user: User = Depends(require_client),
+    user: User = Depends(get_current_user),
 ) -> Document:
     application = _owned(db, application_id, user)
     if application.status not in {DRAFT, NEED_INFO}:
@@ -787,7 +786,7 @@ def download_document(
     application_id: int,
     document_id: int,
     db: Session = Depends(get_db),
-    user: User = Depends(require_client),
+    user: User = Depends(get_current_user),
 ) -> Response:
     _owned(db, application_id, user)
     document = db.get(Document, document_id)

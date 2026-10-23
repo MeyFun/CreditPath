@@ -31,7 +31,7 @@ export default function App() {
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<AuthPage />} />
       <Route path="/register" element={<AuthPage initialTab="register" />} />
-      <Route path="/app" element={<RequireRole roles={["client"]}><AppShell role="client" /></RequireRole>}>
+      <Route path="/app" element={<RequireRole roles={["client", "employee", "admin"]}><AppShell role="client" /></RequireRole>}>
         <Route index element={<DashboardPage />} />
         <Route path="applications" element={<ApplicationsPage />} />
         <Route path="applications/new" element={<NewApplicationPage />} />
