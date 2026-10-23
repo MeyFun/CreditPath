@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ArrowRight,
@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   UserPlus
 } from "lucide-react";
-import { useState } from "react";
+import { useDeferredValue, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api";
 import {
@@ -19,11 +19,13 @@ import {
   Button,
   Card,
   EmptyState,
+  ErrorState,
   formatDate,
   formatDateTime,
   formatMoney,
   Input,
   LoadingBlock,
+  Modal,
   PageHeader,
   StatusBadge,
   Timeline,
@@ -32,10 +34,14 @@ import {
 
 const STATUS_OPTIONS = [
   ["", "Все статусы"],
+  ["DRAFT", "Черновик"],
   ["IN_REVIEW", "На рассмотрении"],
   ["NEED_INFO", "Нужны уточнения"],
   ["APPROVED", "Одобрено"],
   ["APPROVED_CHANGED", "Другие условия"],
+  ["OFFER_ACCEPTED", "Оферта принята"],
+  ["OFFER_DECLINED", "Оферта отклонена"],
+  ["SIGNED", "Договор подписан"],
   ["REJECTED", "Отказ"],
   ["DISBURSED", "Выдано"]
 ];
@@ -52,9 +58,11 @@ function AdminApplicationsList() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [unassigned, setUnassigned] = useState(false);
+  const deferredSearch = useDeferredValue(search.trim());
   const query = useQuery({
-    queryKey: ["admin-applications", search, status, unassigned],
-    queryFn: () => api.admin.applications({ search, status, unassigned })
+    queryKey: ["admin-applications", deferredSearch, status, unassigned],
+    queryFn: () => api.admin.applications({ search: deferredSearch, status, unassigned }),
+    placeholderData: keepPreviousData
   });
 
   return (
@@ -80,6 +88,8 @@ function AdminApplicationsList() {
       </Card>
       {query.isLoading ? (
         <LoadingBlock />
+      ) : query.isError ? (
+        <ErrorState title="Не удалось загрузить заявки" onRetry={() => query.refetch()} />
       ) : query.data?.length === 0 ? (
         <Card><EmptyState title="Заявок нет" description="Измените фильтры или дождитесь новых заявок." /></Card>
       ) : (
@@ -94,7 +104,7 @@ function AdminApplicationsList() {
                     <td><strong>{app.company_name}</strong><small className="block muted">ИНН {app.company_inn}</small></td>
                     <td><strong>{formatMoney(app.amount)}</strong><small className="block muted">{app.term_months} мес.</small></td>
                     <td><StatusBadge status={app.status} /></td>
-                    <td>{app.assigned_employee?.full_name ?? <Badge tone="warning">Очередь админа</Badge>}</td>
+                    <td>{app.assigned_employee?.full_name ?? (app.status === "IN_REVIEW" ? <Badge tone="warning">Нужно назначить</Badge> : <span className="muted">—</span>)}</td>
                     <td><button className="row-arrow" onClick={() => navigate(`/admin/applications/${app.id}`)} aria-label="Открыть"><ArrowRight size={17} /></button></td>
                   </tr>
                 ))}
@@ -112,22 +122,34 @@ function AdminApplicationDetail({ applicationId }: { applicationId: number }) {
   const { push } = useToast();
   const [employeeId, setEmployeeId] = useState("");
   const [error, setError] = useState("");
+  const [confirmReassign, setConfirmReassign] = useState(false);
   const query = useQuery({ queryKey: ["admin-application", applicationId], queryFn: () => api.admin.application(applicationId) });
   const employees = useQuery({ queryKey: ["admin-users", "", "employee"], queryFn: () => api.admin.users("", "employee") });
   const assign = useMutation({
     mutationFn: () => api.admin.assign(applicationId, Number(employeeId)),
     onSuccess: () => {
       push("Сотрудник назначен", "success");
+      setError("");
+      setEmployeeId("");
+      setConfirmReassign(false);
       queryClient.invalidateQueries({ queryKey: ["admin-application", applicationId] });
       queryClient.invalidateQueries({ queryKey: ["admin-applications"] });
     },
-    onError: (err) => setError(err instanceof ApiError ? err.message : "Не удалось назначить сотрудника")
+    onError: (err) => {
+      setConfirmReassign(false);
+      setError(err instanceof ApiError ? err.message : "Не удалось назначить сотрудника");
+    }
   });
 
   if (query.isLoading) return <LoadingBlock />;
+  if (query.isError && query.error instanceof ApiError && query.error.status !== 404) {
+    return <ErrorState title="Не удалось загрузить заявку" onRetry={() => query.refetch()} />;
+  }
   if (query.isError || !query.data) return <Card><Alert tone="danger">Заявка не найдена</Alert><Link className="btn btn-secondary" to="/admin/applications">К списку</Link></Card>;
   const app = query.data;
   const canAssign = ["IN_REVIEW", "NEED_INFO"].includes(app.status);
+  const candidates = (employees.data ?? []).filter((employee) => employee.is_active && employee.id !== app.assigned_employee?.id);
+  const chosen = candidates.find((employee) => String(employee.id) === employeeId);
 
   return (
     <div className="page-stack">
@@ -169,12 +191,22 @@ function AdminApplicationDetail({ applicationId }: { applicationId: number }) {
             {canAssign ? (
               <>
                 <p className="muted small">Если заявка без сотрудника или требуется переназначение. Правило «свежего взгляда» проверяется на сервере.</p>
-                <select className="input" value={employeeId} onChange={(event) => setEmployeeId(event.target.value)}>
+                <select className="input" value={employeeId} onChange={(event) => { setEmployeeId(event.target.value); setError(""); }} aria-label="Сотрудник">
                   <option value="">Выберите сотрудника</option>
-                  {employees.data?.map((employee) => <option key={employee.id} value={employee.id}>{employee.full_name}</option>)}
+                  {candidates.map((employee) => <option key={employee.id} value={employee.id}>{employee.full_name}</option>)}
                 </select>
                 {error && <Alert tone="danger">{error}</Alert>}
-                <Button className="btn-full" loading={assign.isPending} disabled={!employeeId} onClick={() => assign.mutate()}>Назначить</Button>
+                <Button className="btn-full" loading={assign.isPending} disabled={!employeeId} onClick={() => (app.assigned_employee ? setConfirmReassign(true) : assign.mutate())}>
+                  {app.assigned_employee ? "Переназначить" : "Назначить"}
+                </Button>
+                <Modal
+                  open={confirmReassign}
+                  title="Переназначить заявку?"
+                  onClose={() => setConfirmReassign(false)}
+                  footer={<><Button variant="ghost" onClick={() => setConfirmReassign(false)}>Отмена</Button><Button loading={assign.isPending} onClick={() => assign.mutate()}>Переназначить</Button></>}
+                >
+                  <p>Заявка перейдёт от {app.assigned_employee?.full_name} к {chosen?.full_name}. Оба сотрудника получат уведомление в кабинете.</p>
+                </Modal>
               </>
             ) : <p className="muted">Назначение доступно для заявок в работе.</p>}
             {app.queue_reason && <Alert tone="warning" title="Причина очереди">{app.queue_reason}</Alert>}

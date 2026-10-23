@@ -10,7 +10,7 @@ import {
   Info,
   LockKeyhole,
   ShieldCheck,
-  Sparkles
+  XCircle
 } from "lucide-react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { api, downloadDocument } from "../api";
@@ -18,9 +18,9 @@ import { useAuth } from "../auth";
 import {
   Alert,
   applicationPollInterval,
+  applicationProgress,
   Badge,
   Card,
-  DemoNote,
   formatDate,
   formatDateTime,
   formatMoney,
@@ -32,6 +32,8 @@ import {
 import type { ApplicationDetail } from "../types";
 
 const PIPELINE = ["SUBMITTED", "VALIDATION", "ENRICHMENT", "SCORING", "DECISION_DRAFT"];
+const DECIDED = ["APPROVED", "APPROVED_CHANGED", "REJECTED", "OFFER_ACCEPTED", "OFFER_DECLINED", "SIGNED", "DISBURSED"];
+const FINISHED = ["REJECTED", "OFFER_DECLINED", "DISBURSED"];
 
 function stageOf(status: string): number {
   if (status === "DRAFT") return -1;
@@ -39,6 +41,15 @@ function stageOf(status: string): number {
   if (PIPELINE.includes(status)) return 1;
   if (["IN_REVIEW", "NEED_INFO"].includes(status)) return 2;
   return 3;
+}
+
+/** Время, когда заявка впервые перешла в один из статусов: у этапа своё время, а не общее updated_at. */
+function reachedAt(app: ApplicationDetail, statuses: string[]): string | null {
+  const times = app.events
+    .filter((event) => event.status_to && statuses.includes(event.status_to))
+    .map((event) => event.created_at)
+    .sort();
+  return times[0] ?? null;
 }
 
 const NEXT_STEP: Record<string, { title: string; body: string }> = {
@@ -79,7 +90,8 @@ export default function ApplicationPage() {
   const next = NEXT_STEP[app.status] ?? NEXT_STEP.VALIDATION;
   const isPending = ["SUBMITTED", ...PIPELINE].includes(app.status);
   const canOpenResult = ["NEED_INFO", "APPROVED", "APPROVED_CHANGED", "REJECTED", "OFFER_ACCEPTED", "OFFER_DECLINED", "SIGNED", "DISBURSED"].includes(app.status);
-  const progress = app.status === "DRAFT" ? 10 : stage === 0 ? 20 : stage === 1 ? 45 : stage === 2 ? 70 : 100;
+  const progress = applicationProgress(app.status);
+  const finished = FINISHED.includes(app.status);
   const route = `/app/applications/${app.id}/result`;
   const paymentAmount = app.approved_amount ?? app.amount;
   const paymentRate = app.approved_rate ?? app.product.rate;
@@ -113,11 +125,11 @@ export default function ApplicationPage() {
         </div>
       </div>
 
-      {searchParams.get("submitted") && <Alert tone="success" title="Заявка отправлена">Автоматические проверки запущены. Статус обновляется автоматически.</Alert>}
+      {searchParams.get("submitted") && stage < 3 && <Alert tone="success" title="Заявка отправлена">Автоматические проверки запущены. Статус обновляется автоматически.</Alert>}
       {isPending && <div className="pipeline-strip"><span className="pulse-dot" /> Автоматический конвейер работает: данные сохраняются после каждого этапа.</div>}
 
       <Card className={`status-banner ${app.status === "NEED_INFO" ? "status-banner-warning" : app.status === "REJECTED" ? "status-banner-danger" : ""}`}>
-        <div className="status-banner-icon">{app.status === "NEED_INFO" ? <Clock3 size={24} /> : stage === 3 ? <CheckCircle2 size={24} /> : <ShieldCheck size={24} />}</div>
+        <div className="status-banner-icon">{app.status === "NEED_INFO" ? <Clock3 size={24} /> : app.status === "REJECTED" ? <XCircle size={24} /> : stage === 3 ? <CheckCircle2 size={24} /> : <ShieldCheck size={24} />}</div>
         <div className="status-banner-copy">
           <span className="eyebrow">Текущий статус</span>
           <h2>{next.title}</h2>
@@ -140,9 +152,9 @@ export default function ApplicationPage() {
             </div>
             <ol className="stage-list">
               <StageItem index={1} title="Заявка отправлена" done={stage >= 0} active={stage === 0} text="Заявка зафиксирована в системе, данные переданы на автоматические проверки." time={app.submitted_at} />
-              <StageItem index={2} title="Автоматические проверки" done={stage >= 2} active={stage === 1} text="ИНН и реквизиты, реестр, кредитная история и скоринг." time={stage >= 2 ? app.updated_at : null} />
-              <StageItem index={3} title="Рассмотрение сотрудником" done={stage >= 3} active={stage === 2} text={app.status === "NEED_INFO" ? "Сотрудник или автоматическая проверка ожидает данные от вас." : "Финальное решение принимает сотрудник банка с учётом предварительной оценки."} time={stage >= 3 ? app.updated_at : null} />
-              <StageItem index={4} title="Решение и оферта" done={stage >= 3} active={stage === 3} text="Условия, оферта, демонстрационное подписание и зачисление." time={null} last />
+              <StageItem index={2} title="Автоматические проверки" done={stage >= 2} active={stage === 1} text="ИНН и реквизиты, реестр, кредитная история и скоринг." time={stage >= 2 ? reachedAt(app, ["IN_REVIEW", "NEED_INFO", ...DECIDED]) : null} />
+              <StageItem index={3} title="Рассмотрение сотрудником" done={stage >= 3} active={stage === 2} text={app.status === "NEED_INFO" ? "Сотрудник или автоматическая проверка ожидает данные от вас." : "Финальное решение принимает сотрудник банка с учётом предварительной оценки."} time={stage >= 3 ? reachedAt(app, DECIDED) : null} />
+              <StageItem index={4} title="Решение и оферта" done={finished} active={stage === 3 && !finished} text="Условия, оферта, подписание договора и зачисление средств." time={finished ? reachedAt(app, FINISHED) : null} last />
             </ol>
           </Card>
 

@@ -127,6 +127,7 @@ export const api = {
       request<ApplicationDetail>(`/client/applications/${id}/sign`, { method: "POST" }),
     disburse: (id: number) =>
       request<ApplicationDetail>(`/client/applications/${id}/disburse`, { method: "POST" }),
+    remove: (id: number) => request<void>(`/client/applications/${id}`, { method: "DELETE" }),
     resubmit: (id: number) =>
       request<ApplicationDetail>(`/client/applications/${id}/resubmit`, { method: "POST" }),
     upload: async (id: number, file: File) => {

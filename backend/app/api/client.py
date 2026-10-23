@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -16,13 +17,14 @@ from fastapi import (
     status,
 )
 from fastapi.responses import FileResponse
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..db import get_db
 from ..models import (
     Application,
+    ApplicationEvent,
     Document,
     EnrichmentSnapshot,
     IdempotencyRecord,
@@ -396,6 +398,32 @@ def update_application(
     return application_detail_dict(db, application, product, user)
 
 
+@router.delete("/applications/{application_id}", status_code=204)
+def delete_draft(
+    application_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Response:
+    application = _owned(db, application_id, user, lock=True)
+    if application.status != DRAFT:
+        raise HTTPException(status_code=409, detail="Удалить можно только черновик")
+    write_audit(
+        db,
+        actor=user,
+        action="application.draft_deleted",
+        entity_type="application",
+        entity_id=application.id,
+        before=_event_payload(application),
+    )
+    # Дочерние строки удаляем явно: SQLite в тестах не применяет ON DELETE CASCADE.
+    for model in (Document, ApplicationEvent, EnrichmentSnapshot, Notification, IdempotencyRecord):
+        db.execute(delete(model).where(model.application_id == application.id))
+    db.delete(application)
+    db.commit()
+    shutil.rmtree(Path(settings.upload_dir) / f"application_{application_id}", ignore_errors=True)
+    return Response(status_code=204)
+
+
 @router.post("/applications/{application_id}/submit", response_model=ApplicationDetail, status_code=202)
 def submit_application(
     application_id: int,
@@ -709,6 +737,18 @@ def resubmit(
     if source.status != REJECTED:
         raise HTTPException(status_code=409, detail="Повторно подать можно только отклонённую заявку")
     product = _product(db, source.product_id, allow_inactive=True)
+    existing = db.scalar(
+        select(Application)
+        .where(
+            Application.previous_application_id == source.id,
+            Application.user_id == user.id,
+            Application.status == DRAFT,
+        )
+        .limit(1)
+    )
+    if existing is not None:
+        # Повторный клик открывает уже созданный черновик, а не плодит копии.
+        return application_detail_dict(db, existing, _product(db, existing.product_id, allow_inactive=True), user)
     copy = Application(
         public_number=_number(),
         user_id=user.id,

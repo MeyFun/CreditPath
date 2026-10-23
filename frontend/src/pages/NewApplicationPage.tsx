@@ -11,6 +11,7 @@ import {
   LockKeyhole,
   RefreshCw,
   ShieldCheck,
+  Trash2,
   UploadCloud
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -20,11 +21,11 @@ import {
   Alert,
   Button,
   Card,
-  DemoNote,
   Field,
   formatMoney,
   Input,
   LoadingBlock,
+  Modal,
   Select,
   Stepper,
   useToast
@@ -84,6 +85,19 @@ function innError(value: string): string {
   return valid ? "" : "Неверная контрольная сумма ИНН — проверьте цифры";
 }
 
+type StepField = "product" | "purpose" | "inn" | "amount" | "term" | "collateral";
+interface StepProblem {
+  field: StepField;
+  message: string;
+}
+
+/** Поле, в котором видна ошибка шага: к нему прокручиваем экран и ставим фокус. */
+const FIELD_TARGET: Partial<Record<StepField, string>> = {
+  inn: "wizard-inn",
+  amount: "wizard-amount",
+  term: "wizard-term"
+};
+
 function newKey() {
   return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
 }
@@ -117,13 +131,16 @@ export default function NewApplicationPage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [registryLoading, setRegistryLoading] = useState(false);
   const [registryError, setRegistryError] = useState("");
-  // Компании нет в реестре: клиент вводит название вручную и прикладывает выписку файлом.
-  const [notFound, setNotFound] = useState(false);
-  const [manualName, setManualName] = useState("");
+  // Черновик открыт с ИНН, но без снимка реестра: перепроверяем ИНН автоматически.
+  const [autoVerify, setAutoVerify] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [problem, setProblem] = useState<StepProblem | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const errorRef = useRef<HTMLDivElement>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [idempotencyKey] = useState(newKey);
   const [showDemoInns, setShowDemoInns] = useState(false);
@@ -164,6 +181,7 @@ export default function NewApplicationPage() {
     setCollateral(data.collateral);
     setDocuments(data.documents);
     if (data.registry_snapshot) setCompany(data.registry_snapshot);
+    else if (data.company_inn) setAutoVerify(true);
     setDraftId(data.id);
     setInitialized(true);
   }, [draftQuery.data, initialized, navigate]);
@@ -174,6 +192,12 @@ export default function NewApplicationPage() {
     }
   }, [productId]);
 
+  useEffect(() => {
+    if (!autoVerify || !inn) return;
+    setAutoVerify(false);
+    void verifyInn();
+  }, [autoVerify, inn]);
+
   const payment = useMemo(() => (product ? annuity(amount, product.rate, term) : 0), [product, amount, term]);
 
   function selectProduct(next: Product) {
@@ -183,12 +207,13 @@ export default function NewApplicationPage() {
     setTerm(Math.min(24, next.max_term_months));
     setCollateral(next.requires_collateral);
     setError("");
+    setProblem(null);
   }
 
   async function verifyInn() {
     setRegistryError("");
     setCompany(null);
-    setNotFound(false);
+    setProblem(null);
     const formatError = innError(inn);
     if (formatError) {
       setRegistryError(formatError);
@@ -203,8 +228,11 @@ export default function NewApplicationPage() {
         setRegistryError("Компания не действует. Заявку можно создать, но решение будет отрицательным.");
       }
     } catch (err) {
-      setRegistryError(err instanceof ApiError ? err.message : "Не удалось проверить ИНН");
-      setNotFound(err instanceof ApiError && err.status === 404);
+      if (err instanceof ApiError && err.status === 404) {
+        setRegistryError("Компания с таким ИНН не найдена в реестре. Проверьте номер.");
+      } else {
+        setRegistryError(err instanceof ApiError ? err.message : "Не удалось проверить ИНН");
+      }
     } finally {
       setRegistryLoading(false);
     }
@@ -219,7 +247,7 @@ export default function NewApplicationPage() {
       term_months: term,
       purpose,
       company_inn: inn || undefined,
-      company_name: company?.name ?? (manualName.trim() || undefined),
+      company_name: company?.name,
       collateral
     });
     setDraftId(created.id);
@@ -236,7 +264,7 @@ export default function NewApplicationPage() {
       term_months: term,
       purpose,
       company_inn: inn || undefined,
-      company_name: company?.name ?? (manualName.trim() || undefined),
+      company_name: company?.name,
       collateral
     });
     setSavedAt(new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }));
@@ -257,29 +285,71 @@ export default function NewApplicationPage() {
     }
   }
 
-  function validateStep(current: number): string {
+  const amountError = product && (amount < product.min_amount || amount > product.max_amount)
+    ? `Сумма должна быть от ${formatMoney(product.min_amount)} до ${formatMoney(product.max_amount)}`
+    : "";
+  const termError = product && (!Number.isInteger(term) || term < product.min_term_months || term > product.max_term_months)
+    ? `Срок должен быть от ${product.min_term_months} до ${product.max_term_months} месяцев`
+    : "";
+
+  function validateStep(current: number): StepProblem | null {
     if (current === 0) {
-      if (!product) return "Выберите продукт";
-      if (!purpose) return "Выберите цель кредита";
+      if (!product) return { field: "product", message: "Выберите продукт" };
+      if (!purpose) return { field: "purpose", message: "Выберите цель кредита" };
     }
-    if (current === 1) {
-      if (!company && !(notFound && manualName.trim().length >= 3)) return "Проверьте ИНН и дождитесь данных компании";
+    if (current === 1 && !company) {
+      return { field: "inn", message: registryError || "Нажмите «Проверить», чтобы найти компанию по ИНН" };
     }
     if (current === 2 && product) {
-      if (amount < product.min_amount || amount > product.max_amount) return "Сумма вне диапазона продукта";
-      if (term < product.min_term_months || term > product.max_term_months) return "Срок вне диапазона продукта";
-      if (product.requires_collateral && !collateral) return "Для продукта требуется обеспечение";
+      if (amountError) return { field: "amount", message: amountError };
+      if (termError) return { field: "term", message: termError };
+      if (product.requires_collateral && !collateral) return { field: "collateral", message: "Для продукта требуется обеспечение" };
     }
-    return "";
+    return null;
+  }
+
+  /** Ошибку видно сразу: экран едет к полю (или к сообщению у кнопок), фокус — в поле. */
+  function revealProblem(found: StepProblem) {
+    setProblem(found);
+    requestAnimationFrame(() => {
+      const targetId = FIELD_TARGET[found.field];
+      const target = targetId ? document.getElementById(targetId) : null;
+      (target ?? errorRef.current)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      target?.focus({ preventScroll: true });
+    });
+  }
+
+  function back() {
+    setError("");
+    setProblem(null);
+    setStep((value) => Math.max(0, value - 1));
+  }
+
+  async function removeDraft() {
+    if (!draftId) return;
+    setDeleting(true);
+    try {
+      await api.client.remove(draftId);
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
+      queryClient.invalidateQueries({ queryKey: ["client-dashboard"] });
+      push("Черновик удалён", "success");
+      navigate("/app/applications", { replace: true });
+    } catch (err) {
+      setConfirmDelete(false);
+      setError(err instanceof ApiError ? err.message : "Не удалось удалить черновик");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   async function next() {
     setError("");
-    const problem = validateStep(step);
-    if (problem) {
-      setError(problem);
+    const found = validateStep(step);
+    if (found) {
+      revealProblem(found);
       return;
     }
+    setProblem(null);
     setSaving(true);
     try {
       await persist();
@@ -337,7 +407,8 @@ export default function NewApplicationPage() {
     }
   }
 
-  if (productsQuery.isLoading || (draftParam && draftQuery.isLoading)) {
+  // После первого сохранения в URL появляется ?draft=: мастер уже заполнен, лоадер не нужен.
+  if (productsQuery.isLoading || (draftParam && draftQuery.isLoading && !initialized)) {
     return <LoadingBlock label="Готовим мастер заявки…" />;
   }
   if (draftQuery.isError) {
@@ -361,6 +432,7 @@ export default function NewApplicationPage() {
             <p>Пять шагов, без бумажных справок.</p>
           </div>
           <div className="wizard-save">
+            {draftId && <Button variant="ghost" onClick={() => setConfirmDelete(true)} icon={<Trash2 size={16} />}>Удалить черновик</Button>}
             {savedAt ? <span className="saved-note"><CheckCircle2 size={16} /> Черновик сохранён в {savedAt}</span> : <span className="muted small">{draftId ? "Черновик" : "Новый черновик"}</span>}
             <Button variant="secondary" onClick={saveOnly} loading={saving} icon={<FileText size={16} />}>Сохранить черновик</Button>
           </div>
@@ -370,8 +442,6 @@ export default function NewApplicationPage() {
 
       <div className="wizard-grid">
         <Card className="wizard-main">
-          {error && <Alert tone="danger">{error}</Alert>}
-
           {step === 0 && (
             <div className="wizard-step">
               <div className="step-heading"><span className="step-chip">Шаг 1 из 5</span><h2>Выберите условия и цель кредитования</h2><p>Мы подстроим расчёт под продукт и цель.</p></div>
@@ -399,26 +469,16 @@ export default function NewApplicationPage() {
           {step === 1 && (
             <div className="wizard-step">
               <div className="step-heading"><span className="step-chip">Шаг 2 из 5</span><h2>Сведения о компании</h2><p>Введите ИНН — реквизиты заполнятся автоматически.</p></div>
-              <Field label="ИНН организации (10 цифр) или ИП (12 цифр)" required>
+              <Field label="ИНН организации (10 цифр) или ИП (12 цифр)" required error={company ? "" : registryError || (problem?.field === "inn" ? problem.message : "")}>
                 <div className="inn-row">
-                  <div className="input-icon-wrap"><Building2 size={18} /><Input value={inn} onChange={(event) => { setInn(event.target.value.replace(/\D/g, "").slice(0, 12)); setCompany(null); }} inputMode="numeric" placeholder="Например, 9900000017" /></div>
+                  <div className="input-icon-wrap"><Building2 size={18} /><Input id="wizard-inn" value={inn} aria-invalid={!company && Boolean(registryError || problem?.field === "inn")} onChange={(event) => { setInn(event.target.value.replace(/\D/g, "").slice(0, 12)); setCompany(null); setRegistryError(""); setProblem(null); }} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void verifyInn(); } }} inputMode="numeric" placeholder="10 или 12 цифр" /></div>
                   <Button variant="secondary" onClick={verifyInn} loading={registryLoading} icon={registryLoading ? undefined : <RefreshCw size={16} />}>Проверить</Button>
                 </div>
               </Field>
-              {registryError && <Alert tone={company ? "warning" : "danger"}>{registryError}</Alert>}
-              {notFound && (
-                <>
-                  <Alert tone="warning" title="Компании нет в реестре">
-                    Если ИНН указан верно, введите название компании и приложите выписку из ЕГРЮЛ/ЕГРИП файлом на шаге «Документы». Сотрудник банка проверит данные вручную.
-                  </Alert>
-                  <Field label="Название компании" required>
-                    <Input value={manualName} maxLength={255} onChange={(event) => setManualName(event.target.value)} placeholder="ООО «Название»" />
-                  </Field>
-                </>
-              )}
+              {company && registryError && <Alert tone="warning">{registryError}</Alert>}
               {company && (company.revenue == null || company.profit == null) && (
                 <Alert tone="warning" title="В реестре нет финансовых показателей">
-                  Приложите бухгалтерскую отчётность за последний год файлом на шаге «Документы» — иначе банк запросит её отдельно.
+                  После отправки банк попросит указать выручку и прибыль за последний год — подготовьте цифры из отчётности.
                 </Alert>
               )}
               {company && (
@@ -457,8 +517,8 @@ export default function NewApplicationPage() {
               <div className="step-heading"><span className="step-chip">Шаг 3 из 5</span><h2>Параметры кредита</h2><p>Диапазоны ограничены выбранным продуктом.</p></div>
               <div className="amount-display">
                 <label htmlFor="wizard-amount">Сумма кредита</label>
-                <div><input id="wizard-amount" type="number" value={amount} min={product.min_amount} max={product.max_amount} step={100000} onChange={(event) => setAmount(Number(event.target.value))} /><span>₽</span></div>
-                <small>{formatMoney(product.min_amount)} — {formatMoney(product.max_amount)}</small>
+                <div className={amountError ? "invalid" : ""}><input id="wizard-amount" type="number" aria-invalid={Boolean(amountError)} value={amount} min={product.min_amount} max={product.max_amount} step={100000} onChange={(event) => setAmount(Number(event.target.value))} /><span>₽</span></div>
+                {amountError ? <small className="field-error">{amountError}</small> : <small>{formatMoney(product.min_amount)} — {formatMoney(product.max_amount)}</small>}
               </div>
               <input className="range" type="range" min={product.min_amount} max={product.max_amount} step={100000} value={amount} onChange={(event) => setAmount(Number(event.target.value))} aria-label="Сумма кредита" />
               <div className="range-labels"><span>{formatMoney(product.min_amount)}</span><span>{formatMoney(product.max_amount)}</span></div>
@@ -469,8 +529,8 @@ export default function NewApplicationPage() {
                     .filter((value) => value >= product.min_term_months && value <= product.max_term_months)
                     .map((value) => <button type="button" key={value} className={term === value ? "active" : ""} onClick={() => setTerm(value)}>{value} мес.</button>)}
                 </div>
-                <Field label="Или укажите точный срок" hint={`от ${product.min_term_months} до ${product.max_term_months} месяцев`}>
-                  <Input type="number" value={term} min={product.min_term_months} max={product.max_term_months} onChange={(event) => setTerm(Number(event.target.value))} />
+                <Field label="Или укажите точный срок" hint={`от ${product.min_term_months} до ${product.max_term_months} месяцев`} error={termError}>
+                  <Input id="wizard-term" type="number" aria-invalid={Boolean(termError)} value={term} min={product.min_term_months} max={product.max_term_months} onChange={(event) => setTerm(Number(event.target.value))} />
                 </Field>
               </div>
               <label className="toggle-row">
@@ -491,13 +551,6 @@ export default function NewApplicationPage() {
                 <strong>{uploading ? "Загружаем…" : "Нажмите, чтобы выбрать файлы"}</strong>
                 <span>Можно приложить отчётность, выписку или другой документ</span>
               </button>
-              {(notFound || (company && (company.revenue == null || company.profit == null))) && documents.length === 0 && (
-                <Alert tone="warning" title="Добавьте документы файлом">
-                  {notFound
-                    ? "Компании нет в реестре: приложите выписку из ЕГРЮЛ/ЕГРИП и учредительные документы."
-                    : "В реестре нет финансовых показателей: приложите бухгалтерскую отчётность за последний год."}
-                </Alert>
-              )}
               <input ref={fileInput} type="file" hidden multiple accept=".pdf,.jpg,.jpeg,.png" onChange={(event) => uploadFiles(event.target.files)} />
               <div className="document-list">
                 {documents.length === 0 ? (
@@ -546,8 +599,14 @@ export default function NewApplicationPage() {
             </div>
           )}
 
+          <div ref={errorRef}>
+            {(error || (problem && !FIELD_TARGET[problem.field])) && <Alert tone="danger">{error || problem?.message}</Alert>}
+            {step === STEPS.length - 1 && !consentsGiven && (
+              <p className="muted small consent-hint">Чтобы отправить заявку, отметьте {missingConsents()}.</p>
+            )}
+          </div>
           <div className="wizard-footer">
-            <Button variant="secondary" onClick={() => setStep((value) => Math.max(0, value - 1))} disabled={step === 0} icon={<ArrowLeft size={16} />}>Назад</Button>
+            <Button variant="secondary" onClick={back} disabled={step === 0} icon={<ArrowLeft size={16} />}>Назад</Button>
             {step < STEPS.length - 1 ? (
               <Button onClick={next} loading={saving}>Продолжить <ArrowRight size={16} /></Button>
             ) : (
@@ -575,6 +634,22 @@ export default function NewApplicationPage() {
           </Card>
         </aside>
       </div>
+      <Modal
+        open={confirmDelete}
+        title="Удалить черновик?"
+        onClose={() => setConfirmDelete(false)}
+        footer={<><Button variant="ghost" onClick={() => setConfirmDelete(false)}>Отмена</Button><Button variant="danger" loading={deleting} onClick={removeDraft}>Удалить</Button></>}
+      >
+        <p>Черновик и приложенные к нему файлы будут удалены без возможности восстановления.</p>
+      </Modal>
     </div>
   );
+
+  function missingConsents(): string {
+    return [
+      !authorityConfirmed && "подтверждение полномочий",
+      !consentBki && "согласие на запрос в бюро кредитных историй",
+      !consentPersonalData && "согласие на обработку персональных данных"
+    ].filter(Boolean).join(", ");
+  }
 }

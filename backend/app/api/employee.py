@@ -146,7 +146,11 @@ def get_application(
 ) -> dict:
     application = _assigned(db, application_id, user)
     product = db.get(Product, application.product_id)
-    return application_detail_dict(db, application, product, user, assigned=user)
+    detail = application_detail_dict(db, application, product, user, assigned=user)
+    # Те же правила, что при решении: интерфейс предупреждает ровно о том, что попадёт в аудит.
+    config, _ = get_active_config(db)
+    detail["risk_override_reasons"] = _risk_override_reasons(application, "approve", config)
+    return detail
 
 
 @router.post("/applications/{application_id}/decision", response_model=ApplicationDetail)

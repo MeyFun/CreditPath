@@ -194,6 +194,18 @@ export function applicationPollInterval(status: string | undefined): number | fa
   return false;
 }
 
+/** Единая шкала прогресса заявки: список и карточка показывают одинаковый процент. */
+export function applicationProgress(status: string): number {
+  if (status === "DRAFT") return 5;
+  if (status === "SUBMITTED") return 15;
+  if (PIPELINE_STATUSES.includes(status)) return 35;
+  if (status === "IN_REVIEW" || status === "NEED_INFO") return 60;
+  if (status === "APPROVED" || status === "APPROVED_CHANGED") return 75;
+  if (status === "OFFER_ACCEPTED") return 85;
+  if (status === "SIGNED") return 95;
+  return 100;
+}
+
 export function StatusBadge({ status, label }: { status: string; label?: string }) {
   const item = STATUS_MAP[status] ?? { label: label ?? status, tone: "neutral" };
   return (
@@ -227,6 +239,20 @@ export function LoadingBlock({ label = "Загружаем данные…" }: {
       <Spinner />
       <span>{label}</span>
     </div>
+  );
+}
+
+/** Ошибка загрузки вместо пустой таблицы или вечного лоадера. */
+export function ErrorState({ title = "Не удалось загрузить данные", onRetry }: { title?: string; onRetry?: () => void }) {
+  return (
+    <Card>
+      <EmptyState
+        icon={<CircleAlert size={24} />}
+        title={title}
+        description="Проверьте соединение и повторите попытку."
+        action={onRetry && <Button variant="secondary" onClick={onRetry}>Повторить</Button>}
+      />
+    </Card>
   );
 }
 

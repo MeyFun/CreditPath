@@ -8,6 +8,7 @@ import {
   Button,
   Card,
   EmptyState,
+  ErrorState,
   formatDateTime,
   Input,
   LoadingBlock,
@@ -70,6 +71,8 @@ export default function AdminUsers() {
       </Card>
       {query.isLoading ? (
         <LoadingBlock />
+      ) : query.isError ? (
+        <ErrorState title="Не удалось загрузить пользователей" onRetry={() => query.refetch()} />
       ) : query.data?.length === 0 ? (
         <Card><EmptyState icon={<Users size={26} />} title="Пользователи не найдены" description="Измените параметры поиска." /></Card>
       ) : (

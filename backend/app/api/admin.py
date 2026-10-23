@@ -181,6 +181,8 @@ def assign_application(
     employee = db.get(User, payload.employee_id)
     if employee is None or employee.role != ROLE_EMPLOYEE or not employee.is_active:
         raise HTTPException(status_code=422, detail="Выбранный сотрудник недоступен")
+    if employee.id == application.assigned_employee_id:
+        raise HTTPException(status_code=409, detail="Заявка уже назначена этому сотруднику")
     if employee.id == application.user_id:
         raise HTTPException(status_code=422, detail="Нельзя назначить заявку её автору")
     applicant = db.get(User, application.user_id)
@@ -216,6 +218,15 @@ def assign_application(
         body=f"Заявка {application.public_number} назначена администратором.",
         kind="action",
     )
+    if before["employee_id"]:
+        notify(
+            db,
+            user_id=before["employee_id"],
+            application_id=application.id,
+            title="Заявка передана другому сотруднику",
+            body=f"Заявка {application.public_number} переназначена администратором.",
+            kind="info",
+        )
     db.commit()
     product = db.get(Product, application.product_id)
     return application_detail_dict(db, application, product, admin, assigned=employee)

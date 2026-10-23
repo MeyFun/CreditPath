@@ -58,6 +58,32 @@ function schedule(amount: number, rate: number, months: number) {
   return rows;
 }
 
+type OfferStep = "accept" | "decline" | "sign" | "disburse";
+
+/** Каждый необратимый шаг сделки клиент подтверждает явно. */
+const OFFER_STEPS: Record<OfferStep, { title: string; action: string; body: (amount: string, term: number) => string }> = {
+  accept: {
+    title: "Принять предложение?",
+    action: "Принять",
+    body: (amount, term) => `Вы соглашаетесь на кредит ${amount} на ${term} мес. Следующий шаг — подписание договора.`
+  },
+  decline: {
+    title: "Отклонить предложение?",
+    action: "Отклонить",
+    body: () => "Оферта перестанет действовать. Чтобы получить финансирование, понадобится новая заявка."
+  },
+  sign: {
+    title: "Подписать договор?",
+    action: "Подписать",
+    body: (amount, term) => `Договор на ${amount} сроком ${term} мес. вступит в силу после подписания.`
+  },
+  disburse: {
+    title: "Получить средства?",
+    action: "Зачислить средства",
+    body: (amount) => `${amount} будут зачислены на расчётный счёт компании.`
+  }
+};
+
 export default function ResultPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -69,7 +95,7 @@ export default function ResultPage() {
   const [revenue, setRevenue] = useState("");
   const [profit, setProfit] = useState("");
   const [fixedInn, setFixedInn] = useState("");
-  const [confirmDecline, setConfirmDecline] = useState(false);
+  const [confirm, setConfirm] = useState<OfferStep | null>(null);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
 
@@ -106,28 +132,30 @@ export default function ResultPage() {
     mutationFn: (accept: boolean) => api.client.offer(applicationId, accept),
     onSuccess: (_, accept) => {
       push(accept ? "Оферта принята" : "Оферта отклонена", "success");
-      setConfirmDecline(false);
+      setConfirm(null);
       invalidate();
     },
-    onError: (err) => setError(err instanceof ApiError ? err.message : "Не удалось обработать оферту")
+    onError: (err) => { setConfirm(null); setError(err instanceof ApiError ? err.message : "Не удалось обработать оферту"); }
   });
 
   const sign = useMutation({
     mutationFn: () => api.client.sign(applicationId),
     onSuccess: () => {
-      push("Договор подписан в демонстрационном режиме", "success");
+      push("Договор подписан", "success");
+      setConfirm(null);
       invalidate();
     },
-    onError: (err) => setError(err instanceof ApiError ? err.message : "Не удалось подписать")
+    onError: (err) => { setConfirm(null); setError(err instanceof ApiError ? err.message : "Не удалось подписать"); }
   });
 
   const disburse = useMutation({
     mutationFn: () => api.client.disburse(applicationId),
     onSuccess: () => {
-      push("Средства зачислены в демонстрационном режиме", "success");
+      push("Средства зачислены", "success");
+      setConfirm(null);
       invalidate();
     },
-    onError: (err) => setError(err instanceof ApiError ? err.message : "Не удалось завершить сделку")
+    onError: (err) => { setConfirm(null); setError(err instanceof ApiError ? err.message : "Не удалось завершить сделку"); }
   });
 
   const resubmit = useMutation({
@@ -279,15 +307,17 @@ export default function ResultPage() {
             {app.employee_comment && <div className="reason-box"><strong>Комментарий сотрудника</strong><p>{app.employee_comment}</p></div>}
 
             <div className="offer-actions">
-              {app.status === "APPROVED" || app.status === "APPROVED_CHANGED" ? (
+              {active && !app.can_accept_offer && !app.can_decline_offer ? (
+                <div className="offer-expired"><Clock3 size={18} /><span>Срок действия оферты истёк. Чтобы получить финансирование, подайте новую заявку.</span></div>
+              ) : active ? (
                 <>
-                  <Button onClick={() => offer.mutate(true)} loading={offer.isPending && offer.variables === true} disabled={offer.isPending} icon={<FileText size={17} />}>Принять предложение</Button>
-                  <Button variant="secondary" onClick={() => setConfirmDecline(true)} disabled={offer.isPending}>Отклонить</Button>
+                  {app.can_accept_offer && <Button onClick={() => setConfirm("accept")} disabled={offer.isPending} icon={<FileText size={17} />}>Принять предложение</Button>}
+                  {app.can_decline_offer && <Button variant="secondary" onClick={() => setConfirm("decline")} disabled={offer.isPending}>Отклонить</Button>}
                 </>
               ) : app.status === "OFFER_ACCEPTED" ? (
-                <Button onClick={() => sign.mutate()} loading={sign.isPending} icon={<ShieldCheck size={17} />}>Подписать договор (демо)</Button>
+                <Button onClick={() => setConfirm("sign")} icon={<ShieldCheck size={17} />}>Подписать договор</Button>
               ) : app.status === "SIGNED" ? (
-                <Button onClick={() => disburse.mutate()} loading={disburse.isPending} icon={<Banknote size={17} />}>Получить средства (демо)</Button>
+                <Button onClick={() => setConfirm("disburse")} icon={<Banknote size={17} />}>Получить средства</Button>
               ) : app.status === "DISBURSED" ? (
                 <div className="disbursed"><CheckCircle2 size={22} /><div><strong>Средства перечислены</strong><span>{formatDateTime(app.disbursed_at)}</span></div></div>
               ) : (
@@ -297,12 +327,23 @@ export default function ResultPage() {
             <DemoNote><Sparkles size={13} /> Подписание и зачисление средств в этом прототипе имитируются. Реальные деньги не перечисляются.</DemoNote>
           </Card>
           <Modal
-            open={confirmDecline}
-            title="Отклонить предложение?"
-            onClose={() => setConfirmDecline(false)}
-            footer={<><Button variant="ghost" onClick={() => setConfirmDecline(false)}>Отмена</Button><Button variant="danger" loading={offer.isPending} onClick={() => offer.mutate(false)}>Отклонить</Button></>}
+            open={Boolean(confirm)}
+            title={confirm ? OFFER_STEPS[confirm].title : ""}
+            onClose={() => setConfirm(null)}
+            footer={confirm && (
+              <>
+                <Button variant="ghost" onClick={() => setConfirm(null)}>Отмена</Button>
+                <Button
+                  variant={confirm === "decline" ? "danger" : "primary"}
+                  loading={offer.isPending || sign.isPending || disburse.isPending}
+                  onClick={() => (confirm === "sign" ? sign.mutate() : confirm === "disburse" ? disburse.mutate() : offer.mutate(confirm === "accept"))}
+                >
+                  {OFFER_STEPS[confirm].action}
+                </Button>
+              </>
+            )}
           >
-            <p>Оферта перестанет действовать. Чтобы получить финансирование, понадобится новая заявка.</p>
+            {confirm && <p>{OFFER_STEPS[confirm].body(formatMoney(amount), term)}</p>}
           </Modal>
 
           <aside className="result-aside">

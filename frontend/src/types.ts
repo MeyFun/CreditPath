@@ -180,6 +180,7 @@ export interface ApplicationDetail extends ApplicationSummary {
   can_decide: boolean;
   previous_decisions: PreviousDecision[];
   related_party: boolean;
+  risk_override_reasons?: string[];
 }
 
 export interface DashboardData {

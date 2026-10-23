@@ -1,9 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, FileText, Plus, Search } from "lucide-react";
-import { useState } from "react";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowRight, FileText, Plus, Search, Trash2 } from "lucide-react";
+import { useDeferredValue, useState } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../api";
+import { api, ApiError } from "../api";
 import {
+  applicationProgress,
   Button,
   Card,
   EmptyState,
@@ -12,9 +13,11 @@ import {
   formatShortDate,
   Input,
   LoadingBlock,
+  Modal,
   PageHeader,
   ProgressBar,
-  StatusBadge
+  StatusBadge,
+  useToast
 } from "../components/ui";
 import type { ApplicationSummary } from "../types";
 
@@ -25,21 +28,31 @@ const FILTERS = [
   { key: "draft", label: "Черновики" }
 ];
 
-function progressFor(app: ApplicationSummary): number {
-  if (app.status === "DRAFT") return 10;
-  if (["SUBMITTED", "VALIDATION", "ENRICHMENT", "SCORING", "DECISION_DRAFT"].includes(app.status)) return 35;
-  if (["IN_REVIEW", "NEED_INFO"].includes(app.status)) return 65;
-  if (["APPROVED", "APPROVED_CHANGED", "OFFER_ACCEPTED"].includes(app.status)) return 85;
-  if (["SIGNED"].includes(app.status)) return 95;
-  return 100;
-}
-
 export default function ApplicationsPage() {
   const [group, setGroup] = useState("all");
   const [search, setSearch] = useState("");
+  // Отложенное значение: список не мигает лоадером на каждую букву поиска.
+  const deferredSearch = useDeferredValue(search.trim());
   const query = useQuery({
-    queryKey: ["applications", group, search],
-    queryFn: () => api.client.applications(group, search)
+    queryKey: ["applications", group, deferredSearch],
+    queryFn: () => api.client.applications(group, deferredSearch),
+    placeholderData: keepPreviousData
+  });
+  const queryClient = useQueryClient();
+  const { push } = useToast();
+  const [toDelete, setToDelete] = useState<ApplicationSummary | null>(null);
+  const removal = useMutation({
+    mutationFn: (id: number) => api.client.remove(id),
+    onSuccess: () => {
+      setToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
+      queryClient.invalidateQueries({ queryKey: ["client-dashboard"] });
+      push("Черновик удалён", "success");
+    },
+    onError: (err) => {
+      setToDelete(null);
+      push(err instanceof ApiError ? err.message : "Не удалось удалить черновик", "danger");
+    }
   });
 
   return (
@@ -72,9 +85,9 @@ export default function ApplicationsPage() {
         <Card>
           <EmptyState
             icon={<FileText size={26} />}
-            title={search ? "Ничего не найдено" : "В этом разделе пока пусто"}
-            description={search ? "Попробуйте изменить запрос." : "Создайте заявку — это займёт около трёх минут."}
-            action={!search ? <Link className="btn btn-primary" to="/app/applications/new"><Plus size={16} /> Создать заявку</Link> : undefined}
+            title={deferredSearch ? "Ничего не найдено" : "В этом разделе пока пусто"}
+            description={deferredSearch ? "Попробуйте изменить запрос." : "Создайте заявку — это займёт около десяти минут."}
+            action={!deferredSearch ? <Link className="btn btn-primary" to="/app/applications/new"><Plus size={16} /> Создать заявку</Link> : undefined}
           />
         </Card>
       ) : (
@@ -102,7 +115,7 @@ export default function ApplicationsPage() {
                   </div>
                 </div>
                 <div className="app-card-progress">
-                  <ProgressBar value={progressFor(app)} />
+                  <ProgressBar value={applicationProgress(app.status)} />
                   <span>{app.assigned_employee ? `Сотрудник: ${app.assigned_employee.full_name}` : app.client_status}</span>
                 </div>
               </div>
@@ -112,7 +125,10 @@ export default function ApplicationsPage() {
                   <strong>{formatDate(app.updated_at)}</strong>
                 </div>
                 {app.status === "DRAFT" ? (
-                  <Link className="btn btn-primary btn-sm" to={`/app/applications/new?draft=${app.id}`}>Продолжить <ArrowRight size={15} /></Link>
+                  <div className="app-card-actions">
+                    <button className="icon-button" onClick={() => setToDelete(app)} aria-label={`Удалить черновик № ${app.number}`} title="Удалить черновик"><Trash2 size={17} /></button>
+                    <Link className="btn btn-primary btn-sm" to={`/app/applications/new?draft=${app.id}`}>Продолжить <ArrowRight size={15} /></Link>
+                  </div>
                 ) : (
                   <Link className="btn btn-secondary btn-sm" to={`/app/applications/${app.id}`}>Открыть заявку <ArrowRight size={15} /></Link>
                 )}
@@ -121,6 +137,14 @@ export default function ApplicationsPage() {
           ))}
         </div>
       )}
+      <Modal
+        open={Boolean(toDelete)}
+        title="Удалить черновик?"
+        onClose={() => setToDelete(null)}
+        footer={<><Button variant="ghost" onClick={() => setToDelete(null)}>Отмена</Button><Button variant="danger" loading={removal.isPending} onClick={() => toDelete && removal.mutate(toDelete.id)}>Удалить</Button></>}
+      >
+        <p>Черновик № {toDelete?.number} и приложенные файлы будут удалены без возможности восстановления.</p>
+      </Modal>
     </div>
   );
 }

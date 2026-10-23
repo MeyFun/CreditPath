@@ -184,6 +184,7 @@ class ApplicationDetail(ApplicationOut):
     can_decide: bool = False
     previous_decisions: list[dict[str, Any]] = []
     related_party: bool = False
+    risk_override_reasons: list[str] = []
 
 
 class DashboardOut(BaseModel):

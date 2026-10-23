@@ -170,8 +170,8 @@ export default function AuthPage({ initialTab = "login" }: { initialTab?: Tab })
                 <Field label="Логин" hint="От 3 до 32 символов: буквы, цифры, точка, дефис." required>
                   <div className="input-icon-wrap"><UserRound size={18} /><Input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Например, client3" minLength={3} maxLength={32} pattern="[A-Za-z0-9_.-]+" required /></div>
                 </Field>
-                <Field label="Имя и фамилия" required>
-                  <Input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Как к вам обращаться" minLength={2} required />
+                <Field label="Фамилия и имя" required>
+                  <Input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Например, Иванов Иван" minLength={2} required />
                 </Field>
                 <Field label="ИНН компании или ИП" hint="Необязательно. Можно указать позже — в мастере заявки.">
                   <Input value={inn} onChange={(event) => setInn(event.target.value.replace(/\D/g, "").slice(0, 12))} placeholder="10 или 12 цифр" inputMode="numeric" />

@@ -1,12 +1,13 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { CheckCircle2, ChevronLeft, ChevronRight, Hash, RefreshCw, ShieldAlert, ShieldCheck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Hash, RefreshCw, ShieldAlert, ShieldCheck } from "lucide-react";
 import { useState } from "react";
-import { api } from "../api";
+import { api, ApiError } from "../api";
 import {
   Alert,
   Badge,
   Button,
   Card,
+  ErrorState,
   formatDateTime,
   LoadingBlock,
   Modal,
@@ -33,8 +34,9 @@ const ACTION_LABELS: Record<string, string> = {
   "application.resubmitted": "Повторная подача",
   "offer.accepted": "Оферта принята",
   "offer.declined": "Оферта отклонена",
-  "contract.signed_demo": "Демо-подписание",
-  "funds.disbursed_demo": "Демо-зачисление",
+  "contract.signed_demo": "Договор подписан",
+  "funds.disbursed_demo": "Средства зачислены",
+  "application.draft_deleted": "Черновик удалён",
   "document.uploaded": "Документ загружен",
   "product.updated": "Продукт изменён",
   "scoring_config.updated": "Скоринг обновлён",
@@ -47,13 +49,17 @@ export default function AdminAudit() {
   const [selected, setSelected] = useState<AuditItem | null>(null);
   const { push } = useToast();
   const limit = 50;
+  // Берём на одну запись больше: так видно, есть ли следующая страница, без пустого перехода.
   const query = useQuery({
     queryKey: ["admin-audit", action, offset],
-    queryFn: () => api.admin.audit({ action, offset, limit })
+    queryFn: () => api.admin.audit({ action, offset, limit: limit + 1 })
   });
+  const entries = (query.data ?? []).slice(0, limit);
+  const hasMore = (query.data?.length ?? 0) > limit;
   const verify = useMutation({
     mutationFn: api.admin.verifyAudit,
-    onSuccess: (result) => push(result.message, result.valid ? "success" : "danger")
+    onSuccess: (result) => push(result.message, result.valid ? "success" : "danger"),
+    onError: (err) => push(err instanceof ApiError ? err.message : "Не удалось проверить журнал", "danger")
   });
 
   return (
@@ -85,18 +91,20 @@ export default function AdminAudit() {
           </select>
           <Button variant="secondary" icon={<RefreshCw size={16} />} onClick={() => query.refetch()}>Обновить</Button>
         </div>
-        <span className="muted small">Показано {query.data?.length ?? 0} записей</span>
+        <span className="muted small">Показано {entries.length} записей</span>
       </Card>
 
       {query.isLoading ? (
         <LoadingBlock />
+      ) : query.isError ? (
+        <ErrorState title="Не удалось загрузить журнал" onRetry={() => query.refetch()} />
       ) : (
         <Card className="table-card">
           <div className="table-wrap">
             <table className="data-table audit-table">
               <thead><tr><th>Время</th><th>Пользователь</th><th>Действие</th><th>Объект</th><th>Было → стало</th><th>Хеш</th></tr></thead>
               <tbody>
-                {query.data?.map((entry) => (
+                {entries.map((entry) => (
                   <tr key={entry.id} onClick={() => setSelected(entry)} className="clickable-row">
                     <td><span className="mono">{formatDateTime(entry.created_at)}</span></td>
                     <td><strong>{entry.actor_label}</strong><small className="block muted">ID {entry.actor_id ?? "system"}</small></td>
@@ -113,8 +121,8 @@ export default function AdminAudit() {
       )}
       <div className="pagination">
         <Button variant="secondary" className="btn-sm" icon={<ChevronLeft size={16} />} disabled={offset === 0} onClick={() => setOffset((value) => Math.max(0, value - limit))}>Назад</Button>
-        <span>Записи {offset + 1}–{offset + (query.data?.length ?? 0)}</span>
-        <Button variant="secondary" className="btn-sm" disabled={(query.data?.length ?? 0) < limit} onClick={() => setOffset((value) => value + limit)}>Далее <ChevronRight size={16} /></Button>
+        <span>{entries.length ? `Записи ${offset + 1}–${offset + entries.length}` : "Записей нет"}</span>
+        <Button variant="secondary" className="btn-sm" disabled={!hasMore} onClick={() => setOffset((value) => value + limit)}>Далее <ChevronRight size={16} /></Button>
       </div>
 
       <Modal open={Boolean(selected)} title={`Запись аудита #${selected?.id ?? ""}`} onClose={() => setSelected(null)}>
@@ -132,7 +140,6 @@ export default function AdminAudit() {
               <div><span>Предыдущий хеш</span><code>{selected.previous_hash}</code></div>
               <div><span>Хеш записи</span><code>{selected.entry_hash}</code></div>
             </div>
-            <Alert tone="info"><CheckCircle2 size={15} /> Запись доступна только для чтения.</Alert>
           </div>
         )}
       </Modal>

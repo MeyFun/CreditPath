@@ -27,6 +27,33 @@ import {
 } from "../components/ui";
 import type { ApplicationSummary } from "../types";
 
+const AWAITING_CLIENT = ["APPROVED", "APPROVED_CHANGED", "OFFER_ACCEPTED", "SIGNED"];
+const FINAL = ["REJECTED", "OFFER_DECLINED", "DISBURSED"];
+
+/** Самое срочное действие клиента: ответ банку, затем решение по оферте, затем заявка в работе, затем черновик. */
+function nextAction(applications: ApplicationSummary[]) {
+  const pick =
+    applications.find((app) => app.status === "NEED_INFO") ??
+    applications.find((app) => AWAITING_CLIENT.includes(app.status)) ??
+    applications.find((app) => app.status !== "DRAFT" && !FINAL.includes(app.status)) ??
+    applications.find((app) => app.status === "DRAFT");
+  if (!pick) return null;
+  const result = `/app/applications/${pick.id}/result`;
+  const copy =
+    pick.status === "NEED_INFO"
+      ? { title: "Нужны уточнения по заявке", body: "Банк ждёт ответ на запрос. Дополните данные — проверки продолжатся автоматически.", action: "Ответить", to: result }
+      : pick.status === "APPROVED" || pick.status === "APPROVED_CHANGED"
+        ? { title: "Банк одобрил заявку", body: `Ознакомьтесь с условиями по заявке ${pick.number} и примите решение по предложению.`, action: "Посмотреть предложение", to: result }
+        : pick.status === "OFFER_ACCEPTED"
+          ? { title: "Осталось подписать договор", body: `Предложение по заявке ${pick.number} принято. Подпишите договор, чтобы получить средства.`, action: "Подписать договор", to: result }
+          : pick.status === "SIGNED"
+            ? { title: "Договор подписан", body: `Средства по заявке ${pick.number} готовы к зачислению.`, action: "Получить средства", to: result }
+            : pick.status === "DRAFT"
+              ? { title: "Завершите черновик", body: "Черновик сохранён. Проверьте параметры и отправьте заявку на рассмотрение.", action: "Продолжить", to: `/app/applications/new?draft=${pick.id}` }
+              : { title: "Заявка на рассмотрении", body: `Заявка ${pick.number} на ${formatMoney(pick.amount)} проходит проверки. Статус обновится автоматически.`, action: "Открыть заявку", to: `/app/applications/${pick.id}` };
+  return { ...pick, copy };
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const query = useQuery({ queryKey: ["client-dashboard"], queryFn: api.client.dashboard });
@@ -36,8 +63,7 @@ export default function DashboardPage() {
     return <Card><EmptyState title="Не удалось загрузить кабинет" description="Обновите страницу или повторите позже." action={<Button onClick={() => query.refetch()}>Повторить</Button>} /></Card>;
   }
   const data = query.data!;
-  const active = data.applications.filter((app) => !["DRAFT", "REJECTED", "OFFER_DECLINED", "DISBURSED"].includes(app.status));
-  const next = data.applications.find((app) => app.status === "NEED_INFO") ?? active[0];
+  const next = nextAction(data.applications);
   const firstName = user?.full_name.split(" ")[1] ?? user?.full_name.split(" ")[0] ?? "";
   const company = data.company;
 
@@ -60,14 +86,8 @@ export default function DashboardPage() {
           <span className="next-action-icon">{next.status === "NEED_INFO" ? <BellRing size={23} /> : <Clock3 size={23} />}</span>
           <div className="next-action-body">
             <span className="eyebrow">Что дальше?</span>
-            <h2>{next.status === "NEED_INFO" ? "Нужны уточнения по заявке" : next.status === "DRAFT" ? "Завершите черновик" : "Следующий шаг по заявке"}</h2>
-            <p>
-              {next.status === "NEED_INFO"
-                ? "Банк ждёт ответ на запрос. Откройте заявку и дополните данные — проверки продолжатся автоматически."
-                : next.status === "DRAFT"
-                  ? "Черновик сохранён. Проверьте параметры и отправьте заявку на рассмотрение."
-                  : `Заявка ${next.number} на ${formatMoney(next.amount)} находится в работе.`}
-            </p>
+            <h2>{next.copy.title}</h2>
+            <p>{next.copy.body}</p>
             <div className="inline-meta">
               <StatusBadge status={next.status} />
               <span>{next.product.name}</span>
@@ -75,8 +95,8 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="next-action-actions">
-            <Link className="btn btn-primary" to={next.status === "DRAFT" ? `/app/applications/new?draft=${next.id}` : `/app/applications/${next.id}`}>
-              {next.status === "NEED_INFO" ? "Ответить" : next.status === "DRAFT" ? "Продолжить" : "Открыть заявку"} <ArrowRight size={16} />
+            <Link className="btn btn-primary" to={next.copy.to}>
+              {next.copy.action} <ArrowRight size={16} />
             </Link>
             <Link className="btn btn-ghost" to={`/app/applications/${next.id}`}>Все детали</Link>
           </div>

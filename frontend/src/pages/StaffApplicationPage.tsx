@@ -17,6 +17,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError, downloadDocument } from "../api";
 import {
   Alert,
+  applicationPollInterval,
   Badge,
   Button,
   Card,
@@ -42,7 +43,12 @@ export default function StaffApplicationPage() {
   const queryClient = useQueryClient();
   const { push } = useToast();
   const applicationId = Number(id);
-  const query = useQuery({ queryKey: ["employee-application", applicationId], queryFn: () => api.employee.application(applicationId) });
+  const query = useQuery({
+    queryKey: ["employee-application", applicationId],
+    queryFn: () => api.employee.application(applicationId),
+    // Ответ клиента на запрос уточнений возвращает заявку в работу без перезагрузки страницы.
+    refetchInterval: (data) => applicationPollInterval(data?.state.data?.status)
+  });
   const [tab, setTab] = useState<"overview" | "checks" | "history">("overview");
   const [action, setAction] = useState<DecisionAction | null>(null);
   const [amount, setAmount] = useState("");
@@ -56,8 +62,9 @@ export default function StaffApplicationPage() {
 
   useEffect(() => {
     if (!app) return;
-    setAmount(String(app.decision_draft?.proposed_amount ?? app.amount));
-    setTerm(String(app.decision_draft?.proposed_term_months ?? app.term_months));
+    // У черновика «отказ» предложенная сумма — 0: подставляем запрошенные условия.
+    setAmount(String(app.decision_draft?.proposed_amount || app.amount));
+    setTerm(String(app.decision_draft?.proposed_term_months || app.term_months));
     setProductId(String(app.product.id));
   }, [app?.id]);
 
@@ -106,8 +113,16 @@ export default function StaffApplicationPage() {
       setError("Для отказа и запроса данных обязателен комментарий");
       return;
     }
-    if (action === "approve_changed" && (!amount || !term)) {
-      setError("Укажите сумму и срок новых условий");
+    if (action === "approve_changed" && (!(Number(amount) > 0) || !Number.isInteger(Number(term)) || !(Number(term) > 0))) {
+      setError("Укажите сумму больше нуля и срок в целых месяцах");
+      return;
+    }
+    if (action === "approve_changed" && Number(amount) > app!.amount) {
+      setError(`Сумма не может превышать запрошенную — ${formatMoney(app!.amount)}`);
+      return;
+    }
+    if (action === "approve_changed" && Number(amount) === app!.amount && Number(term) === app!.term_months && Number(productId) === app!.product.id) {
+      setError("Новые условия совпадают с запрошенными — выберите «Одобрить»");
       return;
     }
     decide.mutate();
@@ -254,9 +269,9 @@ export default function StaffApplicationPage() {
             {app.status === "IN_REVIEW" && app.can_decide ? (
               <>
                 <p className="muted small">Выберите одно из четырёх действий. Отказ и запрос данных требуют комментария.</p>
-                {(app.decision_draft?.outcome === "reject" || score < 70 || (app.decision_draft?.stop_factors?.length ?? 0) > 0) && (
-                  <Alert tone="warning" title="Потребуется риск-исключение">
-                    Одобрение при скоринге {score}/100 или вопреки рекомендации системы будет дополнительно зафиксировано отдельным событием в журнале аудита.
+                {(action === "approve" || action === "approve_changed") && (app.risk_override_reasons?.length ?? 0) > 0 && (
+                  <Alert tone="warning" title="Одобрение будет риск-исключением">
+                    {app.risk_override_reasons!.join("; ")}. Решение дополнительно зафиксируется в журнале аудита.
                   </Alert>
                 )}
                 <div className="decision-buttons">

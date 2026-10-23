@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   CheckCircle2,
@@ -10,7 +10,7 @@ import {
   Sparkles,
   TriangleAlert
 } from "lucide-react";
-import { useState } from "react";
+import { useDeferredValue, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../api";
 import {
@@ -32,11 +32,14 @@ export default function StaffQueuePage() {
   const [search, setSearch] = useState("");
   const [risk, setRisk] = useState("all");
   const stats = useQuery({ queryKey: ["employee-stats"], queryFn: api.employee.stats });
+  const deferredSearch = useDeferredValue(search.trim());
   const applications = useQuery({
-    queryKey: ["employee-applications", scope, search],
-    queryFn: () => api.employee.applications(scope, search),
+    queryKey: ["employee-applications", scope, deferredSearch],
+    queryFn: () => api.employee.applications(scope, deferredSearch),
+    placeholderData: keepPreviousData,
     refetchInterval: 15000
   });
+  const filtersActive = Boolean(deferredSearch) || risk !== "all";
 
   const filtered = (applications.data ?? []).filter((app) => {
     if (risk === "high") return (app.scoring_score ?? 100) < 40;
@@ -76,7 +79,13 @@ export default function StaffQueuePage() {
       ) : applications.isError ? (
         <Card><EmptyState title="Не удалось загрузить очередь" description="Повторите попытку." /></Card>
       ) : filtered.length === 0 ? (
-        <Card><EmptyState icon={<CheckCircle2 size={26} />} title="Очередь пуста" description={scope === "queue" ? "Все назначенные заявки обработаны. Новые появятся автоматически." : "По выбранным фильтрам заявок нет."} /></Card>
+        <Card>
+          {filtersActive ? (
+            <EmptyState icon={<Search size={26} />} title="Ничего не найдено" description="По выбранным фильтрам заявок нет." action={<button className="btn btn-secondary btn-sm" onClick={() => { setSearch(""); setRisk("all"); }}>Сбросить фильтры</button>} />
+          ) : (
+            <EmptyState icon={<CheckCircle2 size={26} />} title="Очередь пуста" description={scope === "queue" ? "Все назначенные заявки обработаны. Новые появятся автоматически." : "Вам ещё не назначали заявок."} />
+          )}
+        </Card>
       ) : (
         <div className="queue-list">
           {filtered.map((app) => {

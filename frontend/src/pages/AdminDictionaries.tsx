@@ -7,6 +7,7 @@ import {
   Badge,
   Button,
   Card,
+  ErrorState,
   Field,
   formatDate,
   formatMoney,
@@ -106,6 +107,7 @@ function ProductsTab() {
       }),
     onSuccess: () => {
       push("Продукт обновлён", "success");
+      setError("");
       setEditing(null);
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       queryClient.invalidateQueries({ queryKey: ["public-products"] });
@@ -133,6 +135,7 @@ function ProductsTab() {
   }
 
   if (query.isLoading) return <LoadingBlock />;
+  if (query.isError) return <ErrorState title="Не удалось загрузить продукты" onRetry={() => query.refetch()} />;
 
   return (
     <>
@@ -185,6 +188,7 @@ function ScoringTab() {
     mutationFn: () => api.admin.updateScoringConfig(config!),
     onSuccess: (data) => {
       push(`Создана версия скоринга v${data.version}`, "success");
+      setError("");
       queryClient.invalidateQueries({ queryKey: ["admin-scoring"] });
       queryClient.invalidateQueries({ queryKey: ["admin-scoring-history"] });
       setConfig(data.config);
@@ -196,8 +200,19 @@ function ScoringTab() {
     if (query.data) setConfig(structuredClone(query.data.config));
   }, [query.data]);
 
+  if (query.isError) return <ErrorState title="Не удалось загрузить параметры скоринга" onRetry={() => query.refetch()} />;
   if (query.isLoading || !config) return <LoadingBlock />;
   const groups = [...new Set(SCORING_FIELDS.map((field) => field.group))];
+
+  function save() {
+    const empty = SCORING_FIELDS.find((field) => typeof getPath(config!, field.path) !== "number" || Number.isNaN(getPath(config!, field.path)));
+    if (empty) {
+      setError(`Заполните поле «${empty.label}»`);
+      return;
+    }
+    setError("");
+    mutation.mutate();
+  }
 
   return (
     <div className="scoring-admin-grid">
@@ -214,7 +229,8 @@ function ScoringTab() {
                     type="number"
                     step={field.step ?? 1}
                     value={String(getPath(config, field.path) ?? "")}
-                    onChange={(event) => setConfig((current) => current ? setPath(current, field.path, Number(event.target.value)) : current)}
+                    // Пустое поле остаётся пустым, а не превращается в 0: перед сохранением его поймает проверка.
+                    onChange={(event) => setConfig((current) => current ? setPath(current, field.path, event.target.value === "" ? "" : Number(event.target.value)) : current)}
                   />
                 </Field>
               ))}
@@ -226,7 +242,7 @@ function ScoringTab() {
         </Field>
         <div className="config-actions">
           <Button variant="secondary" onClick={() => setConfig(structuredClone(query.data!.config))}>Сбросить</Button>
-          <Button loading={mutation.isPending} onClick={() => mutation.mutate()}>Сохранить новую версию</Button>
+          <Button loading={mutation.isPending} onClick={save}>Сохранить новую версию</Button>
         </div>
         <Alert tone="info">Сохранение создаёт новую версию. Старые заявки не пересчитываются; новые используют активную версию.</Alert>
       </Card>
