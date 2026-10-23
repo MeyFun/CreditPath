@@ -66,16 +66,36 @@ img { max-width: 100%; }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
 /* Logo */
-.logo { display: flex; align-items: center; gap: 11px; }
+.logo { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .logo-mark {
   width: 40px; height: 40px; flex: 0 0 40px; border-radius: 11px;
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--accent); color: #fff;
   box-shadow: 0 5px 14px rgba(215, 25, 32, 0.22);
 }
-.logo-text { display: flex; flex-direction: column; line-height: 1.1; }
-.logo-text strong { font-size: 17px; letter-spacing: -0.02em; }
-.logo-text small { color: var(--muted); font-size: 10.5px; margin-top: 3px; }
+.logo-text {
+  display: grid;
+  grid-template-columns: minmax(0, max-content);
+  align-content: center;
+  gap: 2px;
+  line-height: 1.1;
+  min-width: 0;
+}
+.logo-name {
+  display: block;
+  grid-column: 1;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.logo-tagline {
+  display: block;
+  grid-column: 1;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
 
 /* Buttons */
 .btn {
@@ -926,7 +946,7 @@ img { max-width: 100%; }
   .public-header { padding: 14px 18px; }
   .public-actions .btn { padding: 9px 11px; font-size: 12px; }
   .public-actions .btn-ghost { padding: 9px 8px; }
-  .logo-text small { display: none; }
+  .logo-tagline { display: none; }
   .hero { padding: 30px 18px 44px; }
   .hero-stats { grid-template-columns: 1fr 1fr 1fr; }
   .hero-stats strong { font-size: 15px; }

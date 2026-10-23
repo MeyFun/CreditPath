@@ -79,8 +79,8 @@ export function Logo({ compact = false }: { compact?: boolean }) {
       </span>
       {!compact && (
         <span className="logo-text">
-          <strong>CreditPath</strong>
-          <small>кредитный кабинет для бизнеса</small>
+          <strong className="logo-name">CreditPath</strong>
+          <small className="logo-tagline">кредитный кабинет для бизнеса</small>
         </span>
       )}
     </div>
