@@ -73,6 +73,7 @@ img { max-width: 100%; }
   background: var(--accent); color: #fff;
   box-shadow: 0 5px 14px rgba(215, 25, 32, 0.22);
 }
+.logo-mark svg { display: block; }
 .logo-text {
   display: grid;
   grid-template-columns: minmax(0, max-content);
@@ -363,11 +364,14 @@ img { max-width: 100%; }
 .public-footer { border-top: 1px solid var(--border); background: #fbfbfc; padding: 42px 32px 24px; }
 .footer-main { max-width: 1216px; margin: 0 auto; display: grid; grid-template-columns: 1.6fr 0.7fr 0.7fr 0.9fr; gap: 40px; }
 .footer-brand p { color: var(--muted); font-size: 12.5px; max-width: 280px; margin: 14px 0; }
+.footer-brand .logo-mark { color: #fff; }
+.footer-brand .logo-mark svg { width: 24px; height: 24px; display: block; }
 .footer-demo { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
 .footer-main h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; color: var(--muted-dark); }
-.footer-main a, .footer-main span { display: block; color: var(--muted); font-size: 12.5px; margin: 7px 0; }
-.footer-main a:hover { color: var(--accent); }
-.footer-main > div:last-child span { display: flex; align-items: center; gap: 7px; }
+.footer-main > div > a,
+.footer-main > div:not(.footer-brand) > span { display: block; color: var(--muted); font-size: 12.5px; margin: 7px 0; }
+.footer-main > div > a:hover { color: var(--accent); }
+.footer-main > div:last-child > span { display: flex; align-items: center; gap: 7px; }
 .footer-bottom { max-width: 1216px; margin: 32px auto 0; padding-top: 18px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: 20px; color: #9aa1ab; font-size: 11px; }
 
 /* Auth */
