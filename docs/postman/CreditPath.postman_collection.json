@@ -229,12 +229,28 @@
               "path": ["employee", "applications", "{{employeeApplicationId}}", "decision"]
             }
           }
+        },
+        {
+          "name": "Клиентский кабинет сотрудника",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{employeeToken}}" }],
+            "url": { "raw": "{{baseUrl}}/client/dashboard", "host": ["{{baseUrl}}"], "path": ["client", "dashboard"] }
+          }
         }
       ]
     },
     {
       "name": "05 · Администратор",
       "item": [
+        {
+          "name": "Клиентский кабинет администратора",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/client/dashboard", "host": ["{{baseUrl}}"], "path": ["client", "dashboard"] }
+          }
+        },
         {
           "name": "Пользователи",
           "request": {
