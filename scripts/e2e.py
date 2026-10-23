@@ -317,7 +317,12 @@ def run() -> None:
         check(admin_verify["valid"] is True, "Нарушена целостность цепочки аудита")
         audit = client.get("/admin/audit?limit=5", "admin")
         check(len(audit) > 0, "Журнал аудита пуст")
-        print(f"\n✓ Аудит: цепочка целостна, проверено {admin_verify['checked']} записей")
+        risk_audits = client.get("/admin/audit?action=application.risk_override&limit=50", "admin")
+        check(len(risk_audits) > 0, "Не зафиксировано ни одного риск-исключения")
+        print(
+            f"\n✓ Аудит: цепочка целостна, проверено {admin_verify['checked']} записей; "
+            f"риск-исключений: {len(risk_audits)}"
+        )
 
         # Администратор не может принять кредитное решение.
         test_application = client.post(

@@ -35,6 +35,34 @@ from ..services.state_machine import (
 
 router = APIRouter(prefix="/employee", tags=["Рабочее место сотрудника"])
 
+STOP_FACTOR_LABELS = {
+    "active_overdue": "активная просроченная задолженность",
+    "company_inactive": "компания не действует",
+    "company_not_found": "компания не найдена в реестре",
+    "registry_not_found": "компания не найдена в реестре",
+    "product_age": "возраст бизнеса ниже требования продукта",
+    "collateral_required": "не выполнено требование по обеспечению",
+}
+
+
+def _risk_override_reasons(application: Application, action: str, config: dict) -> list[str]:
+    """Причины риск-исключения, если сотрудник одобряет вопреки рекомендации системы."""
+    if action not in {"approve", "approve_changed"}:
+        return []
+    draft = application.decision_draft or {}
+    stop_factors = list(draft.get("stop_factors") or [])
+    score = int(application.scoring_score or 0)
+    threshold = int(config["decision"].get("approve_threshold", 70))
+    reasons: list[str] = []
+    if stop_factors:
+        labels = [STOP_FACTOR_LABELS.get(code, code) for code in stop_factors]
+        reasons.append("Сработали стоп-факторы: " + ", ".join(labels))
+    if draft.get("outcome") == "reject" and not stop_factors:
+        reasons.append("Предварительное решение системы — отказ")
+    if score < threshold:
+        reasons.append(f"Скоринг {score}/100 ниже порога одобрения {threshold}")
+    return reasons
+
 
 def _assigned(db: Session, application_id: int, user: User) -> Application:
     application = db.get(Application, application_id)
@@ -299,6 +327,46 @@ def decide(
             "comment": comment,
         },
     )
+
+    risk_reasons = _risk_override_reasons(application, payload.action, config)
+    if risk_reasons:
+        draft = application.decision_draft or {}
+        risk_comment = "Риск-исключение: " + "; ".join(risk_reasons) + "."
+        add_event(
+            db,
+            application,
+            event_type="RISK_OVERRIDE",
+            actor=user,
+            comment=risk_comment,
+            details={
+                "score": application.scoring_score,
+                "approve_threshold": int(config["decision"].get("approve_threshold", 70)),
+                "system_outcome": draft.get("outcome"),
+                "stop_factors": draft.get("stop_factors") or [],
+                "final_outcome": final_outcome,
+                "employee_id": user.id,
+            },
+        )
+        write_audit(
+            db,
+            actor=user,
+            action="application.risk_override",
+            entity_type="application",
+            entity_id=application.id,
+            before={
+                "score": application.scoring_score,
+                "system_outcome": draft.get("outcome"),
+                "stop_factors": draft.get("stop_factors") or [],
+                "approve_threshold": int(config["decision"].get("approve_threshold", 70)),
+            },
+            after={
+                "final_outcome": final_outcome,
+                "approved_amount": approved_amount,
+                "approved_term_months": approved_term,
+                "employee_id": user.id,
+                "reasons": risk_reasons,
+            },
+        )
     db.commit()
     return application_detail_dict(db, application, product, user, assigned=user)
 

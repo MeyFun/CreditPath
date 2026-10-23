@@ -250,6 +250,11 @@ export default function StaffApplicationPage() {
             {app.status === "IN_REVIEW" && app.can_decide ? (
               <>
                 <p className="muted small">Выберите одно из четырёх действий. Отказ и запрос данных требуют комментария.</p>
+                {(app.decision_draft?.outcome === "reject" || score < 70 || (app.decision_draft?.stop_factors?.length ?? 0) > 0) && (
+                  <Alert tone="warning" title="Потребуется риск-исключение">
+                    Одобрение при скоринге {score}/100 или вопреки рекомендации системы будет дополнительно зафиксировано отдельным событием в журнале аудита.
+                  </Alert>
+                )}
                 <div className="decision-buttons">
                   <button className={`decision-button approve ${action === "approve" ? "selected" : ""}`} onClick={() => choose("approve")}><CheckCircle2 size={18} /><span><strong>Одобрить</strong><small>На запрошенных условиях</small></span></button>
                   <button className={`decision-button changed ${action === "approve_changed" ? "selected" : ""}`} onClick={() => choose("approve_changed")}><LineChart size={18} /><span><strong>Другие условия</strong><small>Изменить сумму или срок</small></span></button>

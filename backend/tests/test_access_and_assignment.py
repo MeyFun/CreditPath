@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import update
+from sqlalchemy import select, update
 
-from app.models import Application, ROLE_EMPLOYEE, User
+from app.models import Application, AuditLog, ROLE_EMPLOYEE, User
 from app.services.assignment import assign_reviewer, chain_reviewer_ids, pick_employee
 from tests.conftest import login, make_application, user_by_name
 
@@ -221,6 +221,72 @@ def test_employee_approval_updates_status_and_creates_offer(client, db):
     assert data["status"] == "APPROVED"
     assert data["approved_amount"] == 1_000_000
     assert data["offer_expires_at"]
+
+
+def test_low_score_approval_creates_separate_risk_audit_event(client, db):
+    client_user = user_by_name(db, "client1")
+    employee = user_by_name(db, "employee2")
+    application = make_application(
+        db, user=client_user, status="IN_REVIEW", assigned=employee, score=50
+    )
+    application.decision_draft = {
+        "outcome": "reject",
+        "summary": "Отказ",
+        "reasons": ["Есть активная просрочка", "Низкий скоринг"],
+        "stop_factors": ["active_overdue"],
+    }
+    db.commit()
+
+    response = client.post(
+        f"/api/employee/applications/{application.id}/decision",
+        headers=login(client, "employee2"),
+        json={"action": "approve", "comment": "Одобрено под ответственность сотрудника"},
+    )
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["status"] == "APPROVED"
+    assert any(event["event_type"] == "RISK_OVERRIDE" for event in data["events"])
+
+    risk_audit = db.scalar(
+        select(AuditLog).where(
+            AuditLog.action == "application.risk_override",
+            AuditLog.entity_id == str(application.id),
+        )
+    )
+    assert risk_audit is not None
+    reasons = " ".join(risk_audit.after["reasons"]).lower()
+    assert "активная просроченная задолженность" in reasons
+    assert "50/100" in reasons
+
+
+def test_normal_approval_does_not_create_risk_override(client, db):
+    client_user = user_by_name(db, "client1")
+    employee = user_by_name(db, "employee2")
+    application = make_application(
+        db, user=client_user, status="IN_REVIEW", assigned=employee, score=88
+    )
+    application.decision_draft = {
+        "outcome": "approve",
+        "summary": "Одобрено",
+        "reasons": ["Проверки пройдены"],
+        "stop_factors": [],
+    }
+    db.commit()
+
+    response = client.post(
+        f"/api/employee/applications/{application.id}/decision",
+        headers=login(client, "employee2"),
+        json={"action": "approve", "comment": "Проверено"},
+    )
+    assert response.status_code == 200
+    assert not any(event["event_type"] == "RISK_OVERRIDE" for event in response.json()["events"])
+    risk_audit = db.scalar(
+        select(AuditLog).where(
+            AuditLog.action == "application.risk_override",
+            AuditLog.entity_id == str(application.id),
+        )
+    )
+    assert risk_audit is None
 
 
 def test_admin_sees_all_and_audit_chain(client, db):
