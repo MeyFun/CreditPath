@@ -87,7 +87,7 @@ def evaluate_application(
 
     if not _has_financials(registry):
         reasons.append("Не хватает финансовых показателей: выручки и прибыли за последний год.")
-        reasons.append("Прикрепите отчётность или укажите показатели в ответе на запрос — после этого проверки продолжатся автоматически.")
+        reasons.append("Добавьте бухгалтерскую отчётность файлом или укажите показатели в ответе на запрос — после этого проверки продолжатся автоматически.")
         return _result("need_info", "Нужны дополнительные данные", reasons, score, 0, requested_term, rate, product, [])
 
     age_months = _months_since(registry.get("registration_date"))
