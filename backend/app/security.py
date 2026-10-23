@@ -135,7 +135,6 @@ login_rate_limiter = LoginRateLimiter()
 
 
 def client_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
+    # Адрес клиента берётся из соединения. X-Forwarded-For учитывает uvicorn
+    # (--proxy-headers) и только от доверенного прокси (nginx), поэтому подмена заголовка не работает.
     return request.client.host if request.client else "unknown"

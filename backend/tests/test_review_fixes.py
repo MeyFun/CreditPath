@@ -139,7 +139,7 @@ def test_payment_schedule_rejects_infinity(client):
     assert response.status_code == 422
 
 
-def test_login_rate_limit_counts_per_username_regardless_of_ip(client):
+def test_login_rate_limit_ignores_spoofed_forwarded_for(client):
     try:
         for index in range(5):
             client.post("/api/auth/login", json={"username": "client2", "password": "wrong"},

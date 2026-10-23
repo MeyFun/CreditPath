@@ -57,19 +57,16 @@ def register(payload: RegisterRequest, request: Request, db: Session = Depends(g
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)) -> TokenResponse:
     username = payload.username.lower().strip()
-    rate_keys = (f"ip:{client_ip(request)}:{username}", f"user:{username}")
-    for key in rate_keys:
-        login_rate_limiter.check(key)
+    rate_key = f"{client_ip(request)}:{username}"
+    login_rate_limiter.check(rate_key)
     user = db.scalar(select(User).where(User.username == username))
     if user is None or not user.is_active or not verify_password(payload.password, user.password_hash):
-        for key in rate_keys:
-            login_rate_limiter.failure(key)
+        login_rate_limiter.failure(rate_key)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Неверный логин или пароль",
         )
-    for key in rate_keys:
-        login_rate_limiter.success(key)
+    login_rate_limiter.success(rate_key)
     user.last_login_at = datetime.now(timezone.utc)
     write_audit(
         db,

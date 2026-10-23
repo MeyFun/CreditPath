@@ -62,7 +62,7 @@ services:
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     ports:
-      - "${BACKEND_PORT:-8000}:8000"
+      - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
     volumes:
       - uploads_data:/data/uploads
     depends_on:
