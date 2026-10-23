@@ -120,7 +120,10 @@ def evaluate_application(
             ["collateral_required"],
         )
 
-    if score >= approve_threshold:
+    revenue = float(registry.get("revenue") or 0)
+    amount_limit = max(_round_amount(revenue * float(product.revenue_limit_ratio)), int(product.min_amount))
+
+    if score >= approve_threshold and requested_amount <= amount_limit:
         reasons.append(f"Оценка {score} из 100 — выше порога одобрения {approve_threshold}.")
         reasons.append("Стоп-факторы не выявлены, финансовые показатели подтверждены.")
         return _result(
@@ -136,14 +139,14 @@ def evaluate_application(
         )
 
     if score >= changed_threshold:
-        revenue = float(registry.get("revenue") or 0)
-        amount_limit = _round_amount(revenue * float(product.revenue_limit_ratio))
-        amount_limit = max(amount_limit, int(product.min_amount))
         proposed_amount = min(requested_amount, amount_limit)
         proposed_term = min(requested_term, int(decision_cfg["changed_term_cap_months"]), int(product.max_term_months))
         proposed_term = max(proposed_term, int(product.min_term_months))
 
-        reasons.append(f"Оценка {score} из 100 находится в диапазоне {changed_threshold}–{approve_threshold - 1}: банк готов одобрить на скорректированных условиях.")
+        if score >= approve_threshold:
+            reasons.append(f"Оценка {score} из 100 выше порога одобрения, но запрошенная сумма превышает лимит к выручке.")
+        else:
+            reasons.append(f"Оценка {score} из 100 находится в диапазоне {changed_threshold}–{approve_threshold - 1}: банк готов одобрить на скорректированных условиях.")
         if proposed_amount < requested_amount:
             reasons.append(
                 f"Сумма снижена с {requested_amount:,.0f} ₽ до {proposed_amount:,.0f} ₽: комфортный лимит привязан к годовой выручке и продукту."

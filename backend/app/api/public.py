@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -60,6 +61,6 @@ def registry_lookup(inn: str) -> dict:
 
 @router.get("/payment-schedule")
 def calculate_payment(amount: float, rate: float, term_months: int) -> dict:
-    if amount <= 0 or rate <= 0 or term_months <= 0 or term_months > 120:
+    if not (math.isfinite(amount) and math.isfinite(rate)) or amount <= 0 or rate <= 0 or term_months <= 0 or term_months > 120:
         raise HTTPException(status_code=422, detail="Проверьте параметры расчёта")
     return payment_schedule(amount, rate, term_months)

@@ -206,8 +206,9 @@ class DecisionRequest(BaseModel):
 
 class RespondInfoRequest(BaseModel):
     comment: str = Field(min_length=2, max_length=4000)
-    declared_revenue: float | None = Field(default=None, ge=0)
-    declared_profit: float | None = None
+    declared_revenue: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    declared_profit: float | None = Field(default=None, allow_inf_nan=False)
+    company_inn: str | None = Field(default=None, max_length=20)
 
 
 class OfferRequest(BaseModel):

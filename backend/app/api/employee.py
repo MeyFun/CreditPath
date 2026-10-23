@@ -5,8 +5,8 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
-from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy import func, or_, select
+from sqlalchemy.orm import Session, aliased
 
 from ..config import settings
 from ..db import get_db
@@ -80,14 +80,23 @@ def _assigned(db: Session, application_id: int, user: User, *, lock: bool = Fals
     return application
 
 
-@router.get("/stats", response_model=EmployeeStatsOut)
-def stats(db: Session = Depends(get_db), user: User = Depends(require_employee)) -> dict:
-    rows = db.scalars(
-        select(Application).where(
+def _reviewer_scope(user: User):
+    """Заявки, которые сотрудник может видеть: назначенные ему, кроме своих и заявок связанных лиц."""
+    applicant = aliased(User)
+    return (
+        select(Application)
+        .join(applicant, applicant.id == Application.user_id)
+        .where(
             Application.assigned_employee_id == user.id,
             Application.user_id != user.id,
+            or_(applicant.related_employee_id.is_(None), applicant.related_employee_id != user.id),
         )
-    ).all()
+    )
+
+
+@router.get("/stats", response_model=EmployeeStatsOut)
+def stats(db: Session = Depends(get_db), user: User = Depends(require_employee)) -> dict:
+    rows = db.scalars(_reviewer_scope(user)).all()
     approved_total = sum(
         float(item.approved_amount or 0) for item in rows if item.status in {APPROVED, APPROVED_CHANGED}
     )
@@ -107,10 +116,7 @@ def list_applications(
     db: Session = Depends(get_db),
     user: User = Depends(require_employee),
 ) -> list[dict]:
-    query = select(Application).where(
-        Application.assigned_employee_id == user.id,
-        Application.user_id != user.id,
-    )
+    query = _reviewer_scope(user)
     if scope == "queue":
         query = query.where(Application.status.in_([IN_REVIEW, NEED_INFO]))
     if status_filter:

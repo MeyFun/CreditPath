@@ -76,8 +76,9 @@ ALLOWED_TYPES = {
 }
 
 
-def _owned(db: Session, application_id: int, user: User) -> Application:
-    application = db.get(Application, application_id)
+def _owned(db: Session, application_id: int, user: User, *, lock: bool = False) -> Application:
+    # lock=True блокирует строку до конца транзакции: повторный клик не запустит действие дважды.
+    application = db.get(Application, application_id, with_for_update=lock)
     if application is None or application.user_id != user.id:
         raise HTTPException(status_code=404, detail="Заявка не найдена")
     return application
@@ -129,7 +130,11 @@ def dashboard(db: Session = Depends(get_db), user: User = Depends(get_current_us
         "approved": sum(1 for item in rows if item.status in {APPROVED, APPROVED_CHANGED, OFFER_ACCEPTED, SIGNED, "DISBURSED"}),
         "rejected": sum(1 for item in rows if item.status == REJECTED),
     }
-    approved_total = sum(float(item.approved_amount or 0) for item in rows if item.final_outcome in {"approve", "approve_changed"})
+    approved_total = sum(
+        float(item.approved_amount or 0)
+        for item in rows
+        if item.final_outcome in {"approve", "approve_changed"} and item.status != OFFER_DECLINED
+    )
     unread = int(
         db.scalar(
             select(func.count(Notification.id)).where(
@@ -401,7 +406,7 @@ def submit_application(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    application = _owned(db, application_id, user)
+    application = _owned(db, application_id, user, lock=True)
     if idempotency_key:
         existing = db.scalar(
             select(IdempotencyRecord).where(
@@ -497,10 +502,17 @@ def respond_info(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    application = _owned(db, application_id, user)
+    application = _owned(db, application_id, user, lock=True)
     if application.status != NEED_INFO:
         raise HTTPException(status_code=409, detail="Сейчас заявка не ожидает уточнений")
     before = {"status": application.status, "client_comment": application.client_comment}
+    if payload.company_inn:
+        inn = payload.company_inn.strip()
+        valid, reason = validate_inn(inn)
+        if not valid:
+            raise HTTPException(status_code=422, detail=reason)
+        before["company_inn"] = application.company_inn
+        application.company_inn = inn
     application.client_comment = payload.comment
     if payload.declared_revenue is not None:
         application.declared_revenue = payload.declared_revenue
@@ -552,7 +564,7 @@ def respond_offer(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    application = _owned(db, application_id, user)
+    application = _owned(db, application_id, user, lock=True)
     if application.status not in {APPROVED, APPROVED_CHANGED}:
         raise HTTPException(status_code=409, detail="Оферта сейчас недоступна")
     if application.offer_expires_at:
@@ -612,7 +624,7 @@ def sign_offer(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    application = _owned(db, application_id, user)
+    application = _owned(db, application_id, user, lock=True)
     if application.status != OFFER_ACCEPTED:
         raise HTTPException(status_code=409, detail="Сначала примите оферту")
     application.signed_at = datetime.now(timezone.utc)
@@ -650,7 +662,7 @@ def disburse(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    application = _owned(db, application_id, user)
+    application = _owned(db, application_id, user, lock=True)
     if application.status != SIGNED:
         raise HTTPException(status_code=409, detail="Сначала подпишите договор")
     application.disbursed_at = datetime.now(timezone.utc)
@@ -688,7 +700,7 @@ def resubmit(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    source = _owned(db, application_id, user)
+    source = _owned(db, application_id, user, lock=True)
     if source.status != REJECTED:
         raise HTTPException(status_code=409, detail="Повторно подать можно только отклонённую заявку")
     product = _product(db, source.product_id, allow_inactive=True)

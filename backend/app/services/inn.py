@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Literal
 
 WEIGHTS_10 = (2, 4, 10, 3, 5, 9, 4, 6, 8)
@@ -24,7 +25,7 @@ def validate_inn(value: str | None) -> tuple[bool, str]:
     if not value:
         return False, "Укажите ИНН"
     inn = value.strip()
-    if not inn.isdigit():
+    if not re.fullmatch(r"[0-9]+", inn):
         return False, "ИНН должен содержать только цифры"
     if len(inn) not in (10, 12):
         return False, "ИНН юрлица состоит из 10 цифр, ИП — из 12"

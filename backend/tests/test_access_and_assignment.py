@@ -132,8 +132,11 @@ def test_related_party_application_is_not_assigned_to_related_employee(client, d
 
     application.assigned_employee_id = employee3.id
     db.commit()
-    detail = client.get(f"/api/employee/applications/{application.id}", headers=login(client, "employee3"))
+    headers3 = login(client, "employee3")
+    detail = client.get(f"/api/employee/applications/{application.id}", headers=headers3)
     assert detail.status_code == 404
+    listed = client.get("/api/employee/applications?scope=all", headers=headers3).json()
+    assert all(item["id"] != application.id for item in listed)
 
     employee1 = user_by_name(db, "employee1")
     application.assigned_employee_id = employee1.id

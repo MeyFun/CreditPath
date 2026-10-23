@@ -187,6 +187,9 @@ def assign_application(
         raise HTTPException(status_code=422, detail="Выбранный сотрудник недоступен")
     if employee.id == application.user_id:
         raise HTTPException(status_code=422, detail="Нельзя назначить заявку её автору")
+    applicant = db.get(User, application.user_id)
+    if applicant is not None and applicant.related_employee_id == employee.id:
+        raise HTTPException(status_code=422, detail="Сотрудник — связанное лицо заявителя")
     if employee.id in chain_reviewer_ids(db, application):
         raise HTTPException(status_code=422, detail="Сотрудник уже рассматривал заявки этой цепочки")
     before = {"employee_id": application.assigned_employee_id, "queue_reason": application.queue_reason}
@@ -308,7 +311,7 @@ def update_scoring_config(
 ) -> ScoringConfig:
     try:
         validate_config(payload.config)
-    except ValueError as exc:
+    except (ValueError, TypeError, KeyError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     latest_version = int(db.scalar(select(func.max(ScoringConfig.version))) or 0)
     previous = db.scalar(select(ScoringConfig).where(ScoringConfig.is_active.is_(True)))
