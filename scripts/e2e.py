@@ -362,6 +362,7 @@ def run() -> None:
 
         # Связанное лицо: заявка client3 никогда не назначается employee3.
         equipment = by_code["EQUIPMENT"]
+        related_company = client.http.get("/public/registry/990000001246").json()["company"]
         related_application = client.post(
             "/client/applications",
             "client3",
@@ -371,6 +372,7 @@ def run() -> None:
                 "term_months": 24,
                 "purpose": equipment["purposes"][0]["code"],
                 "company_inn": "990000001246",
+                "company_name": related_company["name"],
                 "collateral": True,
             },
         )

@@ -9,8 +9,7 @@ import {
   FileText,
   Info,
   LockKeyhole,
-  ShieldCheck,
-  Sparkles
+  ShieldCheck
 } from "lucide-react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { api, downloadDocument } from "../api";
@@ -195,16 +194,12 @@ export default function ApplicationPage() {
           </Card>
 
           <Card className="help-card">
-            <span className="mini-icon"><LockKeyhole size={18} /></span>
-            <div><strong>Данные защищены</strong><p>Вы видите только свои заявки. Каждое действие фиксируется в журнале аудита.</p></div>
-          </Card>
-          <Card className="help-card">
             <span className="mini-icon"><Info size={18} /></span>
             <div><strong>Что дальше?</strong><p>Центр уведомлений покажет изменения статуса. Внешние каналы не используются.</p><Link to="/app/notifications" className="text-link">Уведомления <ArrowRight size={14} /></Link></div>
           </Card>
         </aside>
       </div>
-      <DemoNote><Sparkles size={13} /> Демонстрационный прототип. Подписание договора и зачисление средств имитируются.</DemoNote>
+      <DemoNote>Демонстрационный прототип. Подписание договора и зачисление средств имитируются.</DemoNote>
     </div>
   );
 }

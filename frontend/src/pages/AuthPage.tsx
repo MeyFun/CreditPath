@@ -10,7 +10,6 @@ import {
   KeyRound,
   LockKeyhole,
   ShieldCheck,
-  Sparkles,
   UserRound
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -108,7 +107,6 @@ export default function AuthPage({ initialTab = "login" }: { initialTab?: Tab })
         <Link to="/" className="back-link"><ArrowLeft size={18} /> Вернуться на главную</Link>
         <Logo />
         <div className="auth-header-right">
-          <span className="secure-pill"><ShieldCheck size={16} /> Безопасное соединение</span>
           <a href="/#faq">Помощь</a>
         </div>
       </header>
@@ -118,7 +116,6 @@ export default function AuthPage({ initialTab = "login" }: { initialTab?: Tab })
           <div className="auth-tabs">
             <button className={tab === "login" ? "active" : ""} onClick={() => { setTab("login"); setError(""); }}>Вход</button>
             <button className={tab === "register" ? "active" : ""} onClick={() => { setTab("register"); setError(""); }}>Регистрация</button>
-            <span className="auth-online"><span className="live-dot" /> Демо-контур активен</span>
           </div>
 
           {tab === "login" ? (
@@ -143,7 +140,7 @@ export default function AuthPage({ initialTab = "login" }: { initialTab?: Tab })
               </form>
               <div className="demo-access">
                 <div className="demo-access-head">
-                  <span className="eyebrow"><Sparkles size={14} /> Демо-доступ</span>
+                  <span className="eyebrow">Демо-доступ</span>
                   {hint.data?.password_hint && <span>Пароль: <code>{hint.data.password_hint}</code></span>}
                 </div>
                 <p>Выберите роль — логин и пароль заполнятся автоматически.</p>
@@ -196,23 +193,13 @@ export default function AuthPage({ initialTab = "login" }: { initialTab?: Tab })
         </section>
 
         <aside className="auth-aside">
-          <span className="eyebrow"><Sparkles size={14} /> Финансирование МСП за 3 минуты</span>
-          <h2>Быстрый старт финансирования вашего бизнеса</h2>
-          <p>Заявка, проверки и решение — в одном кабинете. Без внешних подтверждений и лишних переходов.</p>
-          <div className="auth-metrics">
-            <div><strong>до 50 млн ₽</strong><span>лимит</span></div>
-            <div><strong>от 13,8%</strong><span>ставка</span></div>
-            <div><strong>3 минуты</strong><span>на заявку</span></div>
-          </div>
+          <span className="eyebrow">Кредит для малого бизнеса</span>
+          <h2>Заявка, проверки и решение в одном кабинете</h2>
+          <p>Подберите продукт под задачу бизнеса, проверьте компанию по ИНН и следите за решением без звонков и писем.</p>
           <div className="auth-benefits">
             <div><span className="benefit-icon"><Building2 size={19} /></span><div><strong>Данные вводятся один раз</strong><p>ИНН подтягивает компанию из демонстрационного реестра.</p></div></div>
             <div><span className="benefit-icon"><CheckCircle2 size={19} /></span><div><strong>Статус всегда виден</strong><p>Таймлайн, история и центр уведомлений внутри продукта.</p></div></div>
             <div><span className="benefit-icon"><LockKeyhole size={19} /></span><div><strong>Прозрачное решение</strong><p>Факторы скоринга и понятная причина для каждого исхода.</p></div></div>
-          </div>
-          <div className="auth-quote">
-            <div className="quote-stars">Демо-сценарий</div>
-            <p>«Подайте заявку по одному из восьми синтетических ИНН и пройдите путь до демонстрационной выдачи средств».</p>
-            <span>CreditPath · прототип</span>
           </div>
           <div className="auth-security"><ShieldCheck size={19} /><span>Серверная проверка ролей, аудит действий и короткоживущие токены.</span></div>
         </aside>

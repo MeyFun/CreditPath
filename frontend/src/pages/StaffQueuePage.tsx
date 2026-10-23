@@ -7,7 +7,6 @@ import {
   Filter,
   Search,
   ShieldCheck,
-  Sparkles,
   TriangleAlert
 } from "lucide-react";
 import { useState } from "react";
@@ -102,7 +101,7 @@ export default function StaffQueuePage() {
                   </div>
                 </div>
                 <div className="queue-actions">
-                  {app.status === "NEED_INFO" ? <Badge tone="warning"><Clock3 size={13} /> Ждём клиента</Badge> : app.status === "IN_REVIEW" ? <Badge tone="info"><Sparkles size={13} /> Нужно решение</Badge> : <Badge tone="neutral">Завершено</Badge>}
+                  {app.status === "NEED_INFO" ? <Badge tone="warning"><Clock3 size={13} /> Ждём клиента</Badge> : app.status === "IN_REVIEW" ? <Badge tone="info">Нужно решение</Badge> : <Badge tone="neutral">Завершено</Badge>}
                   <Link className="btn btn-primary btn-sm" to={`/staff/applications/${app.id}`}>Открыть <ArrowRight size={15} /></Link>
                 </div>
               </Card>

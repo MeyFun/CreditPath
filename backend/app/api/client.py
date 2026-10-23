@@ -176,6 +176,11 @@ def dashboard(db: Session = Depends(get_db), user: User = Depends(get_current_us
         )
         if snapshot:
             company = snapshot.registry_data
+        else:
+            try:
+                company = fetch_registry(user.company_inn)
+            except ExternalServiceError:
+                company = None
     return {
         "applications": items,
         "counts": counts,
