@@ -14,6 +14,8 @@ erDiagram
     APPLICATIONS ||--o{ NOTIFICATIONS : "связанные"
     APPLICATIONS ||--o{ APPLICATIONS : "previous_application_id"
     SCORING_CONFIGS }o--|| USERS : "создал версию"
+    USERS ||--o{ USERS : "связанное лицо"
+    USERS ||--o{ NEWS_ITEMS : "опубликовал"
 
     USERS {
         int id PK
@@ -22,6 +24,7 @@ erDiagram
         string full_name
         string role "client | employee | admin"
         string company_inn
+        int related_employee_id FK "связанное лицо сотрудника"
         bool is_active
         datetime created_at
         datetime last_login_at
@@ -155,6 +158,20 @@ erDiagram
         json after
         string previous_hash
         string entry_hash UK
+    }
+```
+
+```mermaid
+erDiagram
+    NEWS_ITEMS {
+        int id PK
+        string title
+        text body
+        string category
+        json targeting "okved_prefixes, opf, products, statuses, max_age_months"
+        bool is_active
+        datetime published_at
+        int created_by_id FK
     }
 ```
 

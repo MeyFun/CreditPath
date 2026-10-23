@@ -343,6 +343,33 @@
         ]
       }
     },
+    "/api/client/news": {
+      "get": {
+        "tags": [
+          "Кабинет клиента"
+        ],
+        "summary": "News Feed",
+        "description": "Лента новостей под профиль: ОКВЭД, ОПФ, возраст бизнеса, продукты и статусы заявок.",
+        "operationId": "news_feed_api_client_news_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientNewsFeed"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/client/company": {
       "get": {
         "tags": [
@@ -670,6 +697,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "202": {
             "description": "Successful Response",
@@ -1044,68 +1081,6 @@
             "content": {
               "application/json": {
                 "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/client/payment-schedule": {
-      "get": {
-        "tags": [
-          "Кабинет клиента"
-        ],
-        "summary": "Payment Schedule",
-        "operationId": "payment_schedule_api_client_payment_schedule_get",
-        "parameters": [
-          {
-            "name": "amount",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "number",
-              "title": "Amount"
-            }
-          },
-          {
-            "name": "rate",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "number",
-              "title": "Rate"
-            }
-          },
-          {
-            "name": "term_months",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Term Months"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Payment Schedule Api Client Payment Schedule Get"
-                }
               }
             }
           },
@@ -2086,6 +2061,137 @@
         }
       }
     },
+    "/api/admin/news": {
+      "get": {
+        "tags": [
+          "Администрирование"
+        ],
+        "summary": "List News",
+        "operationId": "list_news_api_admin_news_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/NewsOut"
+                  },
+                  "type": "array",
+                  "title": "Response List News Api Admin News Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Администрирование"
+        ],
+        "summary": "Create News",
+        "operationId": "create_news_api_admin_news_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewsCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewsOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/news/{news_id}": {
+      "patch": {
+        "tags": [
+          "Администрирование"
+        ],
+        "summary": "Update News",
+        "operationId": "update_news_api_admin_news__news_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "news_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "News Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewsUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewsOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/notifications": {
       "get": {
         "tags": [
@@ -2774,6 +2880,20 @@
             "type": "boolean",
             "title": "Can Decide",
             "default": false
+          },
+          "previous_decisions": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Previous Decisions",
+            "default": []
+          },
+          "related_party": {
+            "type": "boolean",
+            "title": "Related Party",
+            "default": false
           }
         },
         "type": "object",
@@ -3258,6 +3378,75 @@
         ],
         "title": "Body_upload_document_api_client_applications__application_id__documents_post"
       },
+      "ClientNewsFeed": {
+        "properties": {
+          "profile": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Profile"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ClientNewsOut"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "profile",
+          "items"
+        ],
+        "title": "ClientNewsFeed"
+      },
+      "ClientNewsOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "published_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Published At"
+          },
+          "personal": {
+            "type": "boolean",
+            "title": "Personal"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "body",
+          "category",
+          "published_at",
+          "personal",
+          "reasons"
+        ],
+        "title": "ClientNewsOut"
+      },
       "DashboardOut": {
         "properties": {
           "applications": {
@@ -3315,6 +3504,17 @@
               "reject"
             ],
             "title": "Action"
+          },
+          "product_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Id"
           },
           "approved_amount": {
             "anyOf": [
@@ -3547,6 +3747,195 @@
           "message"
         ],
         "title": "MessageOut"
+      },
+      "NewsCreate": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 3,
+            "title": "Title"
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 3,
+            "title": "Body"
+          },
+          "category": {
+            "type": "string",
+            "maxLength": 40,
+            "title": "Category",
+            "default": "general"
+          },
+          "targeting": {
+            "$ref": "#/components/schemas/NewsTargeting"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "body"
+        ],
+        "title": "NewsCreate"
+      },
+      "NewsOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "targeting": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Targeting"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "published_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Published At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "body",
+          "category",
+          "targeting",
+          "is_active",
+          "published_at"
+        ],
+        "title": "NewsOut"
+      },
+      "NewsTargeting": {
+        "properties": {
+          "okved_prefixes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Okved Prefixes"
+          },
+          "opf": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Opf"
+          },
+          "products": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Products"
+          },
+          "statuses": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Statuses"
+          },
+          "max_age_months": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 600.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Age Months"
+          }
+        },
+        "type": "object",
+        "title": "NewsTargeting"
+      },
+      "NewsUpdate": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160,
+                "minLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000,
+                "minLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "targeting": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NewsTargeting"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "title": "NewsUpdate"
       },
       "NotificationOut": {
         "properties": {
@@ -3966,6 +4355,18 @@
               }
             ],
             "title": "Declared Profit"
+          },
+          "company_inn": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Inn"
           }
         },
         "type": "object",
@@ -4039,6 +4440,43 @@
           "config"
         ],
         "title": "ScoringConfigUpdate"
+      },
+      "SubmitRequest": {
+        "properties": {
+          "signer_position": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "ceo",
+              "cfo",
+              "accountant",
+              "authorized",
+              "entrepreneur"
+            ],
+            "title": "Signer Position"
+          },
+          "authority_confirmed": {
+            "type": "boolean",
+            "title": "Authority Confirmed"
+          },
+          "consent_bki": {
+            "type": "boolean",
+            "title": "Consent Bki"
+          },
+          "consent_personal_data": {
+            "type": "boolean",
+            "title": "Consent Personal Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "signer_position",
+          "authority_confirmed",
+          "consent_bki",
+          "consent_personal_data"
+        ],
+        "title": "SubmitRequest",
+        "description": "Подтверждения заявителя при отправке: полномочия и согласия."
       },
       "TokenResponse": {
         "properties": {

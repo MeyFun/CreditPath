@@ -22,7 +22,7 @@ flowchart LR
 | Компонент | Ответственность |
 |---|---|
 | `frontend` | React 18 + TypeScript + Vite, React Router, TanStack Query. Дизайн-система на CSS. Сборка в статические файлы, runtime — nginx. |
-| `backend` | FastAPI, SQLAlchemy 2, Alembic, Pydantic v2. Аутентификация, RBAC, конечный автомат, автоматические проверки, скоринг, кредитная логика, назначение, уведомления, аудит. |
+| `backend` | FastAPI, SQLAlchemy 2, Alembic, Pydantic v2. Аутентификация, RBAC, конечный автомат, автоматические проверки, скоринг, кредитная логика, назначение, уведомления, персональная лента новостей, аудит. |
 | `db` | PostgreSQL 16, том `postgres_data`, healthcheck `pg_isready`. |
 | `registry-mock` | Синтетический реестр компаний, статический JSON внутри образа. |
 | `bki-mock` | Синтетическая кредитная история, статический JSON внутри образа. |
@@ -43,6 +43,7 @@ flowchart TB
       Assign["assignment"]
       Audit["audit chain"]
       Notify["notifications"]
+      News["news (персональная лента)"]
       Serialize["serializers"]
     end
     Services --> Models["SQLAlchemy models"]
