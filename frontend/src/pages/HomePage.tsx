@@ -15,6 +15,7 @@ import {
   Route,
   ShieldCheck,
   ShoppingBag,
+  Sparkles,
   WalletCards
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -73,8 +74,6 @@ export default function HomePage() {
   const products = productsQuery.data ?? [];
   const [activeCode, setActiveCode] = useState("OBOROT");
   const activeProduct = products.find((item) => item.code === activeCode) ?? products[0];
-  const maxAmount = products.length ? Math.max(...products.map((item) => item.max_amount)) : null;
-  const minRate = products.length ? Math.min(...products.map((item) => item.rate)) : null;
   const [amount, setAmount] = useState(5_000_000);
   const [term, setTerm] = useState(24);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -123,6 +122,7 @@ export default function HomePage() {
       </header>
 
       <div className="demo-strip">
+        <Sparkles size={15} />
         <span>Демонстрационный прототип. Все данные синтетические, подписание и зачисление средств имитируются.</span>
       </div>
 
@@ -142,9 +142,9 @@ export default function HomePage() {
               <a className="btn btn-secondary btn-lg" href="#products">Подобрать продукт</a>
             </div>
             <div className="hero-stats">
-              <div><strong>{maxAmount ? `до ${formatMoney(maxAmount)}` : "—"}</strong><span>лимит финансирования</span></div>
-              <div><strong>{minRate ? `от ${minRate.toFixed(1).replace(".", ",")}%` : "—"}</strong><span>ставка по продуктам</span></div>
-              <div><strong>{products.length || "—"}</strong><span>кредитных продукта в каталоге</span></div>
+              <div><strong>до 50 млн ₽</strong><span>лимит финансирования</span></div>
+              <div><strong>от 13,8%</strong><span>ставка по продуктам</span></div>
+              <div><strong>~10 минут</strong><span>на подачу заявки</span></div>
             </div>
           </div>
           <div className="hero-visual" aria-hidden="true">
@@ -156,7 +156,7 @@ export default function HomePage() {
               </div>
               <div className="hero-offer">
                 <span>Предварительный лимит</span>
-                <strong>5 000 000 ₽</strong>
+                <strong>5 млн ₽</strong>
                 <div className="hero-offer-meta">
                   <span>Срок <b>24 мес.</b></span>
                   <span>Ставка <b>14,5%</b></span>
@@ -178,6 +178,7 @@ export default function HomePage() {
               <span className="mini-icon mini-icon-dark"><Landmark size={18} /></span>
               <div><small>Решение сотрудника</small><strong>Прозрачные причины</strong></div>
             </div>
+            <div className="hero-orbit" />
           </div>
         </section>
 
@@ -278,7 +279,7 @@ export default function HomePage() {
                 <div><span>Сумма</span><strong>{formatMoney(amount)}</strong></div>
                 <div><span>Переплата</span><strong>{formatMoney(payment * term - amount)}</strong></div>
               </div>
-              <div className="calc-security"><ShieldCheck size={18} /><span>Расчёт выполняется в кабинете, данные никуда не передаются.</span></div>
+              <div className="calc-security"><ShieldCheck size={18} /><span>Никаких скрытых комиссий. Данные для расчёта не покидают продукт.</span></div>
               <Link className="btn btn-primary btn-full" to={user ? "/app/applications/new" : "/login"} state={{ from: "/app/applications/new" }}>
                 Перейти к заявке <ArrowRight size={16} />
               </Link>
@@ -344,7 +345,7 @@ export default function HomePage() {
           <div className="footer-brand">
             <Logo />
             <p>Демонстрационный прототип кредитного кабинета для малого и микробизнеса.</p>
-            <span className="footer-demo">Демонстрационный прототип для хакатона, 2026</span>
+            <span className="footer-demo"><Sparkles size={14} /> Hackathon demo · 2026</span>
           </div>
           <div><h4>Продукты</h4><a href="#products">Оборотный кредит</a><a href="#products">Кредит на оборудование</a><a href="#products">Овердрафт</a></div>
           <div><h4>Процесс</h4><a href="#how">Как это работает</a><a href="#calculator">Калькулятор</a><a href="#faq">Вопросы и ответы</a></div>

@@ -67,7 +67,7 @@ export default function AdminAudit() {
       <div className="audit-summary">
         <Card className="audit-integrity">
           <span className="audit-shield"><ShieldCheck size={25} /></span>
-          <div><span className="eyebrow">Неизменяемый журнал</span><h2>Только добавление, цепочка SHA-256</h2><p>Каждая запись содержит хеш предыдущей. Проверка доступна только администратору.</p></div>
+          <div><span className="eyebrow">Неизменяемый журнал</span><h2>Append-only + SHA-256</h2><p>Каждая запись содержит хеш предыдущей. Проверка доступна только администратору.</p></div>
           <Badge tone="success">Защищено</Badge>
         </Card>
         <Card className="audit-warning">

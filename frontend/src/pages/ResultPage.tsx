@@ -10,6 +10,7 @@ import {
   Info,
   RefreshCw,
   ShieldCheck,
+  Sparkles,
   UploadCloud,
   XCircle
 } from "lucide-react";
@@ -296,7 +297,7 @@ export default function ResultPage() {
                 <Link className="btn btn-primary" to="/app/applications/new"><RefreshCw size={16} /> Подать новую заявку</Link>
               )}
             </div>
-            <DemoNote>Подписание и зачисление средств в этом прототипе имитируются. Реальные деньги не перечисляются.</DemoNote>
+            <DemoNote><Sparkles size={13} /> Подписание и зачисление средств в этом прототипе имитируются. Реальные деньги не перечисляются.</DemoNote>
           </Card>
           <Modal
             open={confirmDecline}
@@ -322,6 +323,7 @@ export default function ResultPage() {
               <div className="summary-lines">
                 <div><span>Всего к возврату</span><strong>{formatMoney(payment * term)}</strong></div>
                 <div><span>Переплата</span><strong>{formatMoney(payment * term - amount)}</strong></div>
+                <div><span>Комиссии</span><strong>0 ₽</strong></div>
               </div>
               <p className="muted small">Расчёт предварительный. Полный график формируется в демонстрационной оферте.</p>
             </Card>
