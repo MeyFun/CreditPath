@@ -22,6 +22,7 @@ import {
   type ReactNode,
   type SelectHTMLAttributes
 } from "react";
+import { createPortal } from "react-dom";
 import type { Event } from "../types";
 
 export function formatMoney(value: number | null | undefined, fraction = 0): string {
@@ -335,6 +336,7 @@ const EVENT_LABELS: Record<string, string> = {
   SIGNED_DEMO: "Демонстрационное подписание",
   DISBURSED_DEMO: "Демонстрационное зачисление",
   DOCUMENT_UPLOADED: "Документ загружен",
+  RISK_OVERRIDE: "Риск-исключение при одобрении",
   TECHNICAL_RETRY_REQUIRED: "Проверка приостановлена",
   REASSIGNMENT_REQUIRED: "Требуется переназначение",
   MANUALLY_ASSIGNED: "Назначение администратором",
@@ -398,11 +400,18 @@ export function Modal({
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKey);
+    };
   }, [open, onClose]);
   if (!open) return null;
-  return (
+  // Портал обязателен: у page-stack есть transform-анимация, из-за которой
+  // position: fixed считался бы относительно списка, а не окна браузера.
+  return createPortal(
     <div className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby={id}>
         <div className="modal-head">
@@ -414,7 +423,8 @@ export function Modal({
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-foot">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
