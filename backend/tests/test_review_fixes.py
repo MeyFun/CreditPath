@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.models import ApplicationEvent, Notification
-from app.security import login_rate_limiter
+from app.security import LoginRateLimiter, login_rate_limiter
 from app.services.credit_logic import evaluate_application
 from app.services.inn import validate_inn
 from app.services.scoring_config import load_default_config
@@ -149,3 +149,15 @@ def test_login_rate_limit_ignores_spoofed_forwarded_for(client):
         assert blocked.status_code == 429
     finally:
         login_rate_limiter._attempts.clear()
+
+
+def test_username_limiter_is_softer_than_ip_limiter():
+    from fastapi import HTTPException
+
+    limiter = LoginRateLimiter(limit=3)
+    for _ in range(3):
+        limiter.check("client2")
+        limiter.failure("client2")
+    with pytest.raises(HTTPException) as blocked:
+        limiter.check("client2")
+    assert blocked.value.status_code == 429

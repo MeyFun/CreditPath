@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     access_token_minutes: int = 60
     cors_origins: str = "http://localhost:8080,http://127.0.0.1:8080"
     login_rate_limit: int = 5
+    # Мягкий лимит на логин со всех IP: тормозит распределённый перебор, но не даёт
+    # заблокировать чужой аккаунт парой попыток. Блок снимается по окончании окна.
+    login_user_rate_limit: int = 20
     login_rate_window_seconds: int = 300
     demo_password: str = "DemoPass123!"
     seed_demo: bool = True

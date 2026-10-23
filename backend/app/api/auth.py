@@ -16,6 +16,7 @@ from ..security import (
     get_current_user,
     hash_password,
     login_rate_limiter,
+    login_user_rate_limiter,
     verify_password,
 )
 from ..services.audit import write_audit
@@ -59,14 +60,17 @@ def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)
     username = payload.username.lower().strip()
     rate_key = f"{client_ip(request)}:{username}"
     login_rate_limiter.check(rate_key)
+    login_user_rate_limiter.check(username)
     user = db.scalar(select(User).where(User.username == username))
     if user is None or not user.is_active or not verify_password(payload.password, user.password_hash):
         login_rate_limiter.failure(rate_key)
+        login_user_rate_limiter.failure(username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Неверный логин или пароль",
         )
     login_rate_limiter.success(rate_key)
+    login_user_rate_limiter.success(username)
     user.last_login_at = datetime.now(timezone.utc)
     write_audit(
         db,

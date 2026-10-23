@@ -100,7 +100,8 @@ require_admin = require_roles(ROLE_ADMIN)
 
 
 class LoginRateLimiter:
-    def __init__(self) -> None:
+    def __init__(self, limit: int | None = None) -> None:
+        self._limit = limit
         self._attempts: dict[str, deque[float]] = defaultdict(deque)
         self._lock = threading.Lock()
 
@@ -113,7 +114,8 @@ class LoginRateLimiter:
         now = time.time()
         with self._lock:
             self._trim(key, now)
-            if len(self._attempts[key]) >= settings.login_rate_limit:
+            limit = self._limit if self._limit is not None else settings.login_rate_limit
+            if len(self._attempts[key]) >= limit:
                 retry_after = max(1, int(settings.login_rate_window_seconds - (now - self._attempts[key][0])))
                 raise HTTPException(
                     status_code=429,
@@ -132,6 +134,7 @@ class LoginRateLimiter:
 
 
 login_rate_limiter = LoginRateLimiter()
+login_user_rate_limiter = LoginRateLimiter(settings.login_user_rate_limit)
 
 
 def client_ip(request: Request) -> str:
