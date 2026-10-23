@@ -1,13 +1,10 @@
 import type {
-  AdminNewsItem,
   ApplicationDetail,
   ApplicationSummary,
   AuditItem,
   AuditVerification,
-  ClientNewsFeed,
   DashboardData,
   EmployeeStats,
-  NewsTargeting,
   NotificationItem,
   Product,
   RegistryCompany,
@@ -99,7 +96,6 @@ export const api = {
   },
   client: {
     dashboard: () => request<DashboardData>("/client/dashboard"),
-    news: () => request<ClientNewsFeed>("/client/news"),
     company: () => request<{ user: User; company: RegistryCompany | null; source: string | null }>("/client/company"),
     applications: (group = "all", search = "") =>
       request<ApplicationSummary[]>(
@@ -203,12 +199,7 @@ export const api = {
     scoringConfig: () => request<ScoringConfig>("/admin/scoring-config"),
     scoringHistory: () => request<ScoringConfig[]>("/admin/scoring-config/history"),
     updateScoringConfig: (config: Record<string, unknown>) =>
-      request<ScoringConfig>("/admin/scoring-config", json({ config })),
-    news: () => request<AdminNewsItem[]>("/admin/news"),
-    createNews: (payload: { title: string; body: string; category: string; targeting: Partial<NewsTargeting> }) =>
-      request<AdminNewsItem>("/admin/news", json(payload)),
-    updateNews: (id: number, payload: Partial<Omit<AdminNewsItem, "id" | "published_at">>) =>
-      request<AdminNewsItem>(`/admin/news/${id}`, { method: "PATCH", body: JSON.stringify(payload) })
+      request<ScoringConfig>("/admin/scoring-config", json({ config }))
   }
 };
 

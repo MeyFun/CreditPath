@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpenCheck, History, Newspaper, Pencil, Plus, RefreshCw, SlidersHorizontal } from "lucide-react";
+import { BookOpenCheck, History, Pencil, RefreshCw, SlidersHorizontal } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../api";
 import {
@@ -16,9 +16,9 @@ import {
   PageHeader,
   useToast
 } from "../components/ui";
-import type { AdminNewsItem, Product } from "../types";
+import type { Product } from "../types";
 
-type Tab = "products" | "scoring" | "news";
+type Tab = "products" | "scoring";
 
 const SCORING_FIELDS: { path: string; label: string; group: string; step?: number }[] = [
   { path: "base_score", label: "Базовая оценка", group: "База", step: 1 },
@@ -70,14 +70,13 @@ export default function AdminDictionaries() {
       <PageHeader
         eyebrow="Администрирование"
         title="Справочники и лимиты"
-        description="Продукты, параметры скоринга и новости кабинета. Все изменения фиксируются в аудите."
+        description="Продукты и параметры скоринга. Изменения версионируются и фиксируются в аудите."
       />
       <div className="tabs-row section-tabs">
         <button className={tab === "products" ? "active" : ""} onClick={() => setTab("products")}><BookOpenCheck size={16} /> Продукты</button>
         <button className={tab === "scoring" ? "active" : ""} onClick={() => setTab("scoring")}><SlidersHorizontal size={16} /> Параметры скоринга</button>
-        <button className={tab === "news" ? "active" : ""} onClick={() => setTab("news")}><Newspaper size={16} /> Новости</button>
       </div>
-      {tab === "products" ? <ProductsTab /> : tab === "scoring" ? <ScoringTab /> : <NewsTab />}
+      {tab === "products" ? <ProductsTab /> : <ScoringTab />}
     </div>
   );
 }
@@ -244,155 +243,5 @@ function ScoringTab() {
         </div>
       </Card>
     </div>
-  );
-}
-
-const NEWS_STATUSES: { code: string; label: string }[] = [
-  { code: "NEED_INFO", label: "Требуется уточнение" },
-  { code: "APPROVED", label: "Одобрено" },
-  { code: "APPROVED_CHANGED", label: "Одобрено на других условиях" },
-  { code: "REJECTED", label: "Отказ" },
-  { code: "DISBURSED", label: "Средства перечислены" }
-];
-
-const EMPTY_NEWS = {
-  title: "",
-  body: "",
-  okved: "",
-  maxAge: "",
-  opf: [] as string[],
-  products: [] as string[],
-  statuses: [] as string[]
-};
-
-function toggle(list: string[], value: string): string[] {
-  return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
-}
-
-function targetingLabel(item: AdminNewsItem): string {
-  const t = item.targeting;
-  const parts = [
-    t.okved_prefixes?.length && `ОКВЭД ${t.okved_prefixes.join(", ")}`,
-    t.opf?.length && t.opf.join("/"),
-    t.max_age_months && `до ${t.max_age_months} мес.`,
-    t.products?.length && `продукты: ${t.products.join(", ")}`,
-    t.statuses?.length && `статусы: ${t.statuses.join(", ")}`
-  ].filter(Boolean);
-  return parts.length ? parts.join(" · ") : "Все клиенты";
-}
-
-function NewsTab() {
-  const queryClient = useQueryClient();
-  const { push } = useToast();
-  const news = useQuery({ queryKey: ["admin-news"], queryFn: api.admin.news });
-  const products = useQuery({ queryKey: ["admin-products"], queryFn: api.admin.products });
-  const [form, setForm] = useState(EMPTY_NEWS);
-  const [open, setOpen] = useState(false);
-  const [error, setError] = useState("");
-
-  const create = useMutation({
-    mutationFn: () =>
-      api.admin.createNews({
-        title: form.title,
-        body: form.body,
-        category: "admin",
-        targeting: {
-          okved_prefixes: form.okved.split(",").map((item) => item.trim()).filter(Boolean),
-          opf: form.opf,
-          products: form.products,
-          statuses: form.statuses,
-          max_age_months: form.maxAge ? Number(form.maxAge) : null
-        }
-      }),
-    onSuccess: () => {
-      push("Новость опубликована", "success");
-      setOpen(false);
-      setForm(EMPTY_NEWS);
-      queryClient.invalidateQueries({ queryKey: ["admin-news"] });
-    },
-    onError: (err) => setError(err instanceof ApiError ? err.message : "Не удалось опубликовать новость")
-  });
-
-  const toggleActive = useMutation({
-    mutationFn: (item: AdminNewsItem) => api.admin.updateNews(item.id, { is_active: !item.is_active }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-news"] }),
-    onError: (err) => push(err instanceof ApiError ? err.message : "Не удалось изменить новость", "danger")
-  });
-
-  if (news.isLoading) return <LoadingBlock />;
-  if (news.isError) return <Alert tone="danger">Не удалось загрузить новости.</Alert>;
-
-  return (
-    <>
-      <Card>
-        <div className="card-head">
-          <div><span className="eyebrow">Лента клиентов</span><h2>Новости и таргетинг</h2></div>
-          <Button icon={<Plus size={16} />} onClick={() => { setError(""); setOpen(true); }}>Новая новость</Button>
-        </div>
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead><tr><th>Новость</th><th>Кому показывается</th><th>Дата</th><th>Статус</th><th /></tr></thead>
-            <tbody>
-              {news.data!.map((item) => (
-                <tr key={item.id}>
-                  <td><strong>{item.title}</strong><small className="block muted">{item.body}</small></td>
-                  <td>{targetingLabel(item)}</td>
-                  <td>{formatDate(item.published_at)}</td>
-                  <td>{item.is_active ? <Badge tone="success">Опубликована</Badge> : <Badge tone="neutral">Скрыта</Badge>}</td>
-                  <td>
-                    <Button
-                      variant="ghost"
-                      className="btn-sm"
-                      loading={toggleActive.isPending && toggleActive.variables?.id === item.id}
-                      onClick={() => toggleActive.mutate(item)}
-                    >
-                      {item.is_active ? "Скрыть" : "Показать"}
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-      <Modal
-        open={open}
-        title="Новая новость"
-        onClose={() => setOpen(false)}
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setOpen(false)}>Отмена</Button>
-            <Button loading={create.isPending} disabled={form.title.trim().length < 3 || form.body.trim().length < 3} onClick={() => create.mutate()}>Опубликовать</Button>
-          </>
-        }
-      >
-        {error && <Alert tone="danger">{error}</Alert>}
-        <Field label="Заголовок"><Input value={form.title} maxLength={160} onChange={(event) => setForm({ ...form, title: event.target.value })} /></Field>
-        <Field label="Текст"><textarea className="input textarea" rows={3} value={form.body} maxLength={4000} onChange={(event) => setForm({ ...form, body: event.target.value })} /></Field>
-        <div className="form-grid">
-          <Field label="Префиксы ОКВЭД" hint="Через запятую, например 46, 47.1"><Input value={form.okved} onChange={(event) => setForm({ ...form, okved: event.target.value })} /></Field>
-          <Field label="Возраст бизнеса до, мес." hint="Пусто — без ограничения"><Input type="number" min={1} value={form.maxAge} onChange={(event) => setForm({ ...form, maxAge: event.target.value })} /></Field>
-        </div>
-        <fieldset className="news-targeting">
-          <legend>Форма бизнеса</legend>
-          {["ООО", "ИП"].map((opf) => (
-            <label className="inline-checkbox" key={opf}><input type="checkbox" checked={form.opf.includes(opf)} onChange={() => setForm({ ...form, opf: toggle(form.opf, opf) })} />{opf}</label>
-          ))}
-        </fieldset>
-        <fieldset className="news-targeting">
-          <legend>Продукт в заявках</legend>
-          {(products.data ?? []).map((product) => (
-            <label className="inline-checkbox" key={product.code}><input type="checkbox" checked={form.products.includes(product.code)} onChange={() => setForm({ ...form, products: toggle(form.products, product.code) })} />{product.name}</label>
-          ))}
-        </fieldset>
-        <fieldset className="news-targeting">
-          <legend>Статус заявки</legend>
-          {NEWS_STATUSES.map((status) => (
-            <label className="inline-checkbox" key={status.code}><input type="checkbox" checked={form.statuses.includes(status.code)} onChange={() => setForm({ ...form, statuses: toggle(form.statuses, status.code) })} />{status.label}</label>
-          ))}
-        </fieldset>
-        <p className="muted">Без условий новость увидят все клиенты. Каждое выбранное условие обязательно.</p>
-      </Modal>
-    </>
   );
 }

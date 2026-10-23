@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from datetime import datetime
 from typing import Any, Literal
 
@@ -310,72 +309,3 @@ class MessageOut(BaseModel):
 class HealthOut(BaseModel):
     status: str
     version: str
-
-
-NEWS_OPF = {"ООО", "ИП"}
-
-
-class NewsTargeting(BaseModel):
-    okved_prefixes: list[str] = Field(default_factory=list, max_length=20)
-    opf: list[str] = Field(default_factory=list)
-    products: list[str] = Field(default_factory=list)
-    statuses: list[str] = Field(default_factory=list)
-    max_age_months: int | None = Field(default=None, ge=1, le=600)
-
-    @field_validator("okved_prefixes")
-    @classmethod
-    def _okved(cls, value: list[str]) -> list[str]:
-        cleaned = [item.strip() for item in value if item.strip()]
-        for item in cleaned:
-            if not re.fullmatch(r"[0-9]{2}(\.[0-9]{1,2}){0,2}", item):
-                raise ValueError(f"Некорректный префикс ОКВЭД: {item}")
-        return cleaned
-
-    @field_validator("opf")
-    @classmethod
-    def _opf(cls, value: list[str]) -> list[str]:
-        if any(item not in NEWS_OPF for item in value):
-            raise ValueError("ОПФ: только «ООО» или «ИП»")
-        return value
-
-
-class NewsCreate(BaseModel):
-    title: str = Field(min_length=3, max_length=160)
-    body: str = Field(min_length=3, max_length=4000)
-    category: str = Field(default="general", max_length=40)
-    targeting: NewsTargeting = Field(default_factory=NewsTargeting)
-
-
-class NewsUpdate(BaseModel):
-    title: str | None = Field(default=None, min_length=3, max_length=160)
-    body: str | None = Field(default=None, min_length=3, max_length=4000)
-    category: str | None = Field(default=None, max_length=40)
-    targeting: NewsTargeting | None = None
-    is_active: bool | None = None
-
-
-class NewsOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    title: str
-    body: str
-    category: str
-    targeting: dict[str, Any]
-    is_active: bool
-    published_at: datetime
-
-
-class ClientNewsOut(BaseModel):
-    id: int
-    title: str
-    body: str
-    category: str
-    published_at: datetime
-    personal: bool
-    reasons: list[str]
-
-
-class ClientNewsFeed(BaseModel):
-    profile: dict[str, Any]
-    items: list[ClientNewsOut]

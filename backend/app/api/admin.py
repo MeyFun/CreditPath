@@ -15,7 +15,6 @@ from ..models import (
     Application,
     AuditLog,
     Document,
-    NewsItem,
     Product,
     ROLE_ADMIN,
     ROLE_EMPLOYEE,
@@ -28,9 +27,6 @@ from ..schemas import (
     AssignRequest,
     AuditOut,
     AuditVerifyOut,
-    NewsCreate,
-    NewsOut,
-    NewsUpdate,
     ProductOut,
     ProductUpdate,
     RoleUpdateRequest,
@@ -44,7 +40,7 @@ from ..services.audit import verify_audit_chain, write_audit
 from ..services.notifications import notify, notify_admins
 from ..services.scoring_config import get_active_config, validate_config
 from ..services.serializers import application_base_dict, application_detail_dict, product_dict
-from ..services.state_machine import ALLOWED_TRANSITIONS, IN_REVIEW, NEED_INFO, add_event
+from ..services.state_machine import IN_REVIEW, NEED_INFO, add_event
 
 router = APIRouter(prefix="/admin", tags=["Администрирование"])
 
@@ -355,67 +351,3 @@ def admin_download_document(
     if not path.exists():
         raise HTTPException(status_code=404, detail="Файл не найден")
     return FileResponse(path, media_type=document.content_type, filename=document.original_name)
-
-
-def _news_dict(item: NewsItem) -> dict:
-    return {
-        "title": item.title,
-        "body": item.body,
-        "category": item.category,
-        "targeting": item.targeting,
-        "is_active": item.is_active,
-    }
-
-
-def _check_targeting(db: Session, targeting: dict) -> None:
-    codes = set(db.scalars(select(Product.code)).all())
-    unknown_products = [code for code in targeting.get("products", []) if code not in codes]
-    if unknown_products:
-        raise HTTPException(status_code=422, detail=f"Неизвестные продукты: {', '.join(unknown_products)}")
-    unknown_statuses = [code for code in targeting.get("statuses", []) if code not in ALLOWED_TRANSITIONS]
-    if unknown_statuses:
-        raise HTTPException(status_code=422, detail=f"Неизвестные статусы: {', '.join(unknown_statuses)}")
-
-
-@router.get("/news", response_model=list[NewsOut])
-def list_news(db: Session = Depends(get_db), admin: User = Depends(require_admin)) -> list[NewsItem]:
-    return list(db.scalars(select(NewsItem).order_by(NewsItem.published_at.desc())).all())
-
-
-@router.post("/news", response_model=NewsOut, status_code=201)
-def create_news(payload: NewsCreate, db: Session = Depends(get_db), admin: User = Depends(require_admin)) -> NewsItem:
-    targeting = payload.targeting.model_dump()
-    _check_targeting(db, targeting)
-    item = NewsItem(
-        title=payload.title.strip(),
-        body=payload.body.strip(),
-        category=payload.category,
-        targeting=targeting,
-        created_by_id=admin.id,
-    )
-    db.add(item)
-    db.flush()
-    write_audit(db, actor=admin, action="news.created", entity_type="news", entity_id=item.id, after=_news_dict(item))
-    db.commit()
-    db.refresh(item)
-    return item
-
-
-@router.patch("/news/{news_id}", response_model=NewsOut)
-def update_news(
-    news_id: int, payload: NewsUpdate, db: Session = Depends(get_db), admin: User = Depends(require_admin)
-) -> NewsItem:
-    item = db.get(NewsItem, news_id)
-    if item is None:
-        raise HTTPException(status_code=404, detail="Новость не найдена")
-    before = _news_dict(item)
-    changes = payload.model_dump(exclude_unset=True)
-    if "targeting" in changes and changes["targeting"] is not None:
-        _check_targeting(db, changes["targeting"])
-    for name, value in changes.items():
-        if value is not None:
-            setattr(item, name, value)
-    write_audit(db, actor=admin, action="news.updated", entity_type="news", entity_id=item.id, before=before, after=_news_dict(item))
-    db.commit()
-    db.refresh(item)
-    return item

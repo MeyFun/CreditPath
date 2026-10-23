@@ -9,7 +9,6 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
-  Newspaper,
   Plus,
   ScrollText,
   Settings2,
@@ -44,7 +43,6 @@ const CLIENT_NAV: NavItem[] = [
   { to: "/app/applications", label: "Мои заявки", icon: ClipboardList, end: true },
   { to: "/app/applications/new", label: "Новая заявка", icon: Plus, end: true },
   { to: "/app/products", label: "Продукты", icon: FolderKanban },
-  { to: "/app/news", label: "Новости", icon: Newspaper },
   { to: "/app/company", label: "Профиль компании", icon: Building2 },
   { to: "/app/notifications", label: "Уведомления", icon: Bell }
 ];

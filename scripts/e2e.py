@@ -391,28 +391,6 @@ def run() -> None:
         check(related_detail.get("related_party") is True, "Сотрудник не видит отметку о связанном лице")
         print(f"✓ Связанное лицо: заявка client3 назначена {assigned_to}, не employee3")
 
-        # Персональная лента: client1 (ОКВЭД 46) и client3 (ИП, ОКВЭД 62) видят разное.
-        feed1 = client.get("/client/news", "client1")
-        feed3 = client.get("/client/news", "client3")
-        titles1 = {item["title"] for item in feed1["items"]}
-        titles3 = {item["title"] for item in feed3["items"]}
-        check(titles1 != titles3, "Ленты разных клиентов не должны совпадать")
-        published = client.post(
-            "/admin/news",
-            "admin",
-            {"title": "E2E: новость для ОКВЭД 46", "body": "Проверка таргетинга.", "category": "industry",
-             "targeting": {"okved_prefixes": ["46"]}},
-        )
-        check(
-            any(item["title"] == published["title"] for item in client.get("/client/news", "client1")["items"]),
-            "Новость для ОКВЭД 46 не появилась у client1",
-        )
-        check(
-            all(item["title"] != published["title"] for item in client.get("/client/news", "client3")["items"]),
-            "Новость для ОКВЭД 46 не должна попадать к client3",
-        )
-        print("✓ Новостная лента: персональная подборка и таргетинг администратора работают")
-
         print("\nE2E успешно завершён: все четыре исхода и служебные проверки пройдены.")
     finally:
         client.close()

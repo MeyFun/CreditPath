@@ -35,7 +35,6 @@ from ..schemas import (
     ApplicationDetail,
     ApplicationOut,
     ApplicationUpdate,
-    ClientNewsFeed,
     DashboardOut,
     DocumentOut,
     MessageOut,
@@ -50,7 +49,6 @@ from ..security import get_current_user, require_client
 from ..services.audit import write_audit
 from ..services.external import ExternalServiceError, fetch_registry
 from ..services.inn import validate_inn
-from ..services.news import build_context, personal_feed
 from ..services.serializers import application_base_dict, application_detail_dict
 from ..services.state_machine import (
     APPROVED,
@@ -187,23 +185,6 @@ def dashboard(db: Session = Depends(get_db), user: User = Depends(get_current_us
         "total_approved_amount": approved_total,
         "unread_notifications": unread,
         "company": company,
-    }
-
-
-@router.get("/news", response_model=ClientNewsFeed)
-def news_feed(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> dict:
-    """Лента новостей под профиль: ОКВЭД, ОПФ, возраст бизнеса, продукты и статусы заявок."""
-    context = build_context(db, user)
-    return {
-        "profile": {
-            "opf": context.opf,
-            "okved": context.okved,
-            "okved_name": context.okved_name,
-            "age_months": context.age_months,
-            "statuses": sorted(context.statuses),
-            "products": sorted(context.products.values()),
-        },
-        "items": personal_feed(db, context),
     }
 
 

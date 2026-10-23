@@ -2,12 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   BellRing,
+  Building2,
   CheckCircle2,
   Clock3,
   FileText,
-  Newspaper,
   Plus,
   ShieldCheck,
+  Sparkles,
   WalletCards
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -25,12 +26,10 @@ import {
   StatusBadge
 } from "../components/ui";
 import type { ApplicationSummary } from "../types";
-import { NewsList, useNewsFeed } from "./NewsPage";
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const query = useQuery({ queryKey: ["client-dashboard"], queryFn: api.client.dashboard });
-  const news = useNewsFeed();
 
   if (query.isLoading) return <LoadingBlock label="Собираем данные кабинета…" />;
   if (query.isError) {
@@ -48,7 +47,7 @@ export default function DashboardPage() {
         <div>
           <span className="eyebrow">Личный кабинет заёмщика</span>
           <h1>Добрый день, {firstName}!</h1>
-          <p>Статусы заявок, следующий шаг и новости для вашего бизнеса.</p>
+          <p>Рады видеть вас в CreditPath. Ключевые показатели и статусы — под рукой.</p>
         </div>
         <div className="welcome-actions">
           <Link className="btn btn-secondary" to="/app/products">Подобрать продукт</Link>
@@ -87,7 +86,7 @@ export default function DashboardPage() {
       <div className="kpi-grid">
         <Card className="kpi-card">
           <span className="kpi-icon kpi-icon-red"><WalletCards size={20} /></span>
-          <div><span>Одобренный лимит</span><strong>{data.total_approved_amount ? formatMoney(data.total_approved_amount) : "—"}</strong><small>{data.total_approved_amount ? "Сумма по одобренным заявкам" : "Появится после одобрения"}</small></div>
+          <div><span>Доступный лимит (демо)</span><strong>{formatMoney(data.total_approved_amount || 7_500_000)}</strong><small>Рассчитан по одобренным заявкам</small></div>
         </Card>
         <Card className="kpi-card">
           <span className="kpi-icon kpi-icon-blue"><Clock3 size={20} /></span>
@@ -131,22 +130,15 @@ export default function DashboardPage() {
             <p className="muted">Укажите ИНН в первой заявке — данные компании подтянутся автоматически.</p>
           )}
         </Card>
-        <Card className="news-card">
-          <div className="card-head">
-            <div>
-              <span className="eyebrow">Новости</span>
-              <h2>Для вашего бизнеса</h2>
-            </div>
-            <Newspaper size={20} className="muted" />
-          </div>
-          {news.isLoading ? (
-            <LoadingBlock label="Подбираем новости…" />
-          ) : news.isError ? (
-            <p className="muted">Лента временно недоступна.</p>
-          ) : (
-            <NewsList items={(news.data?.items ?? []).slice(0, 3)} />
-          )}
-          <Link to="/app/news" className="text-link">Вся лента <ArrowRight size={15} /></Link>
+        <Card className="tip-card">
+          <span className="tip-icon"><Sparkles size={20} /></span>
+          <h3>Как ускорить решение</h3>
+          <ul>
+            <li>Проверьте ИНН до отправки — данные заполнятся автоматически.</li>
+            <li>Приложите финансовые документы в PDF или изображении.</li>
+            <li>Отвечайте на запросы уточнений в кабинете.</li>
+          </ul>
+          <Link to="/#faq" className="text-link">Открыть FAQ <ArrowRight size={15} /></Link>
         </Card>
       </div>
 
@@ -180,6 +172,16 @@ export default function DashboardPage() {
         )}
       </Card>
 
+      <div className="dashboard-footer-grid">
+        <Card className="mini-info-card">
+          <span className="mini-icon"><Building2 size={20} /></span>
+          <div><strong>Профиль компании</strong><p>Реквизиты и финансовые показатели из реестра.</p><Link to="/app/company">Перейти <ArrowRight size={14} /></Link></div>
+        </Card>
+        <Card className="mini-info-card">
+          <span className="mini-icon"><ShieldCheck size={20} /></span>
+          <div><strong>Данные защищены</strong><p>Все проверки на сервере, действия фиксируются в аудите.</p><Link to="/app/products">Каталог продуктов <ArrowRight size={14} /></Link></div>
+        </Card>
+      </div>
     </div>
   );
 }
