@@ -113,40 +113,34 @@ def test_employee_cannot_access_own_application_in_service_workspace(client, db)
     assert "назначенных" in decision.json()["detail"].lower()
 
 
-def test_employee_and_admin_have_client_cabinet(client, db):
-    product = client.get("/api/public/products").json()[0]
+def test_staff_accounts_have_no_client_cabinet(client):
+    # Рабочая учётка сотрудника/администратора не действует как заявитель.
     for username in ("employee1", "admin"):
         headers = login(client, username)
-        dashboard = client.get("/api/client/dashboard", headers=headers)
-        assert dashboard.status_code == 200, dashboard.text
+        assert client.get("/api/client/dashboard", headers=headers).status_code == 403
+        assert client.get("/api/client/applications", headers=headers).status_code == 403
 
-        created = client.post(
-            "/api/client/applications",
-            headers=headers,
-            json={
-                "product_id": product["id"],
-                "amount": 1_000_000,
-                "term_months": 12,
-                "purpose": product["purposes"][0]["code"],
-                "company_inn": "9900000017",
-                "company_name": "ООО «Северный Ветер»",
-                "collateral": False,
-            },
-        )
-        assert created.status_code == 201, created.text
-        application_id = created.json()["id"]
 
-        detail = client.get(f"/api/client/applications/{application_id}", headers=headers)
-        assert detail.status_code == 200
-        assert detail.json()["company_name"] == "ООО «Северный Ветер»"
+def test_related_party_application_is_not_assigned_to_related_employee(client, db):
+    related_client = user_by_name(db, "client3")
+    employee3 = user_by_name(db, "employee3")
+    assert related_client.related_employee_id == employee3.id
 
-        mine = client.get("/api/client/applications", headers=headers)
-        assert mine.status_code == 200
-        assert any(item["id"] == application_id for item in mine.json())
-        expected_user = user_by_name(db, username)
-        assert all(
-            db.get(Application, item["id"]).user_id == expected_user.id for item in mine.json()
-        )
+    application = make_application(db, user=related_client, status="IN_REVIEW")
+    picked, _ = pick_employee(db, application, preferred_employee_id=employee3.id)
+    assert picked is None or picked.id != employee3.id
+
+    application.assigned_employee_id = employee3.id
+    db.commit()
+    detail = client.get(f"/api/employee/applications/{application.id}", headers=login(client, "employee3"))
+    assert detail.status_code == 404
+
+    employee1 = user_by_name(db, "employee1")
+    application.assigned_employee_id = employee1.id
+    db.commit()
+    detail = client.get(f"/api/employee/applications/{application.id}", headers=login(client, "employee1"))
+    assert detail.status_code == 200
+    assert detail.json()["related_party"] is True
 
 
 def test_admin_cannot_approve_own_client_application(client, db):

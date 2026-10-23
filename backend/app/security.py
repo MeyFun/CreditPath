@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from .config import settings
 from .db import get_db
-from .models import ROLE_ADMIN, ROLE_EMPLOYEE, User
+from .models import ROLE_ADMIN, ROLE_CLIENT, ROLE_EMPLOYEE, User
 
 password_hasher = PasswordHasher(time_cost=2, memory_cost=65536, parallelism=2)
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -94,6 +94,7 @@ def require_roles(*roles: str):
     return dependency
 
 
+require_client = require_roles(ROLE_CLIENT)
 require_employee = require_roles(ROLE_EMPLOYEE)
 require_admin = require_roles(ROLE_ADMIN)
 

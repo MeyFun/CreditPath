@@ -41,6 +41,9 @@ class User(Base):
     full_name: Mapped[str] = mapped_column(String(160), nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default=ROLE_CLIENT, index=True)
     company_inn: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    # Клиент — связанное лицо сотрудника банка (сам сотрудник или родственник).
+    # Его заявки не назначаются этому сотруднику.
+    related_employee_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -207,6 +210,22 @@ class ScoringConfig(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
 
 
+class NewsItem(Base):
+    """Новость кабинета. Таргетинг определяет, каким клиентам она релевантна."""
+
+    __tablename__ = "news_items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    title: Mapped[str] = mapped_column(String(160), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    category: Mapped[str] = mapped_column(String(40), nullable=False, default="general")
+    # {"okved_prefixes": [...], "opf": ["ООО"|"ИП"], "products": [...], "statuses": [...], "max_age_months": int}
+    targeting: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, index=True)
+    published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False, index=True)
+    created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+
+
 class IdempotencyRecord(Base):
     __tablename__ = "idempotency_records"
     __table_args__ = (UniqueConstraint("user_id", "key", "action", name="uq_idempotency_user_key_action"),)
@@ -228,6 +247,7 @@ __all__ = [
     "Document",
     "EnrichmentSnapshot",
     "IdempotencyRecord",
+    "NewsItem",
     "Notification",
     "Product",
     "ROLE_ADMIN",

@@ -92,5 +92,5 @@ def demo_hint() -> dict:
     return {
         "demo_mode": settings.seed_demo,
         "password_hint": settings.demo_password if settings.seed_demo else "",
-        "accounts": ["client1", "client2", "employee1", "employee2", "employee3", "admin"],
+        "accounts": ["client1", "client2", "client3", "employee1", "employee2", "employee3", "admin"],
     }

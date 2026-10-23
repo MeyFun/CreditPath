@@ -35,6 +35,7 @@ from ..schemas import (
     ApplicationDetail,
     ApplicationOut,
     ApplicationUpdate,
+    ClientNewsFeed,
     DashboardOut,
     DocumentOut,
     MessageOut,
@@ -43,10 +44,11 @@ from ..schemas import (
     RespondInfoRequest,
     UserOut,
 )
-from ..security import get_current_user
+from ..security import get_current_user, require_client
 from ..services.audit import write_audit
 from ..services.external import ExternalServiceError, fetch_registry
 from ..services.inn import validate_inn
+from ..services.news import build_context, personal_feed
 from ..services.serializers import application_base_dict, application_detail_dict
 from ..services.state_machine import (
     APPROVED,
@@ -63,7 +65,8 @@ from ..services.state_machine import (
 )
 from ..services.workflow import run_pipeline
 
-router = APIRouter(prefix="/client", tags=["Кабинет клиента"])
+# Рабочие учётки сотрудника и администратора не могут действовать как заявитель.
+router = APIRouter(prefix="/client", tags=["Кабинет клиента"], dependencies=[Depends(require_client)])
 
 MAX_UPLOAD_BYTES = settings.max_upload_mb * 1024 * 1024
 ALLOWED_TYPES = {
@@ -162,6 +165,23 @@ def dashboard(db: Session = Depends(get_db), user: User = Depends(get_current_us
         "total_approved_amount": approved_total,
         "unread_notifications": unread,
         "company": company,
+    }
+
+
+@router.get("/news", response_model=ClientNewsFeed)
+def news_feed(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> dict:
+    """Лента новостей под профиль: ОКВЭД, ОПФ, возраст бизнеса, продукты и статусы заявок."""
+    context = build_context(db, user)
+    return {
+        "profile": {
+            "opf": context.opf,
+            "okved": context.okved,
+            "okved_name": context.okved_name,
+            "age_months": context.age_months,
+            "statuses": sorted(context.statuses),
+            "products": sorted(context.products.values()),
+        },
+        "items": personal_feed(db, context),
     }
 
 
@@ -797,11 +817,3 @@ def download_document(
         raise HTTPException(status_code=404, detail="Файл не найден в хранилище")
     return FileResponse(path, media_type=document.content_type, filename=document.original_name)
 
-
-@router.get("/payment-schedule")
-def payment_schedule(amount: float, rate: float, term_months: int) -> dict:
-    from ..services.finance import payment_schedule as calculate
-
-    if amount <= 0 or rate <= 0 or term_months <= 0 or term_months > 120:
-        raise HTTPException(status_code=422, detail="Проверьте параметры расчёта")
-    return calculate(amount, rate, term_months)

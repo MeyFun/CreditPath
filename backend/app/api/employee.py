@@ -28,6 +28,7 @@ from ..services.state_machine import (
     APPROVED_CHANGED,
     IN_REVIEW,
     NEED_INFO,
+    OUTCOME_LABELS,
     REJECTED,
     add_event,
     transition_application,
@@ -64,13 +65,16 @@ def _risk_override_reasons(application: Application, action: str, config: dict) 
     return reasons
 
 
-def _assigned(db: Session, application_id: int, user: User) -> Application:
-    application = db.get(Application, application_id)
-    # Сотрудник не может получить в служебном контуре собственную клиентскую заявку.
+def _assigned(db: Session, application_id: int, user: User, *, lock: bool = False) -> Application:
+    # lock=True блокирует строку до конца транзакции: два одновременных решения не пройдут оба.
+    application = db.get(Application, application_id, with_for_update=lock)
+    # Сотрудник не может получить в служебном контуре собственную заявку или заявку связанного лица.
+    applicant = db.get(User, application.user_id) if application else None
     if (
         application is None
         or application.assigned_employee_id != user.id
         or application.user_id == user.id
+        or (applicant is not None and applicant.related_employee_id == user.id)
     ):
         raise HTTPException(status_code=404, detail="Заявка не найдена среди назначенных вам")
     return application
@@ -146,7 +150,7 @@ def decide(
     db: Session = Depends(get_db),
     user: User = Depends(require_employee),
 ) -> dict:
-    application = _assigned(db, application_id, user)
+    application = _assigned(db, application_id, user, lock=True)
     if application.status != IN_REVIEW:
         raise HTTPException(status_code=409, detail="Решение можно принять только по заявке на рассмотрении")
     if application.user_id == user.id:
@@ -249,6 +253,24 @@ def decide(
     if payload.action == "approve_changed":
         if not payload.approved_amount or not payload.approved_term_months:
             raise HTTPException(status_code=422, detail="Укажите сумму и срок новых условий")
+        if payload.product_id is not None and payload.product_id != product.id:
+            offered = db.get(Product, payload.product_id)
+            if offered is None or not offered.is_active:
+                raise HTTPException(status_code=422, detail="Предложенный продукт недоступен")
+            before["product_id"] = product.id
+            product = offered
+            application.product_id = offered.id
+            purposes = [item.get("code") for item in offered.purposes or []]
+            if application.purpose not in purposes and purposes:
+                application.purpose = purposes[0]
+        if float(payload.approved_amount) > float(application.amount):
+            raise HTTPException(status_code=422, detail="Сумма по новым условиям не может превышать запрошенную")
+        if (
+            float(payload.approved_amount) == float(application.amount)
+            and payload.approved_term_months == application.term_months
+            and "product_id" not in before
+        ):
+            raise HTTPException(status_code=422, detail="Новые условия совпадают с запрошенными — выберите «Одобрить»")
         if float(payload.approved_amount) < float(product.min_amount) or float(payload.approved_amount) > float(product.max_amount):
             raise HTTPException(
                 status_code=422,
@@ -288,6 +310,7 @@ def decide(
             "final_outcome": final_outcome,
             "approved_amount": approved_amount,
             "approved_term_months": approved_term,
+            "product_id": product.id,
         },
     )
     add_event(
@@ -309,7 +332,7 @@ def decide(
         user_id=application.user_id,
         application_id=application.id,
         title="Решение по заявке готово",
-        body=f"Заявка {application.public_number}: {application.decision_draft.get('summary') if application.decision_draft else 'решение принято'}. Откройте карточку заявки.",
+        body=f"Заявка {application.public_number}: {OUTCOME_LABELS[final_outcome].lower()}. Откройте карточку заявки.",
         kind="success",
     )
     write_audit(
@@ -324,6 +347,7 @@ def decide(
             "outcome": final_outcome,
             "approved_amount": approved_amount,
             "approved_term_months": approved_term,
+            "product_id": product.id,
             "comment": comment,
         },
     )

@@ -245,3 +245,43 @@ export interface ApiErrorPayload {
   detail?: string;
   errors?: { field: string; message: string }[];
 }
+
+export interface NewsTargeting {
+  okved_prefixes: string[];
+  opf: string[];
+  products: string[];
+  statuses: string[];
+  max_age_months: number | null;
+}
+
+export interface ClientNewsItem {
+  id: number;
+  title: string;
+  body: string;
+  category: string;
+  published_at: string;
+  personal: boolean;
+  reasons: string[];
+}
+
+export interface ClientNewsFeed {
+  profile: {
+    opf: string | null;
+    okved: string | null;
+    okved_name: string | null;
+    age_months: number | null;
+    statuses: string[];
+    products: string[];
+  };
+  items: ClientNewsItem[];
+}
+
+export interface AdminNewsItem {
+  id: number;
+  title: string;
+  body: string;
+  category: string;
+  targeting: Partial<NewsTargeting>;
+  is_active: boolean;
+  published_at: string;
+}

@@ -53,6 +53,61 @@ def product_dict(product: Product) -> dict[str, Any]:
     }
 
 
+# События, которые описывают внутреннюю кухню банка (скоринг, черновик решения,
+# назначение сотрудника, риск-исключения). Клиенту они не показываются.
+INTERNAL_EVENT_TYPES = {
+    "SCORING_COMPLETED",
+    "DECISION_DRAFT",
+    "RISK_OVERRIDE",
+    "ASSIGNED",
+    "QUEUED_FOR_ADMIN",
+    "REASSIGNMENT_REQUIRED",
+    "MANUALLY_ASSIGNED",
+    "TECHNICAL_RETRY_REQUIRED",
+    "ENRICHMENT_PARTIAL",
+}
+
+
+def _client_event(event: ApplicationEvent) -> dict[str, Any]:
+    return {
+        "id": event.id,
+        "event_type": event.event_type,
+        "status_from": event.status_from,
+        "status_to": event.status_to,
+        "actor_role": event.actor_role,
+        "comment": event.comment,
+        "details": None,
+        "created_at": event.created_at,
+    }
+
+
+def _previous_decisions(db: Session, application: Application) -> list[dict[str, Any]]:
+    """История прошлых заявок цепочки для правила «свежего взгляда»."""
+    history: list[dict[str, Any]] = []
+    current = application
+    seen = {application.id}
+    while current.previous_application_id and current.previous_application_id not in seen and len(history) < 20:
+        previous = db.get(Application, current.previous_application_id)
+        if previous is None:
+            break
+        seen.add(previous.id)
+        decided_by = db.get(User, previous.decision_by_id) if previous.decision_by_id else None
+        history.append(
+            {
+                "id": previous.id,
+                "number": previous.public_number,
+                "status": previous.status,
+                "status_label": STATUS_LABELS.get(previous.status, previous.status),
+                "amount": float(previous.amount),
+                "submitted_at": previous.submitted_at,
+                "decided_by": user_min(decided_by),
+                "employee_comment": previous.employee_comment,
+            }
+        )
+        current = previous
+    return history
+
+
 def user_min(user: User | None) -> dict[str, Any] | None:
     if user is None:
         return None
@@ -157,15 +212,19 @@ def application_detail_dict(
 
     scoring = application.scoring_result if internal else None
     decision_draft: dict[str, Any] | None = application.decision_draft
-    if decision_draft and not internal:
-        decision_draft = {
-            "outcome": decision_draft.get("outcome"),
-            "summary": decision_draft.get("summary"),
-            "reasons": decision_draft.get("reasons", []),
-            "proposed_amount": decision_draft.get("proposed_amount"),
-            "proposed_term_months": decision_draft.get("proposed_term_months"),
-            "proposed_rate": decision_draft.get("proposed_rate"),
-        }
+    if not internal:
+        # Клиент видит решение человека, а не черновик системы. Исключение — автоматический
+        # запрос данных: тогда причины черновика и есть то, что нужно дослать.
+        if decision_draft and application.status == NEED_INFO and decision_draft.get("outcome") == "need_info":
+            decision_draft = {
+                "outcome": "need_info",
+                "summary": decision_draft.get("summary"),
+                "reasons": decision_draft.get("reasons", []),
+            }
+        else:
+            decision_draft = None
+        events = [_client_event(event) for event in events if event.event_type not in INTERNAL_EVENT_TYPES]
+    applicant = db.get(User, application.user_id) if internal else None
     registry = snapshot.registry_data if snapshot else None
     bki_data = snapshot.bki_data if snapshot and internal else None
 
@@ -196,6 +255,8 @@ def application_detail_dict(
             "can_disburse": is_owner and application.status == SIGNED,
             "can_resubmit": is_owner and application.status == REJECTED,
             "can_decide": can_decide,
+            "previous_decisions": _previous_decisions(db, application) if internal else [],
+            "related_party": bool(applicant and applicant.related_employee_id),
         }
     )
     return base

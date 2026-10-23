@@ -22,10 +22,10 @@ import { Alert, Button, Field, Input, Logo } from "../components/ui";
 type Tab = "login" | "register";
 
 const DEMO_ACCOUNTS = [
-  { username: "client1", title: "Клиент", text: "Кабинет предпринимателя", icon: UserRound, tone: "red" },
-  { username: "client2", title: "Клиент", text: "Другая компания", icon: Building2, tone: "blue" },
-  { username: "employee1", title: "Сотрудник банка", text: "Очередь, решения и клиентский кабинет", icon: BadgeCheck, tone: "green" },
-  { username: "admin", title: "Администратор", text: "Роли, аудит и клиентский кабинет", icon: ShieldCheck, tone: "dark" }
+  { username: "client1", title: "Клиент", text: "ООО «Северный Ветер», торговля", icon: UserRound, tone: "red" },
+  { username: "client3", title: "Клиент · связанное лицо", text: "ИП Кузнецова, родственница employee3", icon: Building2, tone: "blue" },
+  { username: "employee1", title: "Сотрудник банка", text: "Очередь заявок и решения", icon: BadgeCheck, tone: "green" },
+  { username: "admin", title: "Администратор", text: "Роли, справочники, аудит", icon: ShieldCheck, tone: "dark" }
 ];
 
 export default function AuthPage({ initialTab = "login" }: { initialTab?: Tab }) {

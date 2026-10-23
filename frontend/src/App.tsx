@@ -13,6 +13,7 @@ import CompanyPage from "./pages/CompanyPage";
 import DashboardPage from "./pages/DashboardPage";
 import HomePage from "./pages/HomePage";
 import NewApplicationPage from "./pages/NewApplicationPage";
+import NewsPage from "./pages/NewsPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import ProductsPage from "./pages/ProductsPage";
 import ResultPage from "./pages/ResultPage";
@@ -31,7 +32,7 @@ export default function App() {
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<AuthPage />} />
       <Route path="/register" element={<AuthPage initialTab="register" />} />
-      <Route path="/app" element={<RequireRole roles={["client", "employee", "admin"]}><AppShell role="client" /></RequireRole>}>
+      <Route path="/app" element={<RequireRole roles={["client"]}><AppShell role="client" /></RequireRole>}>
         <Route index element={<DashboardPage />} />
         <Route path="applications" element={<ApplicationsPage />} />
         <Route path="applications/new" element={<NewApplicationPage />} />
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="applications/:id/result" element={<ResultPage />} />
         <Route path="products" element={<ProductsPage />} />
         <Route path="company" element={<CompanyPage />} />
+        <Route path="news" element={<NewsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
       </Route>
       <Route path="/staff" element={<RequireRole roles={["employee"]}><AppShell role="employee" /></RequireRole>}>

@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Newspaper,
   Plus,
   ScrollText,
   Settings2,
@@ -43,6 +44,7 @@ const CLIENT_NAV: NavItem[] = [
   { to: "/app/applications", label: "Мои заявки", icon: ClipboardList, end: true },
   { to: "/app/applications/new", label: "Новая заявка", icon: Plus, end: true },
   { to: "/app/products", label: "Продукты", icon: FolderKanban },
+  { to: "/app/news", label: "Новости", icon: Newspaper },
   { to: "/app/company", label: "Профиль компании", icon: Building2 },
   { to: "/app/notifications", label: "Уведомления", icon: Bell }
 ];
@@ -71,25 +73,12 @@ const ROLE_LABEL: Record<Role, string> = {
   admin: "Администратор"
 };
 
-function navGroups(area: Area, role: Role): NavGroup[] {
-  if (role === "client") return [{ items: CLIENT_NAV }];
-  if (area === "client") {
-    const service = role === "employee"
-      ? { title: "Служебный контур", items: STAFF_NAV }
-      : { title: "Администрирование", items: ADMIN_NAV };
-    return [{ title: "Кабинет предпринимателя", items: CLIENT_NAV }, service];
-  }
-  if (area === "employee") {
-    return [
-      { title: "Рабочее место банка", items: STAFF_NAV },
-      { title: "Кабинет предпринимателя", items: CLIENT_NAV }
-    ];
-  }
-  return [
-    { title: "Администрирование", items: ADMIN_NAV },
-    { title: "Кабинет предпринимателя", items: CLIENT_NAV }
-  ];
-}
+// Рабочие и клиентские учётки разделены: у каждой роли только своё меню.
+const NAV_BY_AREA: Record<Area, NavItem[]> = {
+  client: CLIENT_NAV,
+  employee: STAFF_NAV,
+  admin: ADMIN_NAV
+};
 
 export function AppShell({ role }: { role: Area }) {
   const { user, logout } = useAuth();
@@ -108,7 +97,7 @@ export function AppShell({ role }: { role: Area }) {
 
   if (!user) return null;
 
-  const groups = navGroups(role, user.role);
+  const groups: NavGroup[] = [{ items: NAV_BY_AREA[role] }];
   const notificationPath = role === "client" ? "/app/notifications" : role === "employee" ? "/staff/notifications" : "/admin/notifications";
 
   function handleLogout() {
@@ -178,8 +167,8 @@ export function AppShell({ role }: { role: Area }) {
           <div className="sidebar-note">
             <ShieldCheck size={18} />
             <div>
-              <strong>Свои заявки — только в клиентском кабинете</strong>
-              <p>Служебная очередь не показывает заявки, поданные с вашей учётной записи.</p>
+              <strong>Конфликт интересов исключён</strong>
+              <p>Заявки связанных с вами лиц и повторные заявки после вашего отказа назначаются другим сотрудникам.</p>
             </div>
           </div>
         )}
@@ -210,7 +199,7 @@ export function AppShell({ role }: { role: Area }) {
             <span className="avatar avatar-small">{initials(user.full_name)}</span>
             <div className="topbar-user">
               <strong>{user.full_name}</strong>
-              <small>{ROLE_LABEL[user.role]}{role !== user.role ? ` · ${AREA_LABEL[role]}` : ""}</small>
+              <small>{ROLE_LABEL[user.role]}</small>
             </div>
             <button className="icon-button" onClick={handleLogout} title="Выйти" aria-label="Выйти">
               <LogOut size={18} />

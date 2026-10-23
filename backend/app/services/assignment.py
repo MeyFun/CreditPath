@@ -54,6 +54,9 @@ def pick_employee(
 ) -> tuple[User | None, str | None]:
     excluded = chain_reviewer_ids(db, application)
     excluded.add(application.user_id)
+    applicant = db.get(User, application.user_id)
+    if applicant and applicant.related_employee_id:
+        excluded.add(applicant.related_employee_id)
 
     if preferred_employee_id is not None and preferred_employee_id not in excluded:
         preferred = db.get(User, preferred_employee_id)

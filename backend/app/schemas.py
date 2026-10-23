@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from typing import Any, Literal
 
@@ -182,6 +183,8 @@ class ApplicationDetail(ApplicationOut):
     can_disburse: bool = False
     can_resubmit: bool = False
     can_decide: bool = False
+    previous_decisions: list[dict[str, Any]] = []
+    related_party: bool = False
 
 
 class DashboardOut(BaseModel):
@@ -194,7 +197,9 @@ class DashboardOut(BaseModel):
 
 class DecisionRequest(BaseModel):
     action: Literal["approve", "approve_changed", "need_info", "reject"]
-    approved_amount: float | None = Field(default=None, gt=0)
+    # Для «других условий» банк может предложить другой продукт.
+    product_id: int | None = None
+    approved_amount: float | None = Field(default=None, gt=0, allow_inf_nan=False)
     approved_term_months: int | None = Field(default=None, ge=1, le=120)
     comment: str | None = Field(default=None, max_length=4000)
 
@@ -285,3 +290,72 @@ class MessageOut(BaseModel):
 class HealthOut(BaseModel):
     status: str
     version: str
+
+
+NEWS_OPF = {"ООО", "ИП"}
+
+
+class NewsTargeting(BaseModel):
+    okved_prefixes: list[str] = Field(default_factory=list, max_length=20)
+    opf: list[str] = Field(default_factory=list)
+    products: list[str] = Field(default_factory=list)
+    statuses: list[str] = Field(default_factory=list)
+    max_age_months: int | None = Field(default=None, ge=1, le=600)
+
+    @field_validator("okved_prefixes")
+    @classmethod
+    def _okved(cls, value: list[str]) -> list[str]:
+        cleaned = [item.strip() for item in value if item.strip()]
+        for item in cleaned:
+            if not re.fullmatch(r"[0-9]{2}(\.[0-9]{1,2}){0,2}", item):
+                raise ValueError(f"Некорректный префикс ОКВЭД: {item}")
+        return cleaned
+
+    @field_validator("opf")
+    @classmethod
+    def _opf(cls, value: list[str]) -> list[str]:
+        if any(item not in NEWS_OPF for item in value):
+            raise ValueError("ОПФ: только «ООО» или «ИП»")
+        return value
+
+
+class NewsCreate(BaseModel):
+    title: str = Field(min_length=3, max_length=160)
+    body: str = Field(min_length=3, max_length=4000)
+    category: str = Field(default="general", max_length=40)
+    targeting: NewsTargeting = Field(default_factory=NewsTargeting)
+
+
+class NewsUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=3, max_length=160)
+    body: str | None = Field(default=None, min_length=3, max_length=4000)
+    category: str | None = Field(default=None, max_length=40)
+    targeting: NewsTargeting | None = None
+    is_active: bool | None = None
+
+
+class NewsOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    title: str
+    body: str
+    category: str
+    targeting: dict[str, Any]
+    is_active: bool
+    published_at: datetime
+
+
+class ClientNewsOut(BaseModel):
+    id: int
+    title: str
+    body: str
+    category: str
+    published_at: datetime
+    personal: bool
+    reasons: list[str]
+
+
+class ClientNewsFeed(BaseModel):
+    profile: dict[str, Any]
+    items: list[ClientNewsOut]
