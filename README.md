@@ -54,12 +54,60 @@ cp .env.example .env
 | OpenAPI JSON | http://localhost:8080/openapi.json |
 | API напрямую | http://localhost:8000/api |
 | Health backend | http://localhost:8000/health |
+| PostgreSQL (только localhost) | `127.0.0.1:55432` |
 
 Остановка и полный сброс данных:
 
 ```bash
 docker compose down
-docker compose down -v   # удалить базу и загруженные файлы
+docker compose down -v   # ВНИМАНИЕ: удаляет базу и загруженные файлы
+```
+
+## Где хранятся данные и как посмотреть базу
+
+Все учётные записи, заявки, документы и аудит хранятся в PostgreSQL. Данные находятся в именованном Docker-томе `creditpath_postgres_data` и переживают обычный перезапуск контейнеров:
+
+```bash
+docker compose restart
+docker compose down
+docker compose up -d
+```
+
+**`docker compose down -v` удаляет том вместе со всеми зарегистрированными пользователями и заявками.** Эту команду нельзя использовать, если нужно сохранить данные. Именно она применялась при финальном тестировании, поэтому созданный вручную профиль был удалён; восстановить его без резервной копии невозможно.
+
+Подключение к базе через `psql` внутри контейнера:
+
+```bash
+docker compose exec db psql -U creditpath -d creditpath
+```
+
+Полезные команды:
+
+```sql
+\dt
+SELECT id, username, full_name, role, company_inn, created_at FROM users ORDER BY id;
+SELECT id, public_number, status, scoring_score, final_outcome FROM applications ORDER BY id;
+SELECT id, created_at, actor_label, action, entity_id FROM audit_log ORDER BY id DESC LIMIT 20;
+```
+
+Для графического клиента (DBeaver, pgAdmin, DataGrip):
+
+| Параметр | Значение |
+|---|---|
+| Host | `127.0.0.1` |
+| Port | `55432` |
+| Database | `creditpath` |
+| User | `creditpath` |
+| Password | `creditpath_demo` |
+
+Порт опубликован только на loopback-интерфейсе. Если значение `POSTGRES_HOST_PORT` занято, измените его в `.env`.
+
+Резервная копия и восстановление:
+
+```bash
+docker compose exec -T db pg_dump -U creditpath -d creditpath > creditpath_backup.sql
+docker compose cp creditpath_backup.sql db:/tmp/creditpath_backup.sql
+docker compose exec db psql -U creditpath -d creditpath -f /tmp/creditpath_backup.sql
 ```
 
 ## Демонстрационные учётные записи
@@ -118,6 +166,7 @@ docker compose down -v   # удалить базу и загруженные ф�
 3. **SCORING:** 0–100, база 50, прозрачные факторы: возраст, сумма к выручке, прибыль, просрочки, долговая нагрузка, ОКВЭД, обеспечение. Параметры — версионируемая конфигурация в БД.
 4. **DECISION_DRAFT:** отдельный слой кредитной логики. Стоп-факторы: недействующая компания, активная просрочка, требования продукта. Нет финансовых данных → `NEED_INFO`. Балл ≥ 70 → одобрено; 40–69 → другие условия; < 40 → отказ.
 5. **IN_REVIEW:** автоматическое назначение по минимальной нагрузке и правилу «свежего взгляда». Финальное решение всегда принимает человек.
+6. **Риск-исключение:** если сотрудник одобряет заявку при скоринге ниже порога 70 или вопреки стоп-фактору/отказу системы, создаётся отдельное событие `application.risk_override` в аудите и в истории заявки. Интерфейс предупреждает сотрудника до принятия решения.
 
 ## Безопасность и надёжность
 
