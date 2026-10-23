@@ -178,6 +178,8 @@ export interface ApplicationDetail extends ApplicationSummary {
   can_disburse: boolean;
   can_resubmit: boolean;
   can_decide: boolean;
+  previous_decisions: PreviousDecision[];
+  related_party: boolean;
 }
 
 export interface DashboardData {
@@ -252,6 +254,17 @@ export interface NewsTargeting {
   products: string[];
   statuses: string[];
   max_age_months: number | null;
+}
+
+export interface PreviousDecision {
+  id: number;
+  number: string;
+  status: string;
+  status_label: string;
+  amount: number;
+  submitted_at: string | null;
+  decided_by: EmployeeMini | null;
+  employee_comment: string | null;
 }
 
 export interface ClientNewsItem {

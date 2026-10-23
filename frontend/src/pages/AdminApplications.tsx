@@ -3,7 +3,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Building2,
-  CheckCircle2,
   Clock3,
   RefreshCw,
   Search,
@@ -155,7 +154,7 @@ function AdminApplicationDetail({ applicationId }: { applicationId: number }) {
           </Card>
           <Card>
             <div className="card-head"><div><span className="eyebrow">Внутренние проверки</span><h2>Предварительное решение</h2></div>{app.decision_draft && <Badge tone={app.decision_draft.outcome === "reject" ? "danger" : app.decision_draft.outcome === "need_info" ? "warning" : "success"}>{app.decision_draft.summary}</Badge>}</div>
-            {app.decision_draft ? <ul className="reason-list">{app.decision_draft.reasons.map((reason, index) => <li key={index}><CheckCircle2 size={15} /> {reason}</li>)}</ul> : <p className="muted">Нет данных.</p>}
+            {app.decision_draft ? <ul className="reason-list">{app.decision_draft.reasons.map((reason, index) => <li key={index}><ArrowRight size={15} /> {reason}</li>)}</ul> : <p className="muted">Нет данных.</p>}
             {app.employee_comment && <Alert tone="info" title="Комментарий сотрудника">{app.employee_comment}</Alert>}
           </Card>
           <Card>

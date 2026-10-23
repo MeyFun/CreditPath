@@ -153,6 +153,7 @@ export const api = {
       id: number,
       payload: {
         action: "approve" | "approve_changed" | "need_info" | "reject";
+        product_id?: number;
         approved_amount?: number;
         approved_term_months?: number;
         comment?: string;

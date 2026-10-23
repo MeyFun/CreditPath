@@ -6,13 +6,10 @@ import {
   CheckCircle2,
   Download,
   FileText,
-  History,
   LineChart,
   MessageSquareWarning,
-  RefreshCw,
   ShieldAlert,
   ShieldCheck,
-  Sparkles,
   XCircle
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -31,6 +28,7 @@ import {
   Input,
   LoadingBlock,
   ProgressBar,
+  Select,
   StatusBadge,
   Timeline,
   useToast
@@ -49,6 +47,8 @@ export default function StaffApplicationPage() {
   const [action, setAction] = useState<DecisionAction | null>(null);
   const [amount, setAmount] = useState("");
   const [term, setTerm] = useState("");
+  const [productId, setProductId] = useState("");
+  const products = useQuery({ queryKey: ["public-products"], queryFn: api.public.products });
   const [comment, setComment] = useState("");
   const [error, setError] = useState("");
 
@@ -58,13 +58,16 @@ export default function StaffApplicationPage() {
     if (!app) return;
     setAmount(String(app.decision_draft?.proposed_amount ?? app.amount));
     setTerm(String(app.decision_draft?.proposed_term_months ?? app.term_months));
+    setProductId(String(app.product.id));
   }, [app?.id]);
 
   const decide = useMutation({
     mutationFn: () =>
       api.employee.decide(applicationId, {
         action: action!,
-        ...(action === "approve_changed" ? { approved_amount: Number(amount), approved_term_months: Number(term) } : {}),
+        ...(action === "approve_changed"
+          ? { product_id: Number(productId), approved_amount: Number(amount), approved_term_months: Number(term) }
+          : {}),
         comment
       }),
     onSuccess: (data) => {
@@ -130,6 +133,7 @@ export default function StaffApplicationPage() {
           <span className="eyebrow">Заявка на финансирование</span>
           <h1>{app.company_name}</h1>
           <p>ИНН {app.company_inn} · {app.product.name} · {app.purpose_label}</p>
+          {app.related_party && <Badge tone="warning">Связанное лицо сотрудника банка</Badge>}
         </div>
         <div className="staff-header-metrics">
           <div><span>Сумма</span><strong>{formatMoney(app.amount)}</strong></div>
@@ -223,7 +227,7 @@ export default function StaffApplicationPage() {
                 <div className="card-head"><div><span className="eyebrow">Кредитная логика</span><h2>Предварительное решение</h2></div>{app.decision_draft && <Badge tone={app.decision_draft.outcome === "approve" ? "success" : app.decision_draft.outcome === "reject" ? "danger" : "warning"}>{app.decision_draft.summary}</Badge>}</div>
                 {app.decision_draft ? (
                   <>
-                    <ul className="reason-list">{app.decision_draft.reasons.map((reason, index) => <li key={index}><CheckCircle2 size={15} /> {reason}</li>)}</ul>
+                    <ul className="reason-list">{app.decision_draft.reasons.map((reason, index) => <li key={index}><ArrowRight size={15} /> {reason}</li>)}</ul>
                     {app.decision_draft.outcome !== "reject" && app.decision_draft.outcome !== "need_info" && (
                       <Alert tone="info" title="Рекомендация системы">
                         Сумма {formatMoney(app.decision_draft.proposed_amount)}, срок {app.decision_draft.proposed_term_months} мес., ставка {app.decision_draft.proposed_rate}% годовых. Финальное решение — за вами.
@@ -257,13 +261,22 @@ export default function StaffApplicationPage() {
                 )}
                 <div className="decision-buttons">
                   <button className={`decision-button approve ${action === "approve" ? "selected" : ""}`} onClick={() => choose("approve")}><CheckCircle2 size={18} /><span><strong>Одобрить</strong><small>На запрошенных условиях</small></span></button>
-                  <button className={`decision-button changed ${action === "approve_changed" ? "selected" : ""}`} onClick={() => choose("approve_changed")}><LineChart size={18} /><span><strong>Другие условия</strong><small>Изменить сумму или срок</small></span></button>
+                  <button className={`decision-button changed ${action === "approve_changed" ? "selected" : ""}`} onClick={() => choose("approve_changed")}><LineChart size={18} /><span><strong>Другие условия</strong><small>Сумма, срок или продукт</small></span></button>
                   <button className={`decision-button info ${action === "need_info" ? "selected" : ""}`} onClick={() => choose("need_info")}><MessageSquareWarning size={18} /><span><strong>Запросить данные</strong><small>Вернуть клиенту</small></span></button>
                   <button className={`decision-button reject ${action === "reject" ? "selected" : ""}`} onClick={() => choose("reject")}><XCircle size={18} /><span><strong>Отказать</strong><small>С обязательной причиной</small></span></button>
                 </div>
                 {action && (
                   <div className="decision-form">
                     <strong>{actionTitle[action]}</strong>
+                    {action === "approve_changed" && (
+                      <Field label="Продукт">
+                        <Select value={productId} onChange={(event) => setProductId(event.target.value)}>
+                          {(products.data ?? []).filter((item) => item.is_active).map((item) => (
+                            <option key={item.id} value={item.id}>{item.name}</option>
+                          ))}
+                        </Select>
+                      </Field>
+                    )}
                     {action === "approve_changed" && (
                       <div className="form-grid">
                         <Field label="Новая сумма, ₽" required><Input type="number" value={amount} onChange={(event) => setAmount(event.target.value)} /></Field>
@@ -302,10 +315,26 @@ export default function StaffApplicationPage() {
             <button className="text-link" onClick={() => setTab("checks")}>Разобрать факторы <ArrowRight size={14} /></button>
           </Card>
 
-          <Card className="help-card">
-            <span className="mini-icon"><ShieldAlert size={18} /></span>
-            <div><strong>Свежий взгляд</strong><p>Система уже исключила вас из цепочек, где вы принимали решение, и из собственных заявок. Дополнительная проверка выполняется на сервере.</p></div>
-          </Card>
+          {app.previous_decisions.length > 0 ? (
+            <Card>
+              <div className="card-head"><div><span className="eyebrow">Свежий взгляд</span><h2>Прошлые заявки клиента</h2></div><ShieldAlert size={19} /></div>
+              <p className="muted small">Повторная заявка назначена вам, потому что вы не рассматривали эту цепочку. Учтите контекст прошлых решений.</p>
+              <div className="previous-decisions">
+                {app.previous_decisions.map((item) => (
+                  <div className="previous-decision" key={item.id}>
+                    <div className="inline-meta"><strong>№ {item.number}</strong><StatusBadge status={item.status} label={item.status_label} /></div>
+                    <small className="muted">{formatMoney(item.amount)} · {formatDate(item.submitted_at)} · {item.decided_by?.full_name ?? "—"}</small>
+                    {item.employee_comment && <p>{item.employee_comment}</p>}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          ) : (
+            <Card className="help-card">
+              <span className="mini-icon"><ShieldAlert size={18} /></span>
+              <div><strong>Свежий взгляд</strong><p>Вам не назначаются собственные заявки, заявки связанных лиц и повторные заявки после вашего решения. Проверка выполняется на сервере.</p></div>
+            </Card>
+          )}
         </aside>
       </div>
     </div>
