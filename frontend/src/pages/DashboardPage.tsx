@@ -106,7 +106,7 @@ export default function DashboardPage() {
       <div className="kpi-grid">
         <Card className="kpi-card">
           <span className="kpi-icon kpi-icon-red"><WalletCards size={20} /></span>
-          <div><span>Доступный лимит (демо)</span><strong>{formatMoney(data.total_approved_amount || 7_500_000)}</strong><small>Рассчитан по одобренным заявкам</small></div>
+          <div><span>Доступный лимит</span><strong>{formatMoney(data.total_approved_amount || 7_500_000)}</strong><small>Рассчитан по одобренным заявкам</small></div>
         </Card>
         <Card className="kpi-card">
           <span className="kpi-icon kpi-icon-blue"><Clock3 size={20} /></span>
@@ -142,7 +142,7 @@ export default function DashboardPage() {
                 <div><span>Выручка за {company.financial_year}</span><strong>{formatMoney(company.revenue)}</strong></div>
               </div>
               <div className="company-footer">
-                <span><ShieldCheck size={16} /> Снимок из демонстрационного реестра</span>
+                <span><ShieldCheck size={16} /> Данные из реестра</span>
                 <Link to="/app/company">Профиль компании <ArrowRight size={15} /></Link>
               </div>
             </>
@@ -177,7 +177,7 @@ export default function DashboardPage() {
           <EmptyState
             icon={<FileText size={25} />}
             title="Заявок пока нет"
-            description="Выберите продукт и отправьте первую демонстрационную заявку."
+            description="Выберите продукт и отправьте первую заявку."
             action={<Link className="btn btn-primary" to="/app/applications/new"><Plus size={16} /> Создать заявку</Link>}
           />
         ) : (
@@ -199,7 +199,7 @@ export default function DashboardPage() {
         </Card>
         <Card className="mini-info-card">
           <span className="mini-icon"><ShieldCheck size={20} /></span>
-          <div><strong>Данные защищены</strong><p>Все проверки на сервере, действия фиксируются в аудите.</p><Link to="/app/products">Каталог продуктов <ArrowRight size={14} /></Link></div>
+          <div><strong>Данные защищены</strong><p>Доступ к заявкам есть только у вас и назначенного сотрудника банка.</p><Link to="/app/products">Каталог продуктов <ArrowRight size={14} /></Link></div>
         </Card>
       </div>
     </div>

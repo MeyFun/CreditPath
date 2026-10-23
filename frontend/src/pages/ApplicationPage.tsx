@@ -7,8 +7,6 @@ import {
   Clock3,
   Download,
   FileText,
-  Info,
-  LockKeyhole,
   ShieldCheck,
   XCircle
 } from "lucide-react";
@@ -56,7 +54,7 @@ const NEXT_STEP: Record<string, { title: string; body: string }> = {
   DRAFT: { title: "Черновик не отправлен", body: "Завершите заполнение и отправьте заявку на рассмотрение." },
   SUBMITTED: { title: "Заявка принята", body: "Автоматические проверки начнутся в течение нескольких секунд." },
   VALIDATION: { title: "Проверяем данные", body: "Формат, полнота и ИНН проверяются автоматически." },
-  ENRICHMENT: { title: "Запрашиваем данные", body: "Получаем сведения из демонстрационных реестра и БКИ. Обычно это занимает несколько секунд." },
+  ENRICHMENT: { title: "Запрашиваем данные", body: "Получаем сведения из реестра и бюро кредитных историй. Обычно это занимает несколько секунд." },
   SCORING: { title: "Считаем оценку", body: "Оцениваем данные компании и кредитную историю." },
   DECISION_DRAFT: { title: "Применяем правила банка", body: "Кредитная логика формирует предварительное решение." },
   IN_REVIEW: { title: "Заявка у сотрудника", body: "Сотрудник банка проверяет данные и принимает финальное решение." },
@@ -64,9 +62,9 @@ const NEXT_STEP: Record<string, { title: string; body: string }> = {
   APPROVED: { title: "Одобрено", body: "Оферта сформирована. Ознакомьтесь с условиями и примите решение." },
   APPROVED_CHANGED: { title: "Одобрено на других условиях", body: "Сотрудник банка изменил сумму или срок. Проверьте оферту." },
   REJECTED: { title: "Решение: отказ", body: "Причина указана в решении. Можно устранить замечания и подать заявку повторно." },
-  OFFER_ACCEPTED: { title: "Оферта принята", body: "Осталось подписать договор в демонстрационном режиме." },
-  SIGNED: { title: "Договор подписан", body: "Можно завершить сделку демонстрационным зачислением средств." },
-  DISBURSED: { title: "Сделка завершена", body: "Средства зачислены в демонстрационном режиме. Реальное перечисление не выполнялось." },
+  OFFER_ACCEPTED: { title: "Оферта принята", body: "Осталось подписать договор." },
+  SIGNED: { title: "Договор подписан", body: "Можно получить средства на расчётный счёт." },
+  DISBURSED: { title: "Сделка завершена", body: "Средства зачислены на расчётный счёт компании." },
   OFFER_DECLINED: { title: "Оферта отклонена", body: "Вы отклонили предложенные условия. Можно подать новую заявку." }
 };
 
@@ -126,7 +124,6 @@ export default function ApplicationPage() {
       </div>
 
       {searchParams.get("submitted") && stage < 3 && <Alert tone="success" title="Заявка отправлена">Автоматические проверки запущены. Статус обновляется автоматически.</Alert>}
-      {isPending && <div className="pipeline-strip"><span className="pulse-dot" /> Автоматический конвейер работает: данные сохраняются после каждого этапа.</div>}
 
       <Card className={`status-banner ${app.status === "NEED_INFO" ? "status-banner-warning" : app.status === "REJECTED" ? "status-banner-danger" : ""}`}>
         <div className="status-banner-icon">{app.status === "NEED_INFO" ? <Clock3 size={24} /> : app.status === "REJECTED" ? <XCircle size={24} /> : stage === 3 ? <CheckCircle2 size={24} /> : <ShieldCheck size={24} />}</div>
@@ -159,7 +156,7 @@ export default function ApplicationPage() {
           </Card>
 
           <Card>
-            <div className="card-head"><div><span className="eyebrow">Хронология</span><h2>История событий</h2></div><span className="muted small">Синхронизировано с сервером</span></div>
+            <div className="card-head"><div><span className="eyebrow">Хронология</span><h2>История событий</h2></div></div>
             <Timeline events={app.events} />
           </Card>
 

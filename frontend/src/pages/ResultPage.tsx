@@ -7,10 +7,8 @@ import {
   Clock3,
   Download,
   FileText,
-  Info,
   RefreshCw,
   ShieldCheck,
-  Sparkles,
   UploadCloud,
   XCircle
 } from "lucide-react";
@@ -22,7 +20,6 @@ import {
   Badge,
   Button,
   Card,
-  DemoNote,
   Field,
   formatDate,
   formatDateTime,
@@ -289,7 +286,7 @@ export default function ResultPage() {
                   {declined
                     ? "Условия ниже больше не действуют. Можно подать новую заявку."
                     : app.status === "DISBURSED"
-                      ? "Средства зачислены в демонстрационном режиме."
+                      ? "Средства зачислены на расчётный счёт компании."
                       : "Проверки завершены. Ознакомьтесь с условиями оферты."}
                 </p>
               </div>
@@ -324,7 +321,6 @@ export default function ResultPage() {
                 <Link className="btn btn-primary" to="/app/applications/new"><RefreshCw size={16} /> Подать новую заявку</Link>
               )}
             </div>
-            <DemoNote><Sparkles size={13} /> Подписание и зачисление средств в этом прототипе имитируются. Реальные деньги не перечисляются.</DemoNote>
           </Card>
           <Modal
             open={Boolean(confirm)}
@@ -363,7 +359,7 @@ export default function ResultPage() {
                 <div><span>Переплата</span><strong>{formatMoney(payment * term - amount)}</strong></div>
                 <div><span>Комиссии</span><strong>0 ₽</strong></div>
               </div>
-              <p className="muted small">Расчёт предварительный. Полный график формируется в демонстрационной оферте.</p>
+              <p className="muted small">Расчёт предварительный. Полный график платежей — в оферте.</p>
             </Card>
           </aside>
         </div>
@@ -379,7 +375,6 @@ export default function ResultPage() {
             {app.employee_comment && <div className="reason-box"><strong>Комментарий сотрудника</strong><p>{app.employee_comment}</p></div>}
             <Alert tone="info" title="Можно попробовать снова">Устраните замечания и создайте новую заявку. Она будет связана с предыдущей и не попадёт сотруднику, который уже рассматривал цепочку.</Alert>
             <Button onClick={() => resubmit.mutate()} loading={resubmit.isPending} icon={<RefreshCw size={17} />}>Подать заново</Button>
-            <DemoNote>Повторная подача копирует данные заявки в новый черновик.</DemoNote>
           </Card>
           <aside className="result-aside">
             <Card><div className="card-head"><h2>Заявка</h2></div><div className="summary-lines"><div><span>Номер</span><strong>{app.number}</strong></div><div><span>Сумма</span><strong>{formatMoney(app.amount)}</strong></div><div><span>Срок</span><strong>{app.term_months} мес.</strong></div><div><span>Решение</span><strong>{formatDateTime(app.updated_at)}</strong></div></div></Card>
@@ -410,7 +405,7 @@ export default function ResultPage() {
               </tbody>
             </table>
           </div>
-          <p className="muted small">Показаны первые {rows.length} платежей из {term}. Расчёт демонстрационный и не является публичной офертой.</p>
+          <p className="muted small">Показаны первые {rows.length} платежей из {term}. Расчёт предварительный и не является офертой.</p>
         </Card>
       )}
     </div>

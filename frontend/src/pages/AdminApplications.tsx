@@ -4,10 +4,8 @@ import {
   ArrowRight,
   Building2,
   CheckCircle2,
-  Clock3,
   RefreshCw,
   Search,
-  ShieldCheck,
   UserPlus
 } from "lucide-react";
 import { useDeferredValue, useState } from "react";
@@ -70,12 +68,7 @@ function AdminApplicationsList() {
       <PageHeader
         eyebrow="Администрирование"
         title="Все заявки"
-        description="Режим наблюдения. Кредитные решения принимают только сотрудники банка."
       />
-      <div className="admin-monitor">
-        <span><ShieldCheck size={17} /> Только чтение</span>
-        <span>Назначение сотрудника доступно в карточке заявки без права решения.</span>
-      </div>
       <Card className="filter-card">
         <div className="queue-filters">
           <div className="search-box"><Search size={17} /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Номер, компания или ИНН" /></div>
@@ -153,14 +146,13 @@ function AdminApplicationDetail({ applicationId }: { applicationId: number }) {
 
   return (
     <div className="page-stack">
-      <div className="detail-topbar"><Link to="/admin/applications" className="back-link"><ArrowLeft size={17} /> Все заявки</Link><span className="muted small">Мониторинг · без права решения</span></div>
+      <div className="detail-topbar"><Link to="/admin/applications" className="back-link"><ArrowLeft size={17} /> Все заявки</Link></div>
       <div className="detail-heading">
         <div>
           <div className="inline-meta"><StatusBadge status={app.status} /><span>{app.product.name}</span><span>{formatDate(app.created_at)}</span></div>
           <h1>{app.company_name}</h1>
           <p>Заявка № {app.number} · ИНН {app.company_inn}</p>
         </div>
-        <Badge tone="neutral"><ShieldCheck size={14} /> Режим администратора</Badge>
       </div>
       <div className="detail-grid">
         <div className="detail-main">
@@ -190,7 +182,6 @@ function AdminApplicationDetail({ applicationId }: { applicationId: number }) {
             <div className="card-head"><h2><UserPlus size={18} /> Назначение</h2></div>
             {canAssign ? (
               <>
-                <p className="muted small">Если заявка без сотрудника или требуется переназначение. Правило «свежего взгляда» проверяется на сервере.</p>
                 <select className="input" value={employeeId} onChange={(event) => { setEmployeeId(event.target.value); setError(""); }} aria-label="Сотрудник">
                   <option value="">Выберите сотрудника</option>
                   {candidates.map((employee) => <option key={employee.id} value={employee.id}>{employee.full_name}</option>)}
@@ -208,13 +199,12 @@ function AdminApplicationDetail({ applicationId }: { applicationId: number }) {
                   <p>Заявка перейдёт от {app.assigned_employee?.full_name} к {chosen?.full_name}. Оба сотрудника получат уведомление в кабинете.</p>
                 </Modal>
               </>
-            ) : <p className="muted">Назначение доступно для заявок в работе.</p>}
+            ) : <p className="muted">Заявка не в работе — назначить сотрудника нельзя.</p>}
             {app.queue_reason && <Alert tone="warning" title="Причина очереди">{app.queue_reason}</Alert>}
           </Card>
           <Card>
             <div className="card-head"><h2>Контроль</h2></div>
             <div className="summary-lines"><div><span>Создана</span><strong>{formatDate(app.created_at)}</strong></div><div><span>Отправлена</span><strong>{formatDate(app.submitted_at)}</strong></div><div><span>Сотрудник</span><strong>{app.assigned_employee?.full_name ?? "—"}</strong></div></div>
-            <p className="muted small"><Clock3 size={14} /> Администратор видит данные, но не может принять кредитное решение.</p>
           </Card>
         </aside>
       </div>

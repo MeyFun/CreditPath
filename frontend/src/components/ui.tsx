@@ -369,8 +369,8 @@ const EVENT_LABELS: Record<string, string> = {
   FINAL_DECISION: "Финальное решение",
   OFFER_ACCEPTED: "Оферта принята",
   OFFER_DECLINED: "Оферта отклонена",
-  SIGNED_DEMO: "Демонстрационное подписание",
-  DISBURSED_DEMO: "Демонстрационное зачисление",
+  SIGNED_DEMO: "Договор подписан",
+  DISBURSED_DEMO: "Средства зачислены",
   DOCUMENT_UPLOADED: "Документ загружен",
   RISK_OVERRIDE: "Риск-исключение при одобрении",
   TECHNICAL_RETRY_REQUIRED: "Проверка приостановлена",
@@ -498,15 +498,6 @@ export function useToast() {
   const context = useContext(ToastContext);
   if (!context) throw new Error("useToast должен использоваться внутри ToastProvider");
   return context;
-}
-
-export function DemoNote({ children }: { children: ReactNode }) {
-  return (
-    <p className="demo-note">
-      <Info size={14} />
-      {children}
-    </p>
-  );
 }
 
 export function KeyValue({ label, value }: { label: string; value: ReactNode }) {

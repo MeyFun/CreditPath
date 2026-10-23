@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Hash, RefreshCw, ShieldAlert, ShieldCheck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Hash, RefreshCw, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { api, ApiError } from "../api";
 import {
@@ -67,20 +67,8 @@ export default function AdminAudit() {
       <PageHeader
         eyebrow="Безопасность и соответствие"
         title="Журнал аудита"
-        description="Записи нельзя изменить или удалить."
         actions={<Button icon={<ShieldCheck size={17} />} loading={verify.isPending} onClick={() => verify.mutate()}>Проверить целостность</Button>}
       />
-      <div className="audit-summary">
-        <Card className="audit-integrity">
-          <span className="audit-shield"><ShieldCheck size={25} /></span>
-          <div><span className="eyebrow">Неизменяемый журнал</span><h2>Append-only + SHA-256</h2><p>Каждая запись содержит хеш предыдущей. Проверка доступна только администратору.</p></div>
-          <Badge tone="success">Защищено</Badge>
-        </Card>
-        <Card className="audit-warning">
-          <ShieldAlert size={22} />
-          <div><strong>Никто не может изменить журнал</strong><p>Даже администратор. Триггер PostgreSQL отклоняет UPDATE и DELETE.</p></div>
-        </Card>
-      </div>
       {verify.data && <Alert tone={verify.data.valid ? "success" : "danger"} title={verify.data.valid ? "Цепочка целостна" : "Обнаружено нарушение"}>{verify.data.message}{verify.data.broken_at ? ` · запись #${verify.data.broken_at}` : ""}</Alert>}
 
       <Card className="filter-card">

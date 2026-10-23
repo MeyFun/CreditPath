@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
-  ArrowUpRight,
   BadgeCheck,
   Banknote,
   CheckCircle2,
@@ -10,12 +9,8 @@ import {
   CreditCard,
   Landmark,
   LineChart,
-  LockKeyhole,
   MousePointerClick,
-  Route,
   ShieldCheck,
-  ShoppingBag,
-  Sparkles,
   WalletCards
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -23,7 +18,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api";
 import { SiteFooter } from "../components/Footer";
 import { useAuth } from "../auth";
-import { Button, Card, formatMoney, Logo, Spinner } from "../components/ui";
+import { Card, formatMoney, Logo, Spinner } from "../components/ui";
 import type { Product } from "../types";
 
 const PRODUCT_ICONS = [WalletCards, Banknote, CreditCard];
@@ -35,7 +30,7 @@ const FAQ = [
   },
   {
     q: "Какие документы нужны?",
-    a: "На старте достаточно ИНН: данные компании подтягиваются из демонстрационного реестра. Дополнительно можно приложить PDF, JPEG или PNG — до 10 МБ на файл. OCR и автоматическое распознавание не используются."
+    a: "На старте достаточно ИНН: данные компании подтягиваются из реестра. Дополнительно можно приложить PDF, JPEG или PNG — до 10 МБ на файл. OCR и автоматическое распознавание не используются."
   },
   {
     q: "Нужен ли залог?",
@@ -47,7 +42,7 @@ const FAQ = [
   },
   {
     q: "Как быстро принимается решение?",
-    a: "В демонстрационном сценарии автоматические проверки занимают несколько секунд, после чего заявка попадает сотруднику банка. Финальное решение всегда принимает человек в рабочем месте сотрудника."
+    a: "Автоматические проверки занимают несколько секунд, после чего заявка попадает сотруднику банка. Финальное решение всегда принимает человек в рабочем месте сотрудника."
   },
   {
     q: "Что означает «Одобрено на других условиях»?",
@@ -59,7 +54,7 @@ const STEPS = [
   { icon: MousePointerClick, title: "Заявка онлайн", text: "Выберите продукт, укажите ИНН и параметры. Данные компании подтянутся автоматически." },
   { icon: LineChart, title: "Автоматические проверки", text: "Реестр, кредитная история и скоринг формируют предварительное решение." },
   { icon: BadgeCheck, title: "Решение сотрудника", text: "Заявку проверяет сотрудник банка. Вы видите статус и историю в кабинете." },
-  { icon: CheckCircle2, title: "Оферта и демо-выдача", text: "Примите условия, подпишите договор и завершите сделку в демонстрационном режиме." }
+  { icon: CheckCircle2, title: "Оферта и выдача", text: "Примите условия, подпишите договор и получите средства — всё в кабинете." }
 ];
 
 function annuity(amount: number, rate: number, months: number): number {
@@ -122,11 +117,6 @@ export default function HomePage() {
         </div>
       </header>
 
-      <div className="demo-strip">
-        <Sparkles size={15} />
-        <span>Демонстрационный прототип. Все данные синтетические, подписание и зачисление средств имитируются.</span>
-      </div>
-
       <main>
         <section className="hero">
           <div className="hero-copy">
@@ -173,7 +163,6 @@ export default function HomePage() {
                   <span>Оферта</span>
                 </div>
               </div>
-              <div className="hero-note"><LockKeyhole size={15} /> Данные защищены. Реестр и БКИ в демо — локальные моки.</div>
             </div>
             <div className="hero-card hero-card-float">
               <span className="mini-icon mini-icon-dark"><Landmark size={18} /></span>
@@ -284,7 +273,7 @@ export default function HomePage() {
               <Link className="btn btn-primary btn-full" to={user ? "/app/applications/new" : "/login"} state={{ from: "/app/applications/new" }}>
                 Перейти к заявке <ArrowRight size={16} />
               </Link>
-              <p className="demo-note">Расчёт предварительный и не является офертой.</p>
+              <p className="muted small">Расчёт предварительный и не является офертой.</p>
             </Card>
           </div>
         </section>

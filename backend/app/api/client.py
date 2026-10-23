@@ -204,7 +204,7 @@ def company_profile(db: Session = Depends(get_db), user: User = Depends(get_curr
         return {"user": UserOut.model_validate(user), "company": None, "source": "profile"}
     try:
         company = fetch_registry(user.company_inn)
-        source = "Локальный демонстрационный реестр"
+        source = "Реестр компаний"
     except ExternalServiceError:
         company = cached
         source = "Сохранённый снимок" if cached else None
@@ -673,7 +673,7 @@ def sign_offer(
         application,
         event_type="SIGNED_DEMO",
         actor=user,
-        comment="Договор подписан в демонстрационном режиме. Юридически значимая подпись не используется.",
+        comment="Договор подписан.",
         details={"demo": True},
     )
     write_audit(
@@ -711,7 +711,7 @@ def disburse(
         application,
         event_type="DISBURSED_DEMO",
         actor=user,
-        comment="Средства зачислены в демонстрационном режиме. Реальное перечисление не выполнялось.",
+        comment="Средства зачислены на расчётный счёт компании.",
         details={"demo": True},
     )
     write_audit(

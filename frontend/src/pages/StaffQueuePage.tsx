@@ -8,7 +8,6 @@ import {
   Search,
   ShieldCheck,
   Sparkles,
-  TriangleAlert
 } from "lucide-react";
 import { useDeferredValue, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -22,7 +21,6 @@ import {
   Input,
   LoadingBlock,
   PageHeader,
-  ProgressBar,
   StatusBadge
 } from "../components/ui";
 
@@ -53,7 +51,6 @@ export default function StaffQueuePage() {
       <PageHeader
         eyebrow="Рабочее место сотрудника"
         title="Очередь заявок"
-        description="Заявки, назначенные вам."
       />
       <div className="kpi-grid staff-kpi">
         <Card className="kpi-card"><span className="kpi-icon kpi-icon-red"><FileText size={20} /></span><div><span>В очереди</span><strong>{stats.data?.in_review ?? "—"}</strong><small>Ожидают решения</small></div></Card>
@@ -120,10 +117,6 @@ export default function StaffQueuePage() {
         </div>
       )}
 
-      <Card className="staff-note">
-        <span className="mini-icon"><TriangleAlert size={18} /></span>
-        <div><strong>Правило «свежего взгляда»</strong><p>Вы не получите заявку, поданную с вашей учётной записи, и повторную заявку из цепочки, которую уже рассматривали. Назначение выполняется сервером с учётом нагрузки.</p></div>
-      </Card>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, RefreshCw, Search, ShieldCheck, UserCog, Users } from "lucide-react";
+import { ArrowRight, RefreshCw, Search, UserCog, Users } from "lucide-react";
 import { useState } from "react";
 import { api, ApiError } from "../api";
 import {
@@ -55,7 +55,6 @@ export default function AdminUsers() {
         title="Пользователи и роли"
         description="Выдача ролей клиента и сотрудника."
       />
-      <Alert tone="info" title="Кредитные решения недоступны администратору">Администратор управляет доступом и справочниками, но не рассматривает заявки и не принимает решения по кредитам.</Alert>
       <Card className="filter-card">
         <div className="queue-filters">
           <div className="search-box"><Search size={17} /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Имя, логин или ИНН" /></div>
@@ -90,7 +89,7 @@ export default function AdminUsers() {
                     <td>{user.last_login_at ? formatDateTime(user.last_login_at) : "—"}</td>
                     <td>
                       {user.role === "admin" ? (
-                        <span className="muted small"><ShieldCheck size={14} /> защищено</span>
+                        <span className="muted small">—</span>
                       ) : (
                         <button className="text-link" onClick={() => openChange(user)}><UserCog size={15} /> Сменить роль</button>
                       )}

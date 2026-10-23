@@ -10,7 +10,6 @@ import {
   KeyRound,
   LockKeyhole,
   ShieldCheck,
-  Sparkles,
   UserRound
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -80,7 +79,7 @@ export default function AuthPage({ initialTab = "login" }: { initialTab?: Tab })
       return;
     }
     if (!agreement) {
-      setError("Подтвердите согласие с правилами демонстрационного сервиса");
+      setError("Подтвердите согласие с условиями сервиса");
       return;
     }
     setLoading(true);
@@ -119,7 +118,6 @@ export default function AuthPage({ initialTab = "login" }: { initialTab?: Tab })
           <div className="auth-tabs">
             <button className={tab === "login" ? "active" : ""} onClick={() => { setTab("login"); setError(""); }}>Вход</button>
             <button className={tab === "register" ? "active" : ""} onClick={() => { setTab("register"); setError(""); }}>Регистрация</button>
-            <span className="auth-online"><span className="live-dot" /> Демо-контур активен</span>
           </div>
 
           {tab === "login" ? (
@@ -128,7 +126,7 @@ export default function AuthPage({ initialTab = "login" }: { initialTab?: Tab })
               <p className="auth-subtitle">Единый вход для клиентов, сотрудников банка и администраторов.</p>
               <form onSubmit={handleLogin} className="auth-form">
                 <Field label="Логин" required>
-                  <div className="input-icon-wrap"><UserRound size={18} /><Input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Например, client1" autoComplete="username" required /></div>
+                  <div className="input-icon-wrap"><UserRound size={18} /><Input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Логин" autoComplete="username" required /></div>
                 </Field>
                 <Field label="Пароль" required>
                   <div className="input-icon-wrap">
@@ -142,12 +140,12 @@ export default function AuthPage({ initialTab = "login" }: { initialTab?: Tab })
                 {error && <Alert tone="danger">{error}</Alert>}
                 <Button type="submit" loading={loading} icon={<ArrowRight size={18} />}>Войти в кабинет</Button>
               </form>
-              <div className="demo-access">
+              <details className="demo-access">
+                <summary>Тестовые данные</summary>
                 <div className="demo-access-head">
-                  <span className="eyebrow"><Sparkles size={14} /> Демо-доступ</span>
+                  <span>Выберите роль — логин и пароль заполнятся сами.</span>
                   {hint.data?.password_hint && <span>Пароль: <code>{hint.data.password_hint}</code></span>}
                 </div>
-                <p>Выберите роль — логин и пароль заполнятся автоматически.</p>
                 <div className="demo-account-grid">
                   {DEMO_ACCOUNTS.map((account) => {
                     const Icon = account.icon;
@@ -160,15 +158,15 @@ export default function AuthPage({ initialTab = "login" }: { initialTab?: Tab })
                     );
                   })}
                 </div>
-              </div>
+              </details>
             </>
           ) : (
             <>
               <h1>Регистрация в кабинете</h1>
-              <p className="auth-subtitle">Создайте демонстрационный профиль предпринимателя. Подтверждения вне сайта не требуются.</p>
+              <p className="auth-subtitle">Создайте профиль предпринимателя: подтверждение по почте или телефону не нужно.</p>
               <form onSubmit={handleRegister} className="auth-form">
                 <Field label="Логин" hint="От 3 до 32 символов: буквы, цифры, точка, дефис." required>
-                  <div className="input-icon-wrap"><UserRound size={18} /><Input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Например, client3" minLength={3} maxLength={32} pattern="[A-Za-z0-9_.-]+" required /></div>
+                  <div className="input-icon-wrap"><UserRound size={18} /><Input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Придумайте логин" minLength={3} maxLength={32} pattern="[A-Za-z0-9_.-]+" required /></div>
                 </Field>
                 <Field label="Фамилия и имя" required>
                   <Input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Например, Иванов Иван" minLength={2} required />
@@ -186,7 +184,7 @@ export default function AuthPage({ initialTab = "login" }: { initialTab?: Tab })
                 </div>
                 <label className="checkbox-row">
                   <input type="checkbox" checked={agreement} onChange={(event) => setAgreement(event.target.checked)} />
-                  <span>Я принимаю правила демонстрационного сервиса и согласен на обработку синтетических данных в рамках прототипа.</span>
+                  <span>Я принимаю условия использования сервиса и даю согласие на обработку персональных данных.</span>
                 </label>
                 {error && <Alert tone="danger">{error}</Alert>}
                 <Button type="submit" loading={loading} icon={<ArrowRight size={18} />}>Зарегистрироваться</Button>
@@ -197,9 +195,8 @@ export default function AuthPage({ initialTab = "login" }: { initialTab?: Tab })
         </section>
 
         <aside className="auth-aside">
-          <span className="eyebrow"><Sparkles size={14} /> Заявка на кредит за ~10 минут</span>
-          <h2>Быстрый старт финансирования вашего бизнеса</h2>
-          <p>Заявка, проверки и решение — в одном кабинете.</p>
+          <h2>От заявки до решения — в одном кабинете</h2>
+          <p>Подайте заявку, следите за проверками и получите решение без визита в банк.</p>
           <div className="auth-metrics">
             <div><strong>до 50 млн ₽</strong><span>лимит</span></div>
             <div><strong>от 13,8%</strong><span>ставка</span></div>

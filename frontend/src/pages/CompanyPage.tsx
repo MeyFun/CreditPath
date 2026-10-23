@@ -24,7 +24,7 @@ export default function CompanyPage() {
   if (!company) {
     return (
       <div className="page-stack">
-        <PageHeader eyebrow="Профиль" title="Компания" description="Реквизиты из демонстрационного реестра." />
+        <PageHeader eyebrow="Профиль" title="Компания" description="Реквизиты и финансовые показатели компании." />
         <Alert tone="warning" title="Компания не привязана">Укажите ИНН при создании заявки — профиль заполнится автоматически.</Alert>
       </div>
     );
@@ -74,7 +74,6 @@ export default function CompanyPage() {
               <div key={founder.name}><span className="avatar avatar-small">{founder.name.slice(0, 1)}</span><div><strong>{founder.name}</strong><small>Доля {founder.share}%</small></div></div>
             ))}
           </div>
-          <Alert tone="info" title="Синтетические данные">Это демонстрационный профиль. Показатели и реквизиты вымышлены и не относятся к реальным организациям.</Alert>
         </Card>
       </div>
     </div>

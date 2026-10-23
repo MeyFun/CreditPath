@@ -54,7 +54,7 @@ def registry_lookup(inn: str) -> dict:
     return {
         "found": True,
         "company": company,
-        "source": "Локальный демонстрационный реестр",
+        "source": "Реестр компаний",
         "verified_at": datetime.now(timezone.utc).isoformat(),
     }
 

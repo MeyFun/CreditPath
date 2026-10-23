@@ -21,7 +21,6 @@ import {
   Badge,
   Button,
   Card,
-  DemoNote,
   Field,
   formatDate,
   formatDateTime,
@@ -228,7 +227,7 @@ export default function StaffApplicationPage() {
               <Card>
                 <div className="card-head"><div><span className="eyebrow">Скоринг</span><h2>Скоринг: {score} из 100</h2></div><Badge tone={risk.tone}>{risk.label}</Badge></div>
                 <ProgressBar value={score} tone={score >= 70 ? "success" : score >= 40 ? "warning" : "danger"} />
-                <p className="muted small">Диапазон: 0–100, выше — надёжнее. Модель не принимает финальное решение, а формирует факторы для сотрудника.</p>
+                <p className="muted small">Диапазон: 0–100, выше — надёжнее.</p>
                 <div className="factor-list">
                   {app.scoring?.factors.map((factor) => (
                     <div className="factor-row" key={factor.code}>
@@ -250,14 +249,14 @@ export default function StaffApplicationPage() {
                     )}
                   </>
                 ) : <p className="muted">Предварительное решение ещё не сформировано.</p>}
-                {app.enrichment_errors && <Alert tone="warning" title="Деградация внешних проверок">Часть данных мок-сервисов была недоступна. Проверьте снимок перед решением.</Alert>}
+                {app.enrichment_errors && <Alert tone="warning" title="Деградация внешних проверок">Часть данных из внешних источников была недоступна. Проверьте снимок перед решением.</Alert>}
               </Card>
             </>
           )}
 
           {tab === "history" && (
             <Card>
-              <div className="card-head"><div><span className="eyebrow">Аудит и события</span><h2>История заявки</h2></div><span className="muted small">Все действия фиксируются</span></div>
+              <div className="card-head"><div><span className="eyebrow">Аудит и события</span><h2>История заявки</h2></div></div>
               <Timeline events={app.events} />
             </Card>
           )}
@@ -268,7 +267,6 @@ export default function StaffApplicationPage() {
             <div className="card-head"><div><span className="eyebrow">Финальное решение</span><h2>Панель сотрудника</h2></div><ShieldCheck size={21} /></div>
             {app.status === "IN_REVIEW" && app.can_decide ? (
               <>
-                <p className="muted small">Выберите одно из четырёх действий. Отказ и запрос данных требуют комментария.</p>
                 {(action === "approve" || action === "approve_changed") && (app.risk_override_reasons?.length ?? 0) > 0 && (
                   <Alert tone="warning" title="Одобрение будет риск-исключением">
                     {app.risk_override_reasons!.join("; ")}. Решение дополнительно зафиксируется в журнале аудита.

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ArrowRight,
@@ -6,9 +6,7 @@ import {
   Check,
   CheckCircle2,
   FileText,
-  Info,
   LoaderCircle,
-  LockKeyhole,
   RefreshCw,
   ShieldCheck,
   Trash2,
@@ -143,7 +141,6 @@ export default function NewApplicationPage() {
   const errorRef = useRef<HTMLDivElement>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [idempotencyKey] = useState(newKey);
-  const [showDemoInns, setShowDemoInns] = useState(false);
   const [signerPosition, setSignerPosition] = useState("ceo");
   const [authorityConfirmed, setAuthorityConfirmed] = useState(false);
   const [consentBki, setConsentBki] = useState(false);
@@ -499,16 +496,16 @@ export default function NewApplicationPage() {
                   <p className="registry-address">{company.address}</p>
                 </div>
               )}
-              <button className="text-button demo-inns-toggle" onClick={() => setShowDemoInns((value) => !value)}><Info size={15} /> {showDemoInns ? "Скрыть" : "Показать"} демо-ИНН для проверки сценариев</button>
-              {showDemoInns && (
+              <details className="demo-access">
+                <summary>Тестовые данные</summary>
                 <div className="demo-inn-list">
                   {DEMO_INNS.map(([value, label]) => (
-                    <button key={value} type="button" onClick={() => { setInn(value); setCompany(null); setRegistryError(""); }}>
+                    <button key={value} type="button" onClick={() => { setInn(value); setCompany(null); setRegistryError(""); setProblem(null); }}>
                       <code>{value}</code><span>{label}</span>
                     </button>
                   ))}
                 </div>
-              )}
+              </details>
             </div>
           )}
 
@@ -545,7 +542,7 @@ export default function NewApplicationPage() {
 
           {step === 3 && (
             <div className="wizard-step">
-              <div className="step-heading"><span className="step-chip">Шаг 4 из 5</span><h2>Документы компании</h2><p>Необязательный шаг. PDF, JPEG или PNG, до 10 МБ. OCR не используется.</p></div>
+              <div className="step-heading"><span className="step-chip">Шаг 4 из 5</span><h2>Документы компании</h2><p>Необязательный шаг. PDF, JPEG или PNG, до 10 МБ.</p></div>
               <button type="button" className="upload-zone" onClick={() => fileInput.current?.click()} disabled={uploading}>
                 {uploading ? <LoaderCircle className="spin" size={28} /> : <UploadCloud size={30} />}
                 <strong>{uploading ? "Загружаем…" : "Нажмите, чтобы выбрать файлы"}</strong>
@@ -565,7 +562,6 @@ export default function NewApplicationPage() {
                   ))
                 )}
               </div>
-              <Alert tone="info" title="Безопасное хранение">Файлы сохраняются в приватном томе и доступны только вам, назначенному сотруднику и администратору.</Alert>
             </div>
           )}
 
@@ -586,7 +582,7 @@ export default function NewApplicationPage() {
               </div>
               <div className="consent-box">
                 <ShieldCheck size={20} />
-                <div><strong>Отправка заявки</strong><p>Нажимая «Отправить заявку», вы передаёте синтетические данные в демонстрационный кредитный конвейер. Автоматические проверки и решение сотрудника не имеют юридических последствий.</p></div>
+                <div><strong>Отправка заявки</strong><p>Нажимая «Отправить заявку», вы передаёте данные заявки на автоматические проверки и рассмотрение сотрудником банка.</p></div>
               </div>
               <Field label="Кто подаёт заявку" required>
                 <Select value={signerPosition} onChange={(event) => setSignerPosition(event.target.value)}>
@@ -594,7 +590,7 @@ export default function NewApplicationPage() {
                 </Select>
               </Field>
               <label className="checkbox-row"><input type="checkbox" checked={authorityConfirmed} onChange={(event) => setAuthorityConfirmed(event.target.checked)} /><span>Подтверждаю, что уполномочен подавать заявку на кредит от имени {company?.name ?? "компании"}.</span></label>
-              <label className="checkbox-row"><input type="checkbox" checked={consentBki} onChange={(event) => setConsentBki(event.target.checked)} /><span>Согласен на запрос кредитной истории в бюро кредитных историй (в прототипе — локальный мок).</span></label>
+              <label className="checkbox-row"><input type="checkbox" checked={consentBki} onChange={(event) => setConsentBki(event.target.checked)} /><span>Согласен на запрос кредитной истории в бюро кредитных историй.</span></label>
               <label className="checkbox-row"><input type="checkbox" checked={consentPersonalData} onChange={(event) => setConsentPersonalData(event.target.checked)} /><span>Согласен на обработку персональных данных для рассмотрения заявки.</span></label>
             </div>
           )}
@@ -626,11 +622,7 @@ export default function NewApplicationPage() {
               <div><span>Ставка</span><strong>от {product.rate.toFixed(1).replace(".", ",")}%</strong></div>
               <div><span>Переплата</span><strong>{formatMoney(Math.max(0, payment * term - amount))}</strong></div>
             </div>
-            <div className="assurance"><LockKeyhole size={16} /><span>Расчёт не является публичной офертой. Итоговые условия — после проверок и решения сотрудника.</span></div>
-          </Card>
-          <Card className="help-card">
-            <span className="mini-icon"><CheckCircle2 size={18} /></span>
-            <div><strong>Демо-сценарий</strong><p>Можно проверить одобрение, отказ, другие условия и запрос данных. Список ИНН — в шаге «Компания».</p></div>
+            <p className="muted small">Расчёт не является офертой: итоговые условия — после проверок и решения сотрудника.</p>
           </Card>
         </aside>
       </div>

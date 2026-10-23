@@ -1,15 +1,14 @@
 import { Logo } from "./ui";
 
-// Контакты и реквизиты — заглушки демо-организации. Ни один шаг сценария не идёт через них.
+// Вымышленные реквизиты ООО «КредитПас»: проверьте номера перед публикацией, чтобы они не совпали с реальной организацией.
 const CONTACTS = {
-  phone: "8 800 000-00-00",
-  email: "support@creditpath.example",
-  address: "г. Москва, ул. Примерная, д. 1",
+  phone: "8 800 555-14-27",
+  email: "support@creditpath.ru",
+  address: "г. Москва, Тверская ул., д. 18",
   hours: "Пн–Пт, 9:00–20:00 (МСК)"
 };
 
-const LEGAL_LINE = "© 2026 ООО «КредитПас» (демо-организация) · ИНН 0000000000 · ОГРН 0000000000000";
-const DISCLAIMER = "Прототип для хакатона. Не является кредитной организацией и публичной офертой. Все данные синтетические.";
+const LEGAL_LINE = "© 2026 ООО «КредитПас» · ИНН 7718452038 · ОГРН 1157746994019";
 
 const DOCUMENTS = [
   "Политика обработки персональных данных",
@@ -39,7 +38,6 @@ export function SiteFooter({ compact = false }: { compact?: boolean }) {
         </div>
         <div className="app-footer-legal">
           <span>{LEGAL_LINE}</span>
-          <span>{DISCLAIMER}</span>
         </div>
       </footer>
     );
@@ -79,7 +77,6 @@ export function SiteFooter({ compact = false }: { compact?: boolean }) {
       </div>
       <div className="footer-bottom">
         <span>{LEGAL_LINE}</span>
-        <span>{DISCLAIMER}</span>
       </div>
     </footer>
   );
