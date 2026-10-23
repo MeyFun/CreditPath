@@ -105,8 +105,8 @@ export function Button({
   return (
     <button
       className={`btn btn-${variant} ${className}`.trim()}
-      disabled={loading || props.disabled}
       {...props}
+      disabled={loading || props.disabled}
     >
       {loading ? <LoaderCircle className="spin" size={18} /> : icon}
       <span>{children}</span>
@@ -183,6 +183,16 @@ const STATUS_MAP: Record<string, { label: string; tone: string }> = {
   SIGNED: { label: "Договор подписан", tone: "success" },
   DISBURSED: { label: "Средства перечислены", tone: "success" }
 };
+
+const PIPELINE_STATUSES = ["SUBMITTED", "VALIDATION", "ENRICHMENT", "SCORING", "DECISION_DRAFT"];
+
+/** Как часто опрашивать заявку: быстро на автопроверках, реже пока ждём сотрудника или клиента. */
+export function applicationPollInterval(status: string | undefined): number | false {
+  if (!status) return false;
+  if (PIPELINE_STATUSES.includes(status)) return 2000;
+  if (status === "IN_REVIEW" || status === "NEED_INFO") return 5000;
+  return false;
+}
 
 export function StatusBadge({ status, label }: { status: string; label?: string }) {
   const item = STATUS_MAP[status] ?? { label: label ?? status, tone: "neutral" };

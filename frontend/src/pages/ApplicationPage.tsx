@@ -17,6 +17,7 @@ import { api, downloadDocument } from "../api";
 import { useAuth } from "../auth";
 import {
   Alert,
+  applicationPollInterval,
   Badge,
   Card,
   DemoNote,
@@ -66,10 +67,7 @@ export default function ApplicationPage() {
   const query = useQuery({
     queryKey: ["client-application", applicationId],
     queryFn: () => api.client.application(applicationId),
-    refetchInterval: (data) =>
-      data?.state.data && ["SUBMITTED", "VALIDATION", "ENRICHMENT", "SCORING", "DECISION_DRAFT"].includes(data.state.data.status)
-        ? 2000
-        : false
+    refetchInterval: (data) => applicationPollInterval(data?.state.data?.status)
   });
 
   if (query.isLoading) return <LoadingBlock label="Загружаем заявку…" />;

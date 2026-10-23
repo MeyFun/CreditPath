@@ -10,7 +10,6 @@ import {
   Info,
   RefreshCw,
   ShieldCheck,
-  Sparkles,
   UploadCloud,
   XCircle
 } from "lucide-react";
@@ -29,7 +28,10 @@ import {
   formatMoney,
   Input,
   LoadingBlock,
+  Modal,
+  plural,
   StatusBadge,
+  applicationPollInterval,
   useToast
 } from "../components/ui";
 import type { ApplicationDetail } from "../types";
@@ -66,18 +68,15 @@ export default function ResultPage() {
   const [comment, setComment] = useState("");
   const [revenue, setRevenue] = useState("");
   const [profit, setProfit] = useState("");
+  const [fixedInn, setFixedInn] = useState("");
+  const [confirmDecline, setConfirmDecline] = useState(false);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
 
   const query = useQuery({
     queryKey: ["client-application", applicationId],
     queryFn: () => api.client.application(applicationId),
-    refetchInterval: (data) => {
-      const status = data?.state.data?.status;
-      return status && ["SUBMITTED", "VALIDATION", "ENRICHMENT", "SCORING", "DECISION_DRAFT"].includes(status)
-        ? 2000
-        : false;
-    }
+    refetchInterval: (data) => applicationPollInterval(data?.state.data?.status)
   });
 
   function invalidate() {
@@ -92,7 +91,8 @@ export default function ResultPage() {
       api.client.respond(applicationId, {
         comment,
         ...(revenue ? { declared_revenue: Number(revenue) } : {}),
-        ...(profit ? { declared_profit: Number(profit) } : {})
+        ...(profit ? { declared_profit: Number(profit) } : {}),
+        ...(fixedInn.trim() ? { company_inn: fixedInn.trim() } : {})
       }),
     onSuccess: () => {
       push("Ответ отправлен. Автоматические проверки продолжаются.", "success");
@@ -106,6 +106,7 @@ export default function ResultPage() {
     mutationFn: (accept: boolean) => api.client.offer(applicationId, accept),
     onSuccess: (_, accept) => {
       push(accept ? "Оферта принята" : "Оферта отклонена", "success");
+      setConfirmDecline(false);
       invalidate();
     },
     onError: (err) => setError(err instanceof ApiError ? err.message : "Не удалось обработать оферту")
@@ -168,7 +169,7 @@ export default function ResultPage() {
   const rate = app.approved_rate ?? app.product.rate;
   const payment = annuity(amount, rate, term);
   const rows = schedule(amount, rate, term);
-  const reasons = app.decision_draft?.reasons ?? [];
+  const declined = app.status === "OFFER_DECLINED";
 
   if (!["APPROVED", "APPROVED_CHANGED", "NEED_INFO", "REJECTED", "OFFER_ACCEPTED", "OFFER_DECLINED", "SIGNED", "DISBURSED"].includes(app.status)) {
     return (
@@ -176,7 +177,11 @@ export default function ResultPage() {
         <div className="result-waiting">
           <span className="pulse-dot" />
           <h1>Решение ещё формируется</h1>
-          <p>Заявка находится на этапе автоматических проверок. Статус обновится автоматически.</p>
+          <p>
+            {app.status === "IN_REVIEW"
+              ? "Заявка у сотрудника банка. Страница обновится сама, как только решение будет принято."
+              : "Заявка проходит автоматические проверки. Статус обновится автоматически."}
+          </p>
           <Link className="btn btn-primary" to={`/app/applications/${app.id}`}>Вернуться к заявке <ArrowRight size={16} /></Link>
         </div>
       </Card>
@@ -227,10 +232,15 @@ export default function ResultPage() {
                 <DemoNote>Показатели, указанные здесь, используются только в демонстрационном скоринге и сохраняются как заявленные клиентом.</DemoNote>
               </>
             )}
+            {!app.registry_snapshot && (
+              <Field label="Исправленный ИНН" hint="Если компания не найдена в реестре, укажите верный ИНН">
+                <Input inputMode="numeric" maxLength={12} value={fixedInn} onChange={(event) => setFixedInn(event.target.value.replace(/\D/g, ""))} placeholder={app.company_inn ?? ""} />
+              </Field>
+            )}
             <div className="upload-inline">
               <input ref={fileInput} type="file" hidden multiple accept=".pdf,.jpg,.jpeg,.png" onChange={(event) => upload(event.target.files)} />
               <Button variant="secondary" icon={<UploadCloud size={17} />} loading={uploading} onClick={() => fileInput.current?.click()}>Приложить документы</Button>
-              <span>{app.documents.length} файлов уже загружено</span>
+              <span>Загружено: {app.documents.length} {plural(app.documents.length, "файл", "файла", "файлов")}</span>
             </div>
             <Button onClick={() => { if (comment.trim().length < 2) { setError("Опишите ответ в комментарии"); return; } respond.mutate(); }} loading={respond.isPending}>Отправить ответ и продолжить <ArrowRight size={16} /></Button>
           </Card>
@@ -243,15 +253,21 @@ export default function ResultPage() {
 
       {["APPROVED", "APPROVED_CHANGED", "OFFER_ACCEPTED", "SIGNED", "DISBURSED", "OFFER_DECLINED"].includes(app.status) && (
         <div className="result-grid">
-          <Card className={`result-main ${app.status === "APPROVED_CHANGED" ? "result-changed" : "result-approved"}`}>
+          <Card className={`result-main ${declined ? "" : app.status === "APPROVED_CHANGED" ? "result-changed" : "result-approved"}`}>
             <div className="offered-banner">
-              <span className="result-icon result-icon-success"><CheckCircle2 size={30} /></span>
+              <span className={`result-icon ${declined ? "result-icon-warning" : "result-icon-success"}`}>{declined ? <XCircle size={30} /> : <CheckCircle2 size={30} />}</span>
               <div>
                 <span className="eyebrow">{app.status === "DISBURSED" ? "Сделка завершена" : "Решение банка"}</span>
-                <h2>{app.status === "APPROVED_CHANGED" ? "Одобрено на других условиях" : "Одобрено"}</h2>
-                <p>{app.status === "DISBURSED" ? "Средства зачислены в демонстрационном режиме." : "Проверки завершены. Ознакомьтесь с условиями оферты."}</p>
+                <h2>{declined ? "Вы отклонили предложение" : app.final_outcome === "approve_changed" ? "Одобрено на других условиях" : "Одобрено"}</h2>
+                <p>
+                  {declined
+                    ? "Условия ниже больше не действуют. Можно подать новую заявку."
+                    : app.status === "DISBURSED"
+                      ? "Средства зачислены в демонстрационном режиме."
+                      : "Проверки завершены. Ознакомьтесь с условиями оферты."}
+                </p>
               </div>
-              {app.status === "APPROVED_CHANGED" && <Badge tone="warning">Изменены условия</Badge>}
+              {app.final_outcome === "approve_changed" && !declined && <Badge tone="warning">Изменены условия</Badge>}
             </div>
             {app.offer_expires_at && active && <div className="offer-deadline"><Clock3 size={15} /> Оферта действует до {formatDate(app.offer_expires_at)}</div>}
 
@@ -262,19 +278,13 @@ export default function ResultPage() {
               <div><span>Платёж</span><strong className="accent-text">{formatMoney(payment)}</strong><small>в месяц</small></div>
             </div>
 
-            {reasons.length > 0 && (
-              <div className="reasons">
-                <strong>Почему банк принял такое решение</strong>
-                <ul>{reasons.map((reason, index) => <li key={index}><CheckCircle2 size={15} /> {reason}</li>)}</ul>
-              </div>
-            )}
             {app.employee_comment && <div className="reason-box"><strong>Комментарий сотрудника</strong><p>{app.employee_comment}</p></div>}
 
             <div className="offer-actions">
               {app.status === "APPROVED" || app.status === "APPROVED_CHANGED" ? (
                 <>
-                  <Button onClick={() => offer.mutate(true)} loading={offer.isPending} icon={<FileText size={17} />}>Принять предложение</Button>
-                  <Button variant="secondary" onClick={() => offer.mutate(false)} loading={offer.isPending}>Отклонить</Button>
+                  <Button onClick={() => offer.mutate(true)} loading={offer.isPending && offer.variables === true} disabled={offer.isPending} icon={<FileText size={17} />}>Принять предложение</Button>
+                  <Button variant="secondary" onClick={() => setConfirmDecline(true)} disabled={offer.isPending}>Отклонить</Button>
                 </>
               ) : app.status === "OFFER_ACCEPTED" ? (
                 <Button onClick={() => sign.mutate()} loading={sign.isPending} icon={<ShieldCheck size={17} />}>Подписать договор (демо)</Button>
@@ -286,8 +296,16 @@ export default function ResultPage() {
                 <Link className="btn btn-primary" to="/app/applications/new"><RefreshCw size={16} /> Подать новую заявку</Link>
               )}
             </div>
-            <DemoNote><Sparkles size={13} /> Подписание и зачисление средств в этом прототипе имитируются. Реальные деньги не перечисляются.</DemoNote>
+            <DemoNote>Подписание и зачисление средств в этом прототипе имитируются. Реальные деньги не перечисляются.</DemoNote>
           </Card>
+          <Modal
+            open={confirmDecline}
+            title="Отклонить предложение?"
+            onClose={() => setConfirmDecline(false)}
+            footer={<><Button variant="ghost" onClick={() => setConfirmDecline(false)}>Отмена</Button><Button variant="danger" loading={offer.isPending} onClick={() => offer.mutate(false)}>Отклонить</Button></>}
+          >
+            <p>Оферта перестанет действовать. Чтобы получить финансирование, понадобится новая заявка.</p>
+          </Modal>
 
           <aside className="result-aside">
             <Card>
@@ -304,7 +322,6 @@ export default function ResultPage() {
               <div className="summary-lines">
                 <div><span>Всего к возврату</span><strong>{formatMoney(payment * term)}</strong></div>
                 <div><span>Переплата</span><strong>{formatMoney(payment * term - amount)}</strong></div>
-                <div><span>Комиссии</span><strong>0 ₽</strong></div>
               </div>
               <p className="muted small">Расчёт предварительный. Полный график формируется в демонстрационной оферте.</p>
             </Card>
@@ -324,12 +341,6 @@ export default function ResultPage() {
             <h2>По заявке принят отказ</h2>
             <p>Решение принято сотрудником банка после проверки данных. Причина и рекомендации указаны ниже.</p>
             {app.employee_comment && <div className="reason-box"><strong>Комментарий сотрудника</strong><p>{app.employee_comment}</p></div>}
-            {reasons.length > 0 && (
-              <div className="reasons">
-                <strong>Причины решения</strong>
-                <ul>{reasons.map((reason, index) => <li key={index}><XCircle size={15} /> {reason}</li>)}</ul>
-              </div>
-            )}
             <Alert tone="info" title="Можно попробовать снова">Устраните замечания и создайте новую заявку. Она будет связана с предыдущей и не попадёт сотруднику, который уже рассматривал цепочку.</Alert>
             <Button onClick={() => resubmit.mutate()} loading={resubmit.isPending} icon={<RefreshCw size={17} />}>Подать заново</Button>
             <DemoNote>Повторная подача копирует данные заявки в новый черновик.</DemoNote>
