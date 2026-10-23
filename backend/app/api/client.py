@@ -42,6 +42,8 @@ from ..schemas import (
     OfferRequest,
     ProfileUpdateRequest,
     RespondInfoRequest,
+    SIGNER_POSITIONS,
+    SubmitRequest,
     UserOut,
 )
 from ..security import get_current_user, require_client
@@ -94,6 +96,16 @@ def _product(db: Session, product_id: int, allow_inactive: bool = False) -> Prod
 def _number() -> str:
     year = datetime.now(timezone.utc).year
     return f"CP-{year}-{uuid.uuid4().hex[:8].upper()}"
+
+
+def _consents(payload: SubmitRequest) -> dict:
+    return {
+        "signer_position": payload.signer_position,
+        "authority_confirmed": payload.authority_confirmed,
+        "consent_bki": payload.consent_bki,
+        "consent_personal_data": payload.consent_personal_data,
+        "confirmed_at": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 def _event_payload(application: Application) -> dict:
@@ -401,6 +413,7 @@ def update_application(
 @router.post("/applications/{application_id}/submit", response_model=ApplicationDetail, status_code=202)
 def submit_application(
     application_id: int,
+    payload: SubmitRequest,
     background_tasks: BackgroundTasks,
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     db: Session = Depends(get_db),
@@ -422,6 +435,11 @@ def submit_application(
                 return application_detail_dict(db, same, product, user)
     if application.status != DRAFT:
         raise HTTPException(status_code=409, detail="Отправить можно только черновик")
+    if not (payload.authority_confirmed and payload.consent_bki and payload.consent_personal_data):
+        raise HTTPException(
+            status_code=422,
+            detail="Подтвердите полномочия и согласия на запрос в БКИ и обработку персональных данных",
+        )
     product = _product(db, application.product_id)
     valid, message = validate_inn(application.company_inn)
     if not valid:
@@ -462,7 +480,8 @@ def submit_application(
         application,
         event_type="APPLICATION_SUBMITTED",
         actor=user,
-        comment="Заявка отправлена. Автоматические проверки начались.",
+        comment=f"Заявка отправлена ({SIGNER_POSITIONS[payload.signer_position].lower()}). Автоматические проверки начались.",
+        details=_consents(payload),
     )
     write_audit(
         db,
@@ -470,7 +489,7 @@ def submit_application(
         action="application.submitted",
         entity_type="application",
         entity_id=application.id,
-        after={"number": application.public_number, "status": application.status},
+        after={"number": application.public_number, "status": application.status, **_consents(payload)},
     )
     try:
         db.commit()

@@ -113,10 +113,15 @@ export const api = {
         method: "PUT",
         body: JSON.stringify(payload)
       }),
-    submit: (id: number, key: string) =>
+    submit: (
+      id: number,
+      key: string,
+      body: { signer_position: string; authority_confirmed: boolean; consent_bki: boolean; consent_personal_data: boolean }
+    ) =>
       request<ApplicationDetail>(`/client/applications/${id}/submit`, {
         method: "POST",
-        headers: { "Idempotency-Key": key }
+        headers: { "Idempotency-Key": key, "Content-Type": "application/json" },
+        body: JSON.stringify(body)
       }),
     respond: (id: number, payload: { comment: string; declared_revenue?: number; declared_profit?: number }) =>
       request<ApplicationDetail>(`/client/applications/${id}/respond`, json(payload)),

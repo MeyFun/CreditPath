@@ -52,7 +52,7 @@ export default function AuthPage({ initialTab = "login" }: { initialTab?: Tab })
 
   function chooseDemo(account: string) {
     setUsername(account);
-    setPassword(hint.data?.password_hint ?? "DemoPass123!");
+    setPassword(hint.data?.password_hint ?? "");
     setTab("login");
     setError("");
   }
@@ -144,7 +144,7 @@ export default function AuthPage({ initialTab = "login" }: { initialTab?: Tab })
               <div className="demo-access">
                 <div className="demo-access-head">
                   <span className="eyebrow"><Sparkles size={14} /> Демо-доступ</span>
-                  <span>Пароль: <code>{hint.data?.password_hint ?? "DemoPass123!"}</code></span>
+                  {hint.data?.password_hint && <span>Пароль: <code>{hint.data.password_hint}</code></span>}
                 </div>
                 <p>Выберите роль — логин и пароль заполнятся автоматически.</p>
                 <div className="demo-account-grid">

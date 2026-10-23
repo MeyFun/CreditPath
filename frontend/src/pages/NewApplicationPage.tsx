@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  AlertCircle,
   ArrowLeft,
   ArrowRight,
   Building2,
@@ -10,10 +9,8 @@ import {
   Info,
   LoaderCircle,
   LockKeyhole,
-  Plus,
   RefreshCw,
   ShieldCheck,
-  Trash2,
   UploadCloud
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -35,7 +32,7 @@ import {
 import type { DocumentItem, Product, RegistryCompany } from "../types";
 
 const STEPS = [
-  { title: "Цель и продукт", description: "Что финансируем" },
+  { title: "Потребность", description: "На что нужны деньги" },
   { title: "Компания", description: "Проверка ИНН" },
   { title: "Параметры", description: "Сумма и срок" },
   { title: "Документы", description: "По желанию" },
@@ -59,6 +56,32 @@ function annuity(amount: number, rate: number, months: number) {
   if (!months) return 0;
   if (monthly === 0) return amount / months;
   return (amount * monthly) / (1 - Math.pow(1 + monthly, -months));
+}
+
+const SIGNER_POSITIONS = [
+  ["owner", "Собственник бизнеса"],
+  ["ceo", "Генеральный директор"],
+  ["cfo", "Финансовый директор"],
+  ["accountant", "Бухгалтер"],
+  ["authorized", "Уполномоченный сотрудник"],
+  ["entrepreneur", "Индивидуальный предприниматель"]
+];
+
+const INN_WEIGHTS_10 = [2, 4, 10, 3, 5, 9, 4, 6, 8];
+const INN_WEIGHTS_11 = [7, 2, 4, 10, 3, 5, 9, 4, 6, 8];
+const INN_WEIGHTS_12 = [3, 7, 2, 4, 10, 3, 5, 9, 4, 6, 8];
+
+function innCheck(digits: string, weights: number[]): number {
+  return (weights.reduce((sum, weight, index) => sum + weight * Number(digits[index]), 0) % 11) % 10;
+}
+
+/** Та же проверка контрольной суммы ФНС, что и на сервере: ошибку видно до запроса в реестр. */
+function innError(value: string): string {
+  if (!/^\d{10}$|^\d{12}$/.test(value)) return "ИНН должен содержать 10 цифр для юрлица или 12 для ИП";
+  const valid = value.length === 10
+    ? innCheck(value, INN_WEIGHTS_10) === Number(value[9])
+    : innCheck(value, INN_WEIGHTS_11) === Number(value[10]) && innCheck(value, INN_WEIGHTS_12) === Number(value[11]);
+  return valid ? "" : "Неверная контрольная сумма ИНН — проверьте цифры";
 }
 
 function newKey() {
@@ -101,6 +124,11 @@ export default function NewApplicationPage() {
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [idempotencyKey] = useState(newKey);
   const [showDemoInns, setShowDemoInns] = useState(false);
+  const [signerPosition, setSignerPosition] = useState("ceo");
+  const [authorityConfirmed, setAuthorityConfirmed] = useState(false);
+  const [consentBki, setConsentBki] = useState(false);
+  const [consentPersonalData, setConsentPersonalData] = useState(false);
+  const consentsGiven = authorityConfirmed && consentBki && consentPersonalData;
 
   const products = productsQuery.data ?? [];
   const product = products.find((item) => item.id === productId) ?? null;
@@ -157,10 +185,12 @@ export default function NewApplicationPage() {
   async function verifyInn() {
     setRegistryError("");
     setCompany(null);
-    if (!/^\d{10}$|^\d{12}$/.test(inn)) {
-      setRegistryError("ИНН должен содержать 10 цифр для юрлица или 12 для ИП");
+    const formatError = innError(inn);
+    if (formatError) {
+      setRegistryError(formatError);
       return;
     }
+    setSignerPosition(inn.length === 12 ? "entrepreneur" : "ceo");
     setRegistryLoading(true);
     try {
       const data = await api.public.registry(inn);
@@ -285,7 +315,12 @@ export default function NewApplicationPage() {
     setSubmitting(true);
     try {
       const id = await persist();
-      const submitted = await api.client.submit(id, idempotencyKey);
+      const submitted = await api.client.submit(id, idempotencyKey, {
+        signer_position: signerPosition,
+        authority_confirmed: authorityConfirmed,
+        consent_bki: consentBki,
+        consent_personal_data: consentPersonalData
+      });
       queryClient.invalidateQueries({ queryKey: ["applications"] });
       queryClient.invalidateQueries({ queryKey: ["client-dashboard"] });
       push("Заявка отправлена. Автоматические проверки начались.", "success");
@@ -334,24 +369,33 @@ export default function NewApplicationPage() {
 
           {step === 0 && (
             <div className="wizard-step">
-              <div className="step-heading"><span className="step-chip">Шаг 1 из 5</span><h2>Выберите условия и цель кредитования</h2><p>Мы подстроим расчёт под продукт и цель.</p></div>
-              <h3 className="subheading">Кредитный продукт</h3>
-              <div className="wizard-products">
-                {products.map((item) => (
-                  <button key={item.id} type="button" className={`wizard-product ${product.id === item.id ? "selected" : ""}`} onClick={() => selectProduct(item)}>
-                    <span className="radio-circle">{product.id === item.id && <span />}</span>
-                    <span><strong>{item.name}</strong><small>{item.short_description}</small><em>от {item.rate.toFixed(1).replace(".", ",")}% · {item.min_term_months}–{item.max_term_months} мес.</em></span>
-                  </button>
-                ))}
-              </div>
-              <h3 className="subheading">Цель кредитования</h3>
+              <div className="step-heading"><span className="step-chip">Шаг 1 из 5</span><h2>На что нужны деньги?</h2><p>Выберите задачу бизнеса — подходящий продукт подберётся автоматически.</p></div>
               <div className="purpose-grid">
-                {product.purposes.map((item) => (
-                  <button key={item.code} type="button" className={`purpose-option ${purpose === item.code ? "selected" : ""}`} onClick={() => setPurpose(item.code)}>
-                    <span className="radio-circle">{purpose === item.code && <span />}</span>
-                    <span><strong>{item.label}</strong><small>Соответствует продукту «{product.name}»</small></span>
-                  </button>
-                ))}
+                {products.flatMap((item) => item.purposes.map((need) => ({ need, item }))).map(({ need, item }) => {
+                  const selected = product.id === item.id && purpose === need.code;
+                  return (
+                    <button
+                      key={`${item.code}-${need.code}`}
+                      type="button"
+                      className={`purpose-option ${selected ? "selected" : ""}`}
+                      onClick={() => { if (product.id !== item.id) selectProduct(item); setPurpose(need.code); }}
+                    >
+                      <span className="radio-circle">{selected && <span />}</span>
+                      <span><strong>{need.label}</strong><small>{item.name}</small></span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="registry-card">
+                <span className="eyebrow">Подходящий продукт</span>
+                <h3>{product.name}</h3>
+                <p className="muted">{product.short_description}</p>
+                <div className="registry-grid">
+                  <div><span>Сумма</span><strong>{formatMoney(product.min_amount)} — {formatMoney(product.max_amount)}</strong></div>
+                  <div><span>Срок</span><strong>{product.min_term_months}–{product.max_term_months} мес.</strong></div>
+                  <div><span>Ставка</span><strong>от {product.rate.toFixed(1).replace(".", ",")}%</strong></div>
+                  <div><span>Залог</span><strong>{product.requires_collateral ? "Нужен" : "Не нужен"}</strong></div>
+                </div>
               </div>
               <DemoNote>Данные заявки можно сохранить и продолжить позже: черновик доступен в разделе «Мои заявки».</DemoNote>
             </div>
@@ -470,10 +514,14 @@ export default function NewApplicationPage() {
                 <div><span>Документы</span><strong>{documents.length} шт.</strong></div>
                 <div><span>Платёж</span><strong>{formatMoney(payment)} / мес.</strong></div>
               </div>
-              <div className="consent-box">
-                <ShieldCheck size={20} />
-                <div><strong>Отправка заявки</strong><p>Нажимая «Отправить заявку», вы передаёте синтетические данные в демонстрационный кредитный конвейер. Автоматические проверки и решение сотрудника не имеют юридических последствий.</p></div>
-              </div>
+              <Field label="Кто подаёт заявку" required>
+                <Select value={signerPosition} onChange={(event) => setSignerPosition(event.target.value)}>
+                  {SIGNER_POSITIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </Select>
+              </Field>
+              <label className="checkbox-row"><input type="checkbox" checked={authorityConfirmed} onChange={(event) => setAuthorityConfirmed(event.target.checked)} /><span>Подтверждаю, что уполномочен подавать заявку на кредит от имени {company?.name ?? "компании"}.</span></label>
+              <label className="checkbox-row"><input type="checkbox" checked={consentBki} onChange={(event) => setConsentBki(event.target.checked)} /><span>Согласен на запрос кредитной истории в бюро кредитных историй (в прототипе — локальный мок).</span></label>
+              <label className="checkbox-row"><input type="checkbox" checked={consentPersonalData} onChange={(event) => setConsentPersonalData(event.target.checked)} /><span>Согласен на обработку персональных данных для рассмотрения заявки.</span></label>
               <DemoNote>Подписание и выдача средств на следующих шагах имитируются и явно помечены.</DemoNote>
             </div>
           )}
@@ -483,7 +531,7 @@ export default function NewApplicationPage() {
             {step < STEPS.length - 1 ? (
               <Button onClick={next} loading={saving}>Продолжить <ArrowRight size={16} /></Button>
             ) : (
-              <Button onClick={submit} loading={submitting} icon={<ShieldCheck size={17} />}>Отправить заявку</Button>
+              <Button onClick={submit} loading={submitting} disabled={!consentsGiven} icon={<ShieldCheck size={17} />}>Отправить заявку</Button>
             )}
           </div>
         </Card>
@@ -500,10 +548,6 @@ export default function NewApplicationPage() {
               <div><span>Переплата</span><strong>{formatMoney(Math.max(0, payment * term - amount))}</strong></div>
             </div>
             <div className="assurance"><LockKeyhole size={16} /><span>Расчёт не является публичной офертой. Итоговые условия — после проверок и решения сотрудника.</span></div>
-          </Card>
-          <Card className="help-card">
-            <span className="mini-icon"><Info size={18} /></span>
-            <div><strong>Нужна подсказка?</strong><p>Откройте FAQ на главной или центр уведомлений — внешние каналы не используются.</p><Link to="/#faq" className="text-link">Перейти в FAQ <ArrowRight size={14} /></Link></div>
           </Card>
           <Card className="help-card">
             <span className="mini-icon"><CheckCircle2 size={18} /></span>

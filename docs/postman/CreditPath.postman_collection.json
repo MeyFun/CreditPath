@@ -149,8 +149,13 @@
             "method": "POST",
             "header": [
               { "key": "Authorization", "value": "Bearer {{clientToken}}" },
-              { "key": "Idempotency-Key", "value": "{{$guid}}" }
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
+              { "key": "Content-Type", "value": "application/json" }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"signer_position\": \"ceo\", \"authority_confirmed\": true, \"consent_bki\": true, \"consent_personal_data\": true}"
+            },
             "url": {
               "raw": "{{baseUrl}}/client/applications/{{clientApplicationId}}/submit",
               "host": ["{{baseUrl}}"],

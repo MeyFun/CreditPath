@@ -19,6 +19,14 @@ BASE_URL = os.getenv("E2E_BASE_URL", "http://localhost:8080/api").rstrip("/")
 PASSWORD = os.getenv("E2E_PASSWORD", "DemoPass123!")
 TIMEOUT = float(os.getenv("E2E_TIMEOUT", "90"))
 
+# Подтверждения заявителя при отправке заявки.
+SUBMIT_BODY = {
+    "signer_position": "ceo",
+    "authority_confirmed": True,
+    "consent_bki": True,
+    "consent_personal_data": True,
+}
+
 SCENARIOS = [
     {
         "name": "Здоровая компания",
@@ -252,6 +260,7 @@ def run() -> None:
             submitted = client.post(
                 f"/client/applications/{application_id}/submit",
                 "client1",
+                SUBMIT_BODY,
                 headers={"Idempotency-Key": key},
             )
             check(submitted["status"] == "SUBMITTED", "После отправки ожидался SUBMITTED")
@@ -259,6 +268,7 @@ def run() -> None:
             repeated = client.post(
                 f"/client/applications/{application_id}/submit",
                 "client1",
+                SUBMIT_BODY,
                 headers={"Idempotency-Key": key},
             )
             check(repeated["id"] == application_id, "Idempotency-Key вернул другую заявку")
@@ -344,68 +354,62 @@ def run() -> None:
         )
         check(forbidden.status_code == 403, "Администратор не должен иметь доступ к кредитным решениям")
 
-        # Администратор и сотрудник тоже являются клиентами продукта.
+        # Рабочие учётки сотрудника и администратора не действуют как заявитель.
         for username in ("admin", "employee1"):
-            dashboard = client.get("/client/dashboard", username)
-            check("counts" in dashboard, f"{username} не получил клиентский дашборд")
-            print(f"✓ {username}: клиентский кабинет доступен")
+            staff_dashboard = client.http.get("/client/dashboard", headers=client.headers(username))
+            check(staff_dashboard.status_code == 403, f"{username} не должен иметь клиентский кабинет")
+        print("✓ Сотрудник и администратор: клиентский кабинет закрыт (403)")
 
-        admin_application = client.post(
+        # Связанное лицо: заявка client3 никогда не назначается employee3.
+        equipment = by_code["EQUIPMENT"]
+        related_application = client.post(
             "/client/applications",
-            "admin",
+            "client3",
             {
-                "product_id": by_code["OBOROT"]["id"],
+                "product_id": equipment["id"],
                 "amount": 1_000_000,
-                "term_months": 12,
-                "purpose": "working_capital",
-                "company_inn": "9900000017",
-                "company_name": "ООО «Северный Ветер»",
-                "collateral": False,
-            },
-        )
-        admin_detail = client.get(f"/client/applications/{admin_application['id']}", "admin")
-        check(admin_detail["id"] == admin_application["id"], "Администратор не видит собственную заявку в клиентском кабинете")
-        admin_decision = client.http.post(
-            f"/employee/applications/{admin_application['id']}/decision",
-            headers=client.headers("admin"),
-            json={"action": "approve"},
-        )
-        check(admin_decision.status_code == 403, "Администратор не должен одобрять собственную заявку")
-        print("✓ Администратор: клиентская заявка создана, кредитное решение недоступно")
-
-        employee_application = client.post(
-            "/client/applications",
-            "employee1",
-            {
-                "product_id": by_code["OBOROT"]["id"],
-                "amount": 1_200_000,
-                "term_months": 12,
-                "purpose": "working_capital",
-                "company_inn": "9900000017",
-                "company_name": "ООО «Северный Ветер»",
-                "collateral": False,
+                "term_months": 24,
+                "purpose": equipment["purposes"][0]["code"],
+                "company_inn": "990000001246",
+                "collateral": True,
             },
         )
         client.post(
-            f"/client/applications/{employee_application['id']}/submit",
-            "employee1",
+            f"/client/applications/{related_application['id']}/submit",
+            "client3",
+            {**SUBMIT_BODY, "signer_position": "entrepreneur"},
             headers={"Idempotency-Key": uuid.uuid4().hex},
         )
-        employee_own_status = wait_for(
-            client,
-            employee_application["id"],
-            {"IN_REVIEW", "NEED_INFO", "REJECTED"},
-            username="employee1",
+        related_status = wait_for(
+            client, related_application["id"], {"IN_REVIEW", "NEED_INFO", "REJECTED"}, username="client3"
         )
-        check(employee_own_status["status"] == "IN_REVIEW", "Заявка сотрудника не дошла до рассмотрения")
-        own_service = client.http.get(
-            f"/employee/applications/{employee_application['id']}",
-            headers=client.headers("employee1"),
+        check(related_status["status"] == "IN_REVIEW", "Заявка связанного лица не дошла до рассмотрения")
+        assigned_to, related_detail = find_employee(client, related_application["id"])
+        check(assigned_to != "employee3", "Заявка связанного лица назначена связанному сотруднику")
+        check(related_detail.get("related_party") is True, "Сотрудник не видит отметку о связанном лице")
+        print(f"✓ Связанное лицо: заявка client3 назначена {assigned_to}, не employee3")
+
+        # Персональная лента: client1 (ОКВЭД 46) и client3 (ИП, ОКВЭД 62) видят разное.
+        feed1 = client.get("/client/news", "client1")
+        feed3 = client.get("/client/news", "client3")
+        titles1 = {item["title"] for item in feed1["items"]}
+        titles3 = {item["title"] for item in feed3["items"]}
+        check(titles1 != titles3, "Ленты разных клиентов не должны совпадать")
+        published = client.post(
+            "/admin/news",
+            "admin",
+            {"title": "E2E: новость для ОКВЭД 46", "body": "Проверка таргетинга.", "category": "industry",
+             "targeting": {"okved_prefixes": ["46"]}},
         )
-        check(own_service.status_code == 404, "Сотрудник не должен открывать собственную заявку в служебном контуре")
-        assigned_to, _ = find_employee(client, employee_application["id"])
-        check(assigned_to != "employee1", "Собственная заявка сотрудника не должна назначаться ему")
-        print(f"✓ Сотрудник: своя заявка доступна как клиентская, в служебном контуре скрыта; назначена {assigned_to}")
+        check(
+            any(item["title"] == published["title"] for item in client.get("/client/news", "client1")["items"]),
+            "Новость для ОКВЭД 46 не появилась у client1",
+        )
+        check(
+            all(item["title"] != published["title"] for item in client.get("/client/news", "client3")["items"]),
+            "Новость для ОКВЭД 46 не должна попадать к client3",
+        )
+        print("✓ Новостная лента: персональная подборка и таргетинг администратора работают")
 
         print("\nE2E успешно завершён: все четыре исхода и служебные проверки пройдены.")
     finally:

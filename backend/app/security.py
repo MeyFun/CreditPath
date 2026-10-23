@@ -109,14 +109,18 @@ class LoginRateLimiter:
         bucket = self._attempts[key]
         while bucket and now - bucket[0] > settings.login_rate_window_seconds:
             bucket.popleft()
+        if not bucket:
+            # Пустые счётчики удаляем, чтобы словарь не рос от перебора несуществующих логинов.
+            del self._attempts[key]
 
     def check(self, key: str) -> None:
         now = time.time()
         with self._lock:
             self._trim(key, now)
             limit = self._limit if self._limit is not None else settings.login_rate_limit
-            if len(self._attempts[key]) >= limit:
-                retry_after = max(1, int(settings.login_rate_window_seconds - (now - self._attempts[key][0])))
+            bucket = self._attempts.get(key)
+            if bucket and len(bucket) >= limit:
+                retry_after = max(1, int(settings.login_rate_window_seconds - (now - bucket[0])))
                 raise HTTPException(
                     status_code=429,
                     detail=f"Слишком много попыток входа. Повторите через {retry_after} сек.",

@@ -204,6 +204,25 @@ class DecisionRequest(BaseModel):
     comment: str | None = Field(default=None, max_length=4000)
 
 
+SIGNER_POSITIONS = {
+    "owner": "Собственник бизнеса",
+    "ceo": "Генеральный директор",
+    "cfo": "Финансовый директор",
+    "accountant": "Бухгалтер",
+    "authorized": "Уполномоченный сотрудник",
+    "entrepreneur": "Индивидуальный предприниматель",
+}
+
+
+class SubmitRequest(BaseModel):
+    """Подтверждения заявителя при отправке: полномочия и согласия."""
+
+    signer_position: Literal["owner", "ceo", "cfo", "accountant", "authorized", "entrepreneur"]
+    authority_confirmed: bool
+    consent_bki: bool
+    consent_personal_data: bool
+
+
 class RespondInfoRequest(BaseModel):
     comment: str = Field(min_length=2, max_length=4000)
     declared_revenue: float | None = Field(default=None, ge=0, allow_inf_nan=False)

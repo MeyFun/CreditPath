@@ -161,3 +161,27 @@ def test_username_limiter_is_softer_than_ip_limiter():
     with pytest.raises(HTTPException) as blocked:
         limiter.check("client2")
     assert blocked.value.status_code == 429
+
+
+def test_submit_requires_authority_and_consents(client, db, monkeypatch):
+    import app.api.client as client_api
+
+    monkeypatch.setattr(client_api, "run_pipeline", lambda *args, **kwargs: None)
+    client1 = user_by_name(db, "client1")
+    app = make_application(db, user=client1)
+    headers = login(client, "client1")
+    body = {"signer_position": "ceo", "authority_confirmed": True, "consent_bki": False, "consent_personal_data": True}
+
+    refused = client.post(f"/api/client/applications/{app.id}/submit", headers=headers, json=body)
+    assert refused.status_code == 422
+
+    body["consent_bki"] = True
+    accepted = client.post(f"/api/client/applications/{app.id}/submit", headers=headers, json=body)
+    assert accepted.status_code == 202, accepted.text
+    event = db.scalars(
+        select(ApplicationEvent).where(
+            ApplicationEvent.application_id == app.id, ApplicationEvent.event_type == "APPLICATION_SUBMITTED"
+        )
+    ).one()
+    assert event.details["signer_position"] == "ceo"
+    assert event.details["consent_bki"] is True
