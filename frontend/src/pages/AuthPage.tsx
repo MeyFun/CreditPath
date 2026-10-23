@@ -16,6 +16,7 @@ import {
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { api, ApiError } from "../api";
+import { SiteFooter } from "../components/Footer";
 import { homeForRole, useAuth } from "../auth";
 import { Alert, Button, Field, Input, Logo } from "../components/ui";
 
@@ -198,29 +199,20 @@ export default function AuthPage({ initialTab = "login" }: { initialTab?: Tab })
         <aside className="auth-aside">
           <span className="eyebrow"><Sparkles size={14} /> Заявка на кредит за ~10 минут</span>
           <h2>Быстрый старт финансирования вашего бизнеса</h2>
-          <p>Заявка, проверки и решение — в одном кабинете. Без внешних подтверждений и лишних переходов.</p>
+          <p>Заявка, проверки и решение — в одном кабинете.</p>
           <div className="auth-metrics">
             <div><strong>до 50 млн ₽</strong><span>лимит</span></div>
             <div><strong>от 13,8%</strong><span>ставка</span></div>
             <div><strong>~10 минут</strong><span>на заявку</span></div>
           </div>
           <div className="auth-benefits">
-            <div><span className="benefit-icon"><Building2 size={19} /></span><div><strong>Данные вводятся один раз</strong><p>ИНН подтягивает компанию из демонстрационного реестра.</p></div></div>
-            <div><span className="benefit-icon"><CheckCircle2 size={19} /></span><div><strong>Статус всегда виден</strong><p>Таймлайн, история и центр уведомлений внутри продукта.</p></div></div>
-            <div><span className="benefit-icon"><LockKeyhole size={19} /></span><div><strong>Прозрачное решение</strong><p>Факторы скоринга и понятная причина для каждого исхода.</p></div></div>
+            <div><span className="benefit-icon"><Building2 size={19} /></span><div><strong>Данные вводятся один раз</strong><p>По ИНН данные компании заполнятся автоматически.</p></div></div>
+            <div><span className="benefit-icon"><CheckCircle2 size={19} /></span><div><strong>Статус всегда виден</strong><p>Этапы и история заявки в кабинете.</p></div></div>
+            <div><span className="benefit-icon"><LockKeyhole size={19} /></span><div><strong>Понятное решение</strong><p>Факторы скоринга и понятная причина для каждого исхода.</p></div></div>
           </div>
-          <div className="auth-quote">
-            <div className="quote-stars">Демо-сценарий</div>
-            <p>«Подайте заявку по одному из восьми синтетических ИНН и пройдите путь до демонстрационной выдачи средств».</p>
-            <span>CreditPath · прототип</span>
-          </div>
-          <div className="auth-security"><ShieldCheck size={19} /><span>Серверная проверка ролей, аудит действий и короткоживущие токены.</span></div>
         </aside>
       </main>
-      <footer className="auth-footer">
-        <span>© 2026 CreditPath · демонстрационный прототип</span>
-        <span>Все компании, ИНН и финансовые показатели синтетические.</span>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Bell,
   Building2,
-  Calculator,
   ClipboardList,
   FileClock,
   FolderKanban,
@@ -12,7 +11,6 @@ import {
   Plus,
   ScrollText,
   Settings2,
-  ShieldCheck,
   Users,
   X
 } from "lucide-react";
@@ -20,6 +18,7 @@ import type { LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api";
+import { SiteFooter } from "./Footer";
 import { useAuth } from "../auth";
 import { Logo } from "./ui";
 import type { Role } from "../types";
@@ -143,33 +142,6 @@ export function AppShell({ role }: { role: Area }) {
             </div>
           ))}
         </nav>
-        {role === "client" && (
-          <div className="sidebar-note">
-            <Calculator size={18} />
-            <div>
-              <strong>Демо-режим</strong>
-              <p>Все компании, реестры и решения — синтетические. Подписание и выдача имитируются.</p>
-            </div>
-          </div>
-        )}
-        {role === "admin" && (
-          <div className="sidebar-note">
-            <ShieldCheck size={18} />
-            <div>
-              <strong>Кредитные решения — только у сотрудников</strong>
-              <p>Администратор управляет доступами, но не может одобрить заявку. Журнал аудита неизменяем.</p>
-            </div>
-          </div>
-        )}
-        {role === "employee" && (
-          <div className="sidebar-note">
-            <ShieldCheck size={18} />
-            <div>
-              <strong>Конфликт интересов исключён</strong>
-              <p>Заявки связанных с вами лиц и повторные заявки после вашего отказа назначаются другим сотрудникам.</p>
-            </div>
-          </div>
-        )}
         <div className="sidebar-user">
           <span className="avatar">{initials(user.full_name)}</span>
           <div>
@@ -207,10 +179,7 @@ export function AppShell({ role }: { role: Area }) {
         <main className="page">
           <Outlet />
         </main>
-        <footer className="app-footer">
-          <span>CreditPath · демонстрационный прототип</span>
-          <span>Данные синтетические. Подписание и зачисление имитируются.</span>
-        </footer>
+        <SiteFooter compact />
       </div>
     </div>
   );

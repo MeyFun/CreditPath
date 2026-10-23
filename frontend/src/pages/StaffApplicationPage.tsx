@@ -211,7 +211,7 @@ export default function StaffApplicationPage() {
           {tab === "checks" && (
             <>
               <Card>
-                <div className="card-head"><div><span className="eyebrow">Прозрачная модель</span><h2>Скоринг: {score} из 100</h2></div><Badge tone={risk.tone}>{risk.label}</Badge></div>
+                <div className="card-head"><div><span className="eyebrow">Скоринг</span><h2>Скоринг: {score} из 100</h2></div><Badge tone={risk.tone}>{risk.label}</Badge></div>
                 <ProgressBar value={score} tone={score >= 70 ? "success" : score >= 40 ? "warning" : "danger"} />
                 <p className="muted small">Диапазон: 0–100, выше — надёжнее. Модель не принимает финальное решение, а формирует факторы для сотрудника.</p>
                 <div className="factor-list">
@@ -291,7 +291,6 @@ export default function StaffApplicationPage() {
                   </div>
                 )}
                 {!action && error && <Alert tone="danger">{error}</Alert>}
-                <DemoNote>Решение регистрируется в журнале аудита. Администратор не может принять кредитное решение.</DemoNote>
               </>
             ) : app.status === "NEED_INFO" ? (
               <Alert tone="warning" title="Ожидается ответ клиента">Заявка вернётся к вам после ответа. Вы получите уведомление в центре.</Alert>
@@ -315,10 +314,9 @@ export default function StaffApplicationPage() {
             <button className="text-link" onClick={() => setTab("checks")}>Разобрать факторы <ArrowRight size={14} /></button>
           </Card>
 
-          {app.previous_decisions.length > 0 ? (
+          {app.previous_decisions.length > 0 && (
             <Card>
               <div className="card-head"><div><span className="eyebrow">Свежий взгляд</span><h2>Прошлые заявки клиента</h2></div><ShieldAlert size={19} /></div>
-              <p className="muted small">Повторная заявка назначена вам, потому что вы не рассматривали эту цепочку. Учтите контекст прошлых решений.</p>
               <div className="previous-decisions">
                 {app.previous_decisions.map((item) => (
                   <div className="previous-decision" key={item.id}>
@@ -328,11 +326,6 @@ export default function StaffApplicationPage() {
                   </div>
                 ))}
               </div>
-            </Card>
-          ) : (
-            <Card className="help-card">
-              <span className="mini-icon"><ShieldAlert size={18} /></span>
-              <div><strong>Свежий взгляд</strong><p>Система уже исключила вас из цепочек, где вы принимали решение, и из собственных заявок. Дополнительная проверка выполняется на сервере.</p></div>
             </Card>
           )}
         </aside>

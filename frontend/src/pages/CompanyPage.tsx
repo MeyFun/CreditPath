@@ -35,7 +35,7 @@ export default function CompanyPage() {
       <PageHeader
         eyebrow="Профиль"
         title={company.name}
-        description="Данные получены из локального демонстрационного реестра. Редактирование доступно только в источнике."
+        description="Реквизиты из реестра."
         actions={<Button variant="secondary" icon={<RefreshCw size={16} />} onClick={() => query.refetch()}>Обновить</Button>}
       />
       <div className="company-hero">

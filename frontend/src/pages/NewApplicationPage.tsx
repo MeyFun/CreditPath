@@ -117,6 +117,9 @@ export default function NewApplicationPage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [registryLoading, setRegistryLoading] = useState(false);
   const [registryError, setRegistryError] = useState("");
+  // Компании нет в реестре: клиент вводит название вручную и прикладывает выписку файлом.
+  const [notFound, setNotFound] = useState(false);
+  const [manualName, setManualName] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -185,6 +188,7 @@ export default function NewApplicationPage() {
   async function verifyInn() {
     setRegistryError("");
     setCompany(null);
+    setNotFound(false);
     const formatError = innError(inn);
     if (formatError) {
       setRegistryError(formatError);
@@ -200,6 +204,7 @@ export default function NewApplicationPage() {
       }
     } catch (err) {
       setRegistryError(err instanceof ApiError ? err.message : "Не удалось проверить ИНН");
+      setNotFound(err instanceof ApiError && err.status === 404);
     } finally {
       setRegistryLoading(false);
     }
@@ -214,7 +219,7 @@ export default function NewApplicationPage() {
       term_months: term,
       purpose,
       company_inn: inn || undefined,
-      company_name: company?.name,
+      company_name: company?.name ?? (manualName.trim() || undefined),
       collateral
     });
     setDraftId(created.id);
@@ -231,7 +236,7 @@ export default function NewApplicationPage() {
       term_months: term,
       purpose,
       company_inn: inn || undefined,
-      company_name: company?.name,
+      company_name: company?.name ?? (manualName.trim() || undefined),
       collateral
     });
     setSavedAt(new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }));
@@ -258,7 +263,7 @@ export default function NewApplicationPage() {
       if (!purpose) return "Выберите цель кредита";
     }
     if (current === 1) {
-      if (!company) return "Проверьте ИНН и дождитесь данных компании";
+      if (!company && !(notFound && manualName.trim().length >= 3)) return "Проверьте ИНН и дождитесь данных компании";
     }
     if (current === 2 && product) {
       if (amount < product.min_amount || amount > product.max_amount) return "Сумма вне диапазона продукта";
@@ -353,7 +358,7 @@ export default function NewApplicationPage() {
           <div>
             <span className="eyebrow">Новая заявка</span>
             <h1>Оформление кредита для бизнеса</h1>
-            <p>Пять шагов, без бумажных справок и внешних подтверждений.</p>
+            <p>Пять шагов, без бумажных справок.</p>
           </div>
           <div className="wizard-save">
             {savedAt ? <span className="saved-note"><CheckCircle2 size={16} /> Черновик сохранён в {savedAt}</span> : <span className="muted small">{draftId ? "Черновик" : "Новый черновик"}</span>}
@@ -388,20 +393,34 @@ export default function NewApplicationPage() {
                   </button>
                 ))}
               </div>
-              <DemoNote>Данные заявки можно сохранить и продолжить позже: черновик доступен в разделе «Мои заявки».</DemoNote>
             </div>
           )}
 
           {step === 1 && (
             <div className="wizard-step">
-              <div className="step-heading"><span className="step-chip">Шаг 2 из 5</span><h2>Сведения о компании</h2><p>Введите ИНН — реквизиты подтянутся из демонстрационного реестра.</p></div>
-              <Field label="ИНН организации (10 цифр) или ИП (12 цифр)" required hint="Данные загружаются из локального мок-сервиса реестра.">
+              <div className="step-heading"><span className="step-chip">Шаг 2 из 5</span><h2>Сведения о компании</h2><p>Введите ИНН — реквизиты заполнятся автоматически.</p></div>
+              <Field label="ИНН организации (10 цифр) или ИП (12 цифр)" required>
                 <div className="inn-row">
                   <div className="input-icon-wrap"><Building2 size={18} /><Input value={inn} onChange={(event) => { setInn(event.target.value.replace(/\D/g, "").slice(0, 12)); setCompany(null); }} inputMode="numeric" placeholder="Например, 9900000017" /></div>
                   <Button variant="secondary" onClick={verifyInn} loading={registryLoading} icon={registryLoading ? undefined : <RefreshCw size={16} />}>Проверить</Button>
                 </div>
               </Field>
               {registryError && <Alert tone={company ? "warning" : "danger"}>{registryError}</Alert>}
+              {notFound && (
+                <>
+                  <Alert tone="warning" title="Компании нет в реестре">
+                    Если ИНН указан верно, введите название компании и приложите выписку из ЕГРЮЛ/ЕГРИП файлом на шаге «Документы». Сотрудник банка проверит данные вручную.
+                  </Alert>
+                  <Field label="Название компании" required>
+                    <Input value={manualName} maxLength={255} onChange={(event) => setManualName(event.target.value)} placeholder="ООО «Название»" />
+                  </Field>
+                </>
+              )}
+              {company && (company.revenue == null || company.profit == null) && (
+                <Alert tone="warning" title="В реестре нет финансовых показателей">
+                  Приложите бухгалтерскую отчётность за последний год файлом на шаге «Документы» — иначе банк запросит её отдельно.
+                </Alert>
+              )}
               {company && (
                 <div className="registry-card">
                   <div className="registry-head">
@@ -472,6 +491,13 @@ export default function NewApplicationPage() {
                 <strong>{uploading ? "Загружаем…" : "Нажмите, чтобы выбрать файлы"}</strong>
                 <span>Можно приложить отчётность, выписку или другой документ</span>
               </button>
+              {(notFound || (company && (company.revenue == null || company.profit == null))) && documents.length === 0 && (
+                <Alert tone="warning" title="Добавьте документы файлом">
+                  {notFound
+                    ? "Компании нет в реестре: приложите выписку из ЕГРЮЛ/ЕГРИП и учредительные документы."
+                    : "В реестре нет финансовых показателей: приложите бухгалтерскую отчётность за последний год."}
+                </Alert>
+              )}
               <input ref={fileInput} type="file" hidden multiple accept=".pdf,.jpg,.jpeg,.png" onChange={(event) => uploadFiles(event.target.files)} />
               <div className="document-list">
                 {documents.length === 0 ? (
@@ -517,7 +543,6 @@ export default function NewApplicationPage() {
               <label className="checkbox-row"><input type="checkbox" checked={authorityConfirmed} onChange={(event) => setAuthorityConfirmed(event.target.checked)} /><span>Подтверждаю, что уполномочен подавать заявку на кредит от имени {company?.name ?? "компании"}.</span></label>
               <label className="checkbox-row"><input type="checkbox" checked={consentBki} onChange={(event) => setConsentBki(event.target.checked)} /><span>Согласен на запрос кредитной истории в бюро кредитных историй (в прототипе — локальный мок).</span></label>
               <label className="checkbox-row"><input type="checkbox" checked={consentPersonalData} onChange={(event) => setConsentPersonalData(event.target.checked)} /><span>Согласен на обработку персональных данных для рассмотрения заявки.</span></label>
-              <DemoNote>Подписание и выдача средств на следующих шагах имитируются и явно помечены.</DemoNote>
             </div>
           )}
 
@@ -543,10 +568,6 @@ export default function NewApplicationPage() {
               <div><span>Переплата</span><strong>{formatMoney(Math.max(0, payment * term - amount))}</strong></div>
             </div>
             <div className="assurance"><LockKeyhole size={16} /><span>Расчёт не является публичной офертой. Итоговые условия — после проверок и решения сотрудника.</span></div>
-          </Card>
-          <Card className="help-card">
-            <span className="mini-icon"><Info size={18} /></span>
-            <div><strong>Нужна подсказка?</strong><p>Откройте FAQ на главной или центр уведомлений — внешние каналы не используются.</p><Link to="/#faq" className="text-link">Перейти в FAQ <ArrowRight size={14} /></Link></div>
           </Card>
           <Card className="help-card">
             <span className="mini-icon"><CheckCircle2 size={18} /></span>

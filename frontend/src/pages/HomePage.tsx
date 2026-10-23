@@ -21,6 +21,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
+import { SiteFooter } from "../components/Footer";
 import { useAuth } from "../auth";
 import { Button, Card, formatMoney, Logo, Spinner } from "../components/ui";
 import type { Product } from "../types";
@@ -56,7 +57,7 @@ const FAQ = [
 
 const STEPS = [
   { icon: MousePointerClick, title: "Заявка онлайн", text: "Выберите продукт, укажите ИНН и параметры. Данные компании подтянутся автоматически." },
-  { icon: LineChart, title: "Автоматические проверки", text: "Реестр, кредитная история и прозрачный скоринг формируют предварительное решение." },
+  { icon: LineChart, title: "Автоматические проверки", text: "Реестр, кредитная история и скоринг формируют предварительное решение." },
   { icon: BadgeCheck, title: "Решение сотрудника", text: "Заявку проверяет сотрудник банка. Вы видите статус и историю в кабинете." },
   { icon: CheckCircle2, title: "Оферта и демо-выдача", text: "Примите условия, подпишите договор и завершите сделку в демонстрационном режиме." }
 ];
@@ -133,7 +134,7 @@ export default function HomePage() {
             <h1>Кредит для бизнеса без визита в банк</h1>
             <p>
               Единый кабинет для ИП и компаний: подберите продукт, проверьте ИНН,
-              отправьте заявку и следите за решением. Прозрачные этапы, понятные причины и никаких внешних каналов — всё внутри продукта.
+              отправьте заявку и следите за решением.
             </p>
             <div className="hero-actions">
               <Link className="btn btn-primary btn-lg" to={user ? "/app/applications/new" : "/login"} state={{ from: "/app/applications/new" }}>
@@ -176,7 +177,7 @@ export default function HomePage() {
             </div>
             <div className="hero-card hero-card-float">
               <span className="mini-icon mini-icon-dark"><Landmark size={18} /></span>
-              <div><small>Решение сотрудника</small><strong>Прозрачные причины</strong></div>
+              <div><small>Решение сотрудника</small><strong>Понятные причины</strong></div>
             </div>
             <div className="hero-orbit" />
           </div>
@@ -290,7 +291,7 @@ export default function HomePage() {
 
         <section className="section" id="how">
           <div className="section-heading centered">
-            <span className="eyebrow">Прозрачный процесс</span>
+            <span className="eyebrow">Как это работает</span>
             <h2>Как это работает</h2>
             <p>От заявки до решения — четыре понятных этапа, каждый со статусом в кабинете.</p>
           </div>
@@ -331,7 +332,7 @@ export default function HomePage() {
           <div>
             <span className="eyebrow">Готовы начать?</span>
             <h2>Подайте заявку и наблюдайте за решением онлайн</h2>
-            <p>Внутренний центр уведомлений, прозрачный скоринг и решение сотрудника — без внешних каналов и бумажной волокиты.</p>
+            <p>Решение по заявке и все уведомления — в личном кабинете.</p>
           </div>
           <div className="cta-actions">
             <Link className="btn btn-primary btn-lg" to={user ? "/app" : "/register"}>Создать кабинет <ArrowRight size={18} /></Link>
@@ -340,22 +341,7 @@ export default function HomePage() {
         </section>
       </main>
 
-      <footer className="public-footer">
-        <div className="footer-main">
-          <div className="footer-brand">
-            <Logo />
-            <p>Демонстрационный прототип кредитного кабинета для малого и микробизнеса.</p>
-            <span className="footer-demo"><Sparkles size={14} /> Hackathon demo · 2026</span>
-          </div>
-          <div><h4>Продукты</h4><a href="#products">Оборотный кредит</a><a href="#products">Кредит на оборудование</a><a href="#products">Овердрафт</a></div>
-          <div><h4>Процесс</h4><a href="#how">Как это работает</a><a href="#calculator">Калькулятор</a><a href="#faq">Вопросы и ответы</a></div>
-          <div><h4>Безопасность</h4><span><ShieldCheck size={15} /> Серверная проверка ролей</span><span><LockKeyhole size={15} /> Неизменяемый аудит</span><span><Route size={15} /> Прозрачные статусы</span></div>
-        </div>
-        <div className="footer-bottom">
-          <span>© 2026 CreditPath. Все данные вымышлены.</span>
-          <span>Не является кредитной организацией и публичной офертой.</span>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

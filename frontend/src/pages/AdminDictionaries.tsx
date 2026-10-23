@@ -70,7 +70,7 @@ export default function AdminDictionaries() {
       <PageHeader
         eyebrow="Администрирование"
         title="Справочники и лимиты"
-        description="Продукты и параметры скоринга. Изменения версионируются и фиксируются в аудите."
+        description="Продукты и параметры скоринга."
       />
       <div className="tabs-row section-tabs">
         <button className={tab === "products" ? "active" : ""} onClick={() => setTab("products")}><BookOpenCheck size={16} /> Продукты</button>

@@ -50,7 +50,7 @@ export default function StaffQueuePage() {
       <PageHeader
         eyebrow="Рабочее место сотрудника"
         title="Очередь заявок"
-        description="Заявки, назначенные лично вам. Полные данные и решения доступны только по закреплённым заявкам."
+        description="Заявки, назначенные вам."
       />
       <div className="kpi-grid staff-kpi">
         <Card className="kpi-card"><span className="kpi-icon kpi-icon-red"><FileText size={20} /></span><div><span>В очереди</span><strong>{stats.data?.in_review ?? "—"}</strong><small>Ожидают решения</small></div></Card>

@@ -46,7 +46,7 @@ const NEXT_STEP: Record<string, { title: string; body: string }> = {
   SUBMITTED: { title: "Заявка принята", body: "Автоматические проверки начнутся в течение нескольких секунд." },
   VALIDATION: { title: "Проверяем данные", body: "Формат, полнота и ИНН проверяются автоматически." },
   ENRICHMENT: { title: "Запрашиваем данные", body: "Получаем сведения из демонстрационных реестра и БКИ. Обычно это занимает несколько секунд." },
-  SCORING: { title: "Считаем оценку", body: "Прозрачная факторная модель формирует балл и причины." },
+  SCORING: { title: "Считаем оценку", body: "Оцениваем данные компании и кредитную историю." },
   DECISION_DRAFT: { title: "Применяем правила банка", body: "Кредитная логика формирует предварительное решение." },
   IN_REVIEW: { title: "Заявка у сотрудника", body: "Сотрудник банка проверяет данные и принимает финальное решение." },
   NEED_INFO: { title: "Нужны уточнения", body: "Ответьте на запрос и при необходимости приложите документы. Проверки продолжатся автоматически." },
@@ -140,7 +140,7 @@ export default function ApplicationPage() {
             </div>
             <ol className="stage-list">
               <StageItem index={1} title="Заявка отправлена" done={stage >= 0} active={stage === 0} text="Заявка зафиксирована в системе, данные переданы на автоматические проверки." time={app.submitted_at} />
-              <StageItem index={2} title="Автоматические проверки" done={stage >= 2} active={stage === 1} text="ИНН и реквизиты, реестр, кредитная история и прозрачный скоринг." time={stage >= 2 ? app.updated_at : null} />
+              <StageItem index={2} title="Автоматические проверки" done={stage >= 2} active={stage === 1} text="ИНН и реквизиты, реестр, кредитная история и скоринг." time={stage >= 2 ? app.updated_at : null} />
               <StageItem index={3} title="Рассмотрение сотрудником" done={stage >= 3} active={stage === 2} text={app.status === "NEED_INFO" ? "Сотрудник или автоматическая проверка ожидает данные от вас." : "Финальное решение принимает сотрудник банка с учётом предварительной оценки."} time={stage >= 3 ? app.updated_at : null} />
               <StageItem index={4} title="Решение и оферта" done={stage >= 3} active={stage === 3} text="Условия, оферта, демонстрационное подписание и зачисление." time={null} last />
             </ol>
@@ -194,17 +194,8 @@ export default function ApplicationPage() {
             <Link className="text-link" to="/app/company">Профиль компании <ArrowRight size={14} /></Link>
           </Card>
 
-          <Card className="help-card">
-            <span className="mini-icon"><LockKeyhole size={18} /></span>
-            <div><strong>Данные защищены</strong><p>Вы видите только свои заявки. Каждое действие фиксируется в журнале аудита.</p></div>
-          </Card>
-          <Card className="help-card">
-            <span className="mini-icon"><Info size={18} /></span>
-            <div><strong>Что дальше?</strong><p>Центр уведомлений покажет изменения статуса. Внешние каналы не используются.</p><Link to="/app/notifications" className="text-link">Уведомления <ArrowRight size={14} /></Link></div>
-          </Card>
         </aside>
       </div>
-      <DemoNote><Sparkles size={13} /> Демонстрационный прототип. Подписание договора и зачисление средств имитируются.</DemoNote>
     </div>
   );
 }

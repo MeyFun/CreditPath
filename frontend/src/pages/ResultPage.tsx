@@ -229,7 +229,6 @@ export default function ResultPage() {
                     <Input type="number" inputMode="numeric" value={profit} onChange={(event) => setProfit(event.target.value)} placeholder="Например, 500000" />
                   </Field>
                 </div>
-                <DemoNote>Показатели, указанные здесь, используются только в демонстрационном скоринге и сохраняются как заявленные клиентом.</DemoNote>
               </>
             )}
             {!app.registry_snapshot && (
@@ -246,7 +245,6 @@ export default function ResultPage() {
           </Card>
           <aside className="result-aside">
             <Card><div className="card-head"><h2>Параметры</h2></div><div className="summary-lines"><div><span>Сумма</span><strong>{formatMoney(app.amount)}</strong></div><div><span>Срок</span><strong>{app.term_months} мес.</strong></div><div><span>Продукт</span><strong>{app.product.name}</strong></div><div><span>Компания</span><strong>{app.company_name}</strong></div></div></Card>
-            <Card className="help-card"><span className="mini-icon"><ShieldCheck size={18} /></span><div><strong>Проверки продолжатся</strong><p>После ответа заявка вернётся на автоматические проверки и затем к тому же сотруднику.</p></div></Card>
           </aside>
         </div>
       )}
@@ -326,10 +324,6 @@ export default function ResultPage() {
               </div>
               <p className="muted small">Расчёт предварительный. Полный график формируется в демонстрационной оферте.</p>
             </Card>
-            <Card className="help-card">
-              <span className="mini-icon"><Info size={18} /></span>
-              <div><strong>Уведомления</strong><p>Изменения решения фиксируются в центре уведомлений.</p><Link to="/app/notifications" className="text-link">Открыть центр <ArrowRight size={14} /></Link></div>
-            </Card>
           </aside>
         </div>
       )}
@@ -348,7 +342,6 @@ export default function ResultPage() {
           </Card>
           <aside className="result-aside">
             <Card><div className="card-head"><h2>Заявка</h2></div><div className="summary-lines"><div><span>Номер</span><strong>{app.number}</strong></div><div><span>Сумма</span><strong>{formatMoney(app.amount)}</strong></div><div><span>Срок</span><strong>{app.term_months} мес.</strong></div><div><span>Решение</span><strong>{formatDateTime(app.updated_at)}</strong></div></div></Card>
-            <Card className="help-card"><span className="mini-icon"><Info size={18} /></span><div><strong>История сохранена</strong><p>Все события и причина отказа доступны в карточке заявки.</p><Link to={`/app/applications/${app.id}`} className="text-link">Открыть историю <ArrowRight size={14} /></Link></div></Card>
           </aside>
         </div>
       )}

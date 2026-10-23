@@ -61,7 +61,7 @@ export default function AdminAudit() {
       <PageHeader
         eyebrow="Безопасность и соответствие"
         title="Журнал аудита"
-        description="Только добавление. Изменение и удаление запрещены на уровне базы данных; записи связаны хеш-цепочкой."
+        description="Записи нельзя изменить или удалить."
         actions={<Button icon={<ShieldCheck size={17} />} loading={verify.isPending} onClick={() => verify.mutate()}>Проверить целостность</Button>}
       />
       <div className="audit-summary">

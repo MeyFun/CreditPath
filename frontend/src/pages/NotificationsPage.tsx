@@ -32,7 +32,7 @@ export default function NotificationsPage() {
       <PageHeader
         eyebrow="Центр уведомлений"
         title="Уведомления"
-        description="Единственный канал оповещений в CreditPath. Ничего не отправляется за пределы продукта."
+        description="Статусы заявок и запросы банка."
         actions={<Button variant="secondary" icon={<CheckCheck size={17} />} loading={readAll.isPending} onClick={() => readAll.mutate()} disabled={!query.data?.unread}>Прочитать все</Button>}
       />
       {query.isLoading ? (

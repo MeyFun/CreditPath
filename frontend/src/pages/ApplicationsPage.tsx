@@ -47,7 +47,7 @@ export default function ApplicationsPage() {
       <PageHeader
         eyebrow="Кредитный портфель"
         title="Мои заявки"
-        description="Все заявки и черновики. Статус и следующий шаг видны без звонков и внешних переходов."
+        description="Все заявки и черновики."
         actions={<Link className="btn btn-primary" to="/app/applications/new"><Plus size={17} /> Подать новую заявку</Link>}
       />
       <Card className="filter-card">
