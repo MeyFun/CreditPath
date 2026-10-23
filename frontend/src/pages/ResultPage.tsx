@@ -30,7 +30,6 @@ import {
   Input,
   LoadingBlock,
   Modal,
-  plural,
   StatusBadge,
   applicationPollInterval,
   useToast
@@ -241,7 +240,7 @@ export default function ResultPage() {
             <div className="upload-inline">
               <input ref={fileInput} type="file" hidden multiple accept=".pdf,.jpg,.jpeg,.png" onChange={(event) => upload(event.target.files)} />
               <Button variant="secondary" icon={<UploadCloud size={17} />} loading={uploading} onClick={() => fileInput.current?.click()}>Приложить документы</Button>
-              <span>Загружено: {app.documents.length} {plural(app.documents.length, "файл", "файла", "файлов")}</span>
+              <span>{app.documents.length} файлов уже загружено</span>
             </div>
             <Button onClick={() => { if (comment.trim().length < 2) { setError("Опишите ответ в комментарии"); return; } respond.mutate(); }} loading={respond.isPending}>Отправить ответ и продолжить <ArrowRight size={16} /></Button>
           </Card>

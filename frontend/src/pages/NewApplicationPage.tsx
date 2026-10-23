@@ -32,7 +32,7 @@ import {
 import type { DocumentItem, Product, RegistryCompany } from "../types";
 
 const STEPS = [
-  { title: "Потребность", description: "На что нужны деньги" },
+  { title: "Цель и продукт", description: "Что финансируем" },
   { title: "Компания", description: "Проверка ИНН" },
   { title: "Параметры", description: "Сумма и срок" },
   { title: "Документы", description: "По желанию" },
@@ -369,33 +369,24 @@ export default function NewApplicationPage() {
 
           {step === 0 && (
             <div className="wizard-step">
-              <div className="step-heading"><span className="step-chip">Шаг 1 из 5</span><h2>На что нужны деньги?</h2><p>Выберите задачу бизнеса — подходящий продукт подберётся автоматически.</p></div>
-              <div className="purpose-grid">
-                {products.flatMap((item) => item.purposes.map((need) => ({ need, item }))).map(({ need, item }) => {
-                  const selected = product.id === item.id && purpose === need.code;
-                  return (
-                    <button
-                      key={`${item.code}-${need.code}`}
-                      type="button"
-                      className={`purpose-option ${selected ? "selected" : ""}`}
-                      onClick={() => { if (product.id !== item.id) selectProduct(item); setPurpose(need.code); }}
-                    >
-                      <span className="radio-circle">{selected && <span />}</span>
-                      <span><strong>{need.label}</strong><small>{item.name}</small></span>
-                    </button>
-                  );
-                })}
+              <div className="step-heading"><span className="step-chip">Шаг 1 из 5</span><h2>Выберите условия и цель кредитования</h2><p>Мы подстроим расчёт под продукт и цель.</p></div>
+              <h3 className="subheading">Кредитный продукт</h3>
+              <div className="wizard-products">
+                {products.map((item) => (
+                  <button key={item.id} type="button" className={`wizard-product ${product.id === item.id ? "selected" : ""}`} onClick={() => selectProduct(item)}>
+                    <span className="radio-circle">{product.id === item.id && <span />}</span>
+                    <span><strong>{item.name}</strong><small>{item.short_description}</small><em>от {item.rate.toFixed(1).replace(".", ",")}% · {item.min_term_months}–{item.max_term_months} мес.</em></span>
+                  </button>
+                ))}
               </div>
-              <div className="registry-card">
-                <span className="eyebrow">Подходящий продукт</span>
-                <h3>{product.name}</h3>
-                <p className="muted">{product.short_description}</p>
-                <div className="registry-grid">
-                  <div><span>Сумма</span><strong>{formatMoney(product.min_amount)} — {formatMoney(product.max_amount)}</strong></div>
-                  <div><span>Срок</span><strong>{product.min_term_months}–{product.max_term_months} мес.</strong></div>
-                  <div><span>Ставка</span><strong>от {product.rate.toFixed(1).replace(".", ",")}%</strong></div>
-                  <div><span>Залог</span><strong>{product.requires_collateral ? "Нужен" : "Не нужен"}</strong></div>
-                </div>
+              <h3 className="subheading">Цель кредитования</h3>
+              <div className="purpose-grid">
+                {product.purposes.map((item) => (
+                  <button key={item.code} type="button" className={`purpose-option ${purpose === item.code ? "selected" : ""}`} onClick={() => setPurpose(item.code)}>
+                    <span className="radio-circle">{purpose === item.code && <span />}</span>
+                    <span><strong>{item.label}</strong><small>Соответствует продукту «{product.name}»</small></span>
+                  </button>
+                ))}
               </div>
               <DemoNote>Данные заявки можно сохранить и продолжить позже: черновик доступен в разделе «Мои заявки».</DemoNote>
             </div>
@@ -514,6 +505,10 @@ export default function NewApplicationPage() {
                 <div><span>Документы</span><strong>{documents.length} шт.</strong></div>
                 <div><span>Платёж</span><strong>{formatMoney(payment)} / мес.</strong></div>
               </div>
+              <div className="consent-box">
+                <ShieldCheck size={20} />
+                <div><strong>Отправка заявки</strong><p>Нажимая «Отправить заявку», вы передаёте синтетические данные в демонстрационный кредитный конвейер. Автоматические проверки и решение сотрудника не имеют юридических последствий.</p></div>
+              </div>
               <Field label="Кто подаёт заявку" required>
                 <Select value={signerPosition} onChange={(event) => setSignerPosition(event.target.value)}>
                   {SIGNER_POSITIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
@@ -548,6 +543,10 @@ export default function NewApplicationPage() {
               <div><span>Переплата</span><strong>{formatMoney(Math.max(0, payment * term - amount))}</strong></div>
             </div>
             <div className="assurance"><LockKeyhole size={16} /><span>Расчёт не является публичной офертой. Итоговые условия — после проверок и решения сотрудника.</span></div>
+          </Card>
+          <Card className="help-card">
+            <span className="mini-icon"><Info size={18} /></span>
+            <div><strong>Нужна подсказка?</strong><p>Откройте FAQ на главной или центр уведомлений — внешние каналы не используются.</p><Link to="/#faq" className="text-link">Перейти в FAQ <ArrowRight size={14} /></Link></div>
           </Card>
           <Card className="help-card">
             <span className="mini-icon"><CheckCircle2 size={18} /></span>

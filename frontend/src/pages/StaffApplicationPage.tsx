@@ -227,7 +227,7 @@ export default function StaffApplicationPage() {
                 <div className="card-head"><div><span className="eyebrow">Кредитная логика</span><h2>Предварительное решение</h2></div>{app.decision_draft && <Badge tone={app.decision_draft.outcome === "approve" ? "success" : app.decision_draft.outcome === "reject" ? "danger" : "warning"}>{app.decision_draft.summary}</Badge>}</div>
                 {app.decision_draft ? (
                   <>
-                    <ul className="reason-list">{app.decision_draft.reasons.map((reason, index) => <li key={index}><ArrowRight size={15} /> {reason}</li>)}</ul>
+                    <ul className="reason-list">{app.decision_draft.reasons.map((reason, index) => <li key={index}><CheckCircle2 size={15} /> {reason}</li>)}</ul>
                     {app.decision_draft.outcome !== "reject" && app.decision_draft.outcome !== "need_info" && (
                       <Alert tone="info" title="Рекомендация системы">
                         Сумма {formatMoney(app.decision_draft.proposed_amount)}, срок {app.decision_draft.proposed_term_months} мес., ставка {app.decision_draft.proposed_rate}% годовых. Финальное решение — за вами.
@@ -332,7 +332,7 @@ export default function StaffApplicationPage() {
           ) : (
             <Card className="help-card">
               <span className="mini-icon"><ShieldAlert size={18} /></span>
-              <div><strong>Свежий взгляд</strong><p>Вам не назначаются собственные заявки, заявки связанных лиц и повторные заявки после вашего решения. Проверка выполняется на сервере.</p></div>
+              <div><strong>Свежий взгляд</strong><p>Система уже исключила вас из цепочек, где вы принимали решение, и из собственных заявок. Дополнительная проверка выполняется на сервере.</p></div>
             </Card>
           )}
         </aside>
