@@ -66,7 +66,6 @@ function AdminApplicationsList() {
   return (
     <div className="page-stack">
       <PageHeader
-        eyebrow="Администрирование"
         title="Все заявки"
       />
       <Card className="filter-card">
@@ -157,7 +156,7 @@ function AdminApplicationDetail({ applicationId }: { applicationId: number }) {
       <div className="detail-grid">
         <div className="detail-main">
           <Card>
-            <div className="card-head"><div><span className="eyebrow">Заявка</span><h2>Параметры</h2></div><span className="muted small">{formatDateTime(app.updated_at)}</span></div>
+            <div className="card-head"><div><h2>Параметры</h2></div><span className="muted small">{formatDateTime(app.updated_at)}</span></div>
             <div className="review-grid">
               <div><span>Сумма</span><strong>{formatMoney(app.amount)}</strong></div>
               <div><span>Срок</span><strong>{app.term_months} мес.</strong></div>
@@ -168,7 +167,7 @@ function AdminApplicationDetail({ applicationId }: { applicationId: number }) {
             </div>
           </Card>
           <Card>
-            <div className="card-head"><div><span className="eyebrow">Внутренние проверки</span><h2>Предварительное решение</h2></div>{app.decision_draft && <Badge tone={app.decision_draft.outcome === "reject" ? "danger" : app.decision_draft.outcome === "need_info" ? "warning" : "success"}>{app.decision_draft.summary}</Badge>}</div>
+            <div className="card-head"><div><h2>Предварительное решение</h2></div>{app.decision_draft && <Badge tone={app.decision_draft.outcome === "reject" ? "danger" : app.decision_draft.outcome === "need_info" ? "warning" : "success"}>{app.decision_draft.summary}</Badge>}</div>
             {app.decision_draft ? <ul className="reason-list">{app.decision_draft.reasons.map((reason, index) => <li key={index}><CheckCircle2 size={15} /> {reason}</li>)}</ul> : <p className="muted">Нет данных.</p>}
             {app.employee_comment && <Alert tone="info" title="Комментарий сотрудника">{app.employee_comment}</Alert>}
           </Card>

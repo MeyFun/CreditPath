@@ -174,7 +174,7 @@ export default function HomePage() {
 
         <section className="section" id="products">
           <div className="section-heading">
-            <span className="eyebrow">Финансовые инструменты</span>
+            
             <h2>Кредитные продукты для вашего бизнеса</h2>
             <p>Три сценария финансирования с разными требованиями и условиями.</p>
           </div>
@@ -211,7 +211,7 @@ export default function HomePage() {
 
         <section className="section calcular" id="calculator">
           <div className="section-heading">
-            <span className="eyebrow">Калькулятор платежей</span>
+            
             <h2>Рассчитайте параметры кредитования</h2>
             <p>Предварительный расчёт. Итоговые условия определяются после проверок и решения сотрудника.</p>
           </div>
@@ -280,7 +280,7 @@ export default function HomePage() {
 
         <section className="section" id="how">
           <div className="section-heading centered">
-            <span className="eyebrow">Как это работает</span>
+            
             <h2>Как это работает</h2>
             <p>От заявки до решения — четыре понятных этапа, каждый со статусом в кабинете.</p>
           </div>
@@ -300,7 +300,7 @@ export default function HomePage() {
 
         <section className="section faq-section" id="faq">
           <div className="section-heading centered">
-            <span className="eyebrow">Справочный центр</span>
+            
             <h2>Часто задаваемые вопросы</h2>
             <p>Всё, что нужно знать о правилах и этапах финансирования.</p>
           </div>
@@ -319,7 +319,7 @@ export default function HomePage() {
 
         <section className="cta-section">
           <div>
-            <span className="eyebrow">Готовы начать?</span>
+            
             <h2>Подайте заявку и наблюдайте за решением онлайн</h2>
             <p>Решение по заявке и все уведомления — в личном кабинете.</p>
           </div>

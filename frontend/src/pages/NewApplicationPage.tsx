@@ -424,7 +424,7 @@ export default function NewApplicationPage() {
         <Link to="/app/applications" className="back-link"><ArrowLeft size={17} /> К моим заявкам</Link>
         <div className="wizard-title-row">
           <div>
-            <span className="eyebrow">Новая заявка</span>
+            
             <h1>Оформление кредита для бизнеса</h1>
             <p>Пять шагов, без бумажных справок.</p>
           </div>

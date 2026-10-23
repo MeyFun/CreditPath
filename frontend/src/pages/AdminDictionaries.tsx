@@ -69,7 +69,6 @@ export default function AdminDictionaries() {
   return (
     <div className="page-stack">
       <PageHeader
-        eyebrow="Администрирование"
         title="Справочники и лимиты"
         description="Продукты и параметры скоринга."
       />
@@ -140,7 +139,7 @@ function ProductsTab() {
   return (
     <>
       <Card>
-        <div className="card-head"><div><span className="eyebrow">Справочник</span><h2>Кредитные продукты</h2></div><Button variant="secondary" icon={<RefreshCw size={16} />} onClick={() => query.refetch()}>Обновить</Button></div>
+        <div className="card-head"><div><h2>Кредитные продукты</h2></div><Button variant="secondary" icon={<RefreshCw size={16} />} onClick={() => query.refetch()}>Обновить</Button></div>
         <div className="product-admin-list">
           {query.data?.map((product) => (
             <div className="product-admin-row" key={product.id}>
@@ -247,7 +246,7 @@ function ScoringTab() {
         <Alert tone="info">Сохранение создаёт новую версию. Старые заявки не пересчитываются; новые используют активную версию.</Alert>
       </Card>
       <Card>
-        <div className="card-head"><div><span className="eyebrow">История</span><h2><History size={18} /> Версии</h2></div></div>
+        <div className="card-head"><div><h2><History size={18} /> Версии</h2></div></div>
         <div className="version-list">
           {history.data?.map((version) => (
             <div className={`version-row ${version.is_active ? "active" : ""}`} key={version.id}>

@@ -11,7 +11,6 @@ export default function ProductsPage() {
   return (
     <div className="page-stack">
       <PageHeader
-        eyebrow="Каталог"
         title="Кредитные продукты"
         description="Выберите продукт под задачу бизнеса. Условия можно рассчитать до подачи заявки."
       />

@@ -8,6 +8,7 @@ import {
   Info,
   LoaderCircle,
   Route,
+  TriangleAlert,
   X
 } from "lucide-react";
 import {
@@ -277,23 +278,29 @@ export function EmptyState({
   );
 }
 
+const TONE_ICON = { success: CircleCheck, warning: TriangleAlert, danger: CircleAlert, info: Info };
+
 export function Alert({
   tone = "info",
   title,
-  children
+  children,
+  action
 }: {
   tone?: "info" | "warning" | "danger" | "success";
   title?: string;
   children: ReactNode;
+  action?: ReactNode;
 }) {
-  const Icon = tone === "success" ? CircleCheck : tone === "warning" ? Clock3 : tone === "danger" ? CircleAlert : Info;
+  const Icon = TONE_ICON[tone];
+  // Ошибку экранный диктор зачитывает сразу, остальное — когда освободится.
   return (
-    <div className={`alert alert-${tone}`}>
-      <Icon size={19} className="alert-icon" />
-      <div>
-        {title && <strong>{title}</strong>}
-        <div>{children}</div>
+    <div className={`alert alert-${tone}`} role={tone === "danger" ? "alert" : "status"}>
+      <span className="alert-icon"><Icon size={17} strokeWidth={2.2} /></span>
+      <div className="alert-body">
+        {title && <strong className="alert-title">{title}</strong>}
+        <div className="alert-text">{children}</div>
       </div>
+      {action && <div className="alert-action">{action}</div>}
     </div>
   );
 }
@@ -464,6 +471,8 @@ export function Modal({
   );
 }
 
+const TOAST_MS = 4600;
+
 interface ToastItem {
   id: number;
   message: string;
@@ -474,19 +483,22 @@ const ToastContext = createContext<{ push: (message: string, tone?: ToastItem["t
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
+  const dismiss = useCallback((id: number) => setItems((prev) => prev.filter((item) => item.id !== id)), []);
   const push = useCallback((message: string, tone: ToastItem["tone"] = "info") => {
     const id = Date.now() + Math.random();
-    setItems((prev) => [...prev, { id, message, tone }]);
-    window.setTimeout(() => setItems((prev) => prev.filter((item) => item.id !== id)), 4200);
-  }, []);
+    setItems((prev) => [...prev.slice(-2), { id, message, tone }]);
+    window.setTimeout(() => dismiss(id), TOAST_MS);
+  }, [dismiss]);
   return (
     <ToastContext.Provider value={{ push }}>
       {children}
       <div className="toast-stack" aria-live="polite">
         {items.map((item) => (
-          <div key={item.id} className={`toast toast-${item.tone}`}>
-            {item.tone === "success" ? <CircleCheck size={18} /> : item.tone === "danger" ? <CircleAlert size={18} /> : <Info size={18} />}
-            <span>{item.message}</span>
+          <div key={item.id} className={`toast toast-${item.tone}`} role={item.tone === "danger" ? "alert" : "status"}>
+            <span className="toast-icon">{(() => { const Icon = TONE_ICON[item.tone]; return <Icon size={16} strokeWidth={2.4} />; })()}</span>
+            <span className="toast-text">{item.message}</span>
+            <button className="toast-close" onClick={() => dismiss(item.id)} aria-label="Закрыть уведомление"><X size={15} /></button>
+            <span className="toast-timer" style={{ animationDuration: `${TOAST_MS}ms` }} />
           </div>
         ))}
       </div>

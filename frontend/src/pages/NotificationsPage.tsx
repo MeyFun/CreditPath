@@ -30,7 +30,6 @@ export default function NotificationsPage() {
   return (
     <div className="page-stack">
       <PageHeader
-        eyebrow="Центр уведомлений"
         title="Уведомления"
         description="Статусы заявок и запросы банка."
         actions={<Button variant="secondary" icon={<CheckCheck size={17} />} loading={readAll.isPending} onClick={() => readAll.mutate()} disabled={!query.data?.unread}>Прочитать все</Button>}

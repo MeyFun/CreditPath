@@ -144,7 +144,7 @@ export default function ApplicationPage() {
         <div className="detail-main">
           <Card>
             <div className="card-head">
-              <div><span className="eyebrow">Путь заявки</span><h2>Этапы рассмотрения</h2></div>
+              <div><h2>Этапы рассмотрения</h2></div>
               {isPending && <Badge tone="info">Обновляется</Badge>}
             </div>
             <ol className="stage-list">
@@ -156,12 +156,12 @@ export default function ApplicationPage() {
           </Card>
 
           <Card>
-            <div className="card-head"><div><span className="eyebrow">Хронология</span><h2>История событий</h2></div></div>
+            <div className="card-head"><div><h2>История событий</h2></div></div>
             <Timeline events={app.events} />
           </Card>
 
           <Card>
-            <div className="card-head"><div><span className="eyebrow">Файлы</span><h2>Документы заявки</h2></div><Badge tone="neutral">{app.documents.length}</Badge></div>
+            <div className="card-head"><div><h2>Документы заявки</h2></div><Badge tone="neutral">{app.documents.length}</Badge></div>
             {app.documents.length === 0 ? (
               <p className="muted">Документы не приложены. Заявка может рассматриваться без них, если данных достаточно.</p>
             ) : (

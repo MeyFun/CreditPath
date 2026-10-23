@@ -221,7 +221,7 @@ export default function ResultPage() {
       </div>
       <div className="result-heading">
         <div>
-          <span className="eyebrow">Решение банка</span>
+          
           <h1>{app.product.name}</h1>
           <p>Заявка № {app.number} · {app.company_name} · подана {formatDate(app.submitted_at ?? app.created_at)}</p>
         </div>
@@ -234,7 +234,7 @@ export default function ResultPage() {
         <div className="result-grid">
           <Card className="result-main result-need-info">
             <div className="result-icon result-icon-warning"><Clock3 size={30} /></div>
-            <span className="eyebrow">Нужны дополнительные данные</span>
+            
             <h2>Проверка приостановлена до вашего ответа</h2>
             <p>Сотрудник банка или автоматическая проверка запросила уточнения. Ответьте в кабинете — после этого проверки продолжатся автоматически.</p>
             <div className="reason-box">
@@ -369,7 +369,7 @@ export default function ResultPage() {
         <div className="result-grid">
           <Card className="result-main result-rejected">
             <div className="result-icon result-icon-danger"><XCircle size={30} /></div>
-            <span className="eyebrow">Решение банка</span>
+            
             <h2>По заявке принят отказ</h2>
             <p>Решение принято сотрудником банка после проверки данных. Причина и рекомендации указаны ниже.</p>
             {app.employee_comment && <div className="reason-box"><strong>Комментарий сотрудника</strong><p>{app.employee_comment}</p></div>}
@@ -385,7 +385,7 @@ export default function ResultPage() {
       {["APPROVED", "APPROVED_CHANGED", "OFFER_ACCEPTED", "SIGNED", "DISBURSED"].includes(app.status) && rows.length > 0 && (
         <Card className="schedule-card">
           <div className="card-head">
-            <div><span className="eyebrow">График</span><h2>Сводка погашения</h2></div>
+            <div><h2>Сводка погашения</h2></div>
             <button className="btn btn-secondary btn-sm" onClick={() => window.print()}><Download size={15} /> Печать</button>
           </div>
           <div className="table-wrap">

@@ -49,7 +49,6 @@ export default function StaffQueuePage() {
   return (
     <div className="page-stack">
       <PageHeader
-        eyebrow="Рабочее место сотрудника"
         title="Очередь заявок"
       />
       <div className="kpi-grid staff-kpi">

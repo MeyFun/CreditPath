@@ -144,7 +144,7 @@ export default function StaffApplicationPage() {
       <Card className="staff-app-header">
         <div className="staff-company-mark"><Building2 size={26} /></div>
         <div>
-          <span className="eyebrow">Заявка на финансирование</span>
+          
           <h1>{app.company_name}</h1>
           <p>ИНН {app.company_inn} · {app.product.name} · {app.purpose_label}</p>
           {app.related_party && <Badge tone="warning">Связанное лицо сотрудника банка</Badge>}
@@ -168,7 +168,7 @@ export default function StaffApplicationPage() {
           {tab === "overview" && (
             <>
               <Card>
-                <div className="card-head"><div><span className="eyebrow">Заявка</span><h2>Параметры финансирования</h2></div><span className="muted small">Подана {formatDate(app.submitted_at ?? app.created_at)}</span></div>
+                <div className="card-head"><div><h2>Параметры финансирования</h2></div><span className="muted small">Подана {formatDate(app.submitted_at ?? app.created_at)}</span></div>
                 <div className="review-grid">
                   <div><span>Продукт</span><strong>{app.product.name}</strong></div>
                   <div><span>Сумма</span><strong>{formatMoney(app.amount)}</strong></div>
@@ -180,7 +180,7 @@ export default function StaffApplicationPage() {
               </Card>
               {company && (
                 <Card>
-                  <div className="card-head"><div><span className="eyebrow">Реестр</span><h2><Building2 size={19} /> Сведения о компании</h2></div><Badge tone={company.status === "Действующая" ? "success" : "danger"}>{company.status}</Badge></div>
+                  <div className="card-head"><div><h2><Building2 size={19} /> Сведения о компании</h2></div><Badge tone={company.status === "Действующая" ? "success" : "danger"}>{company.status}</Badge></div>
                   <div className="review-grid">
                     <div><span>ИНН</span><strong>{company.inn}</strong></div>
                     <div><span>ОПФ</span><strong>{company.legal_form}</strong></div>
@@ -197,7 +197,7 @@ export default function StaffApplicationPage() {
               )}
               {bki && (
                 <Card>
-                  <div className="card-head"><div><span className="eyebrow">Кредитная история</span><h2>Данные БКИ</h2></div><Badge tone={bki.active_overdue ? "danger" : "success"}>{bki.active_overdue ? "Есть просрочка" : "Без активных просрочек"}</Badge></div>
+                  <div className="card-head"><div><h2>Данные БКИ</h2></div><Badge tone={bki.active_overdue ? "danger" : "success"}>{bki.active_overdue ? "Есть просрочка" : "Без активных просрочек"}</Badge></div>
                   <div className="review-grid">
                     <div><span>Текущий долг</span><strong>{formatMoney(bki.current_debt)}</strong></div>
                     <div><span>Активная просрочка</span><strong>{formatMoney(bki.current_overdue_amount)}</strong></div>
@@ -210,7 +210,7 @@ export default function StaffApplicationPage() {
                 </Card>
               )}
               <Card>
-                <div className="card-head"><div><span className="eyebrow">Документы</span><h2>Файлы клиента</h2></div><Badge tone="neutral">{app.documents.length}</Badge></div>
+                <div className="card-head"><div><h2>Файлы клиента</h2></div><Badge tone="neutral">{app.documents.length}</Badge></div>
                 {app.documents.length === 0 ? <p className="muted">Клиент не приложил документы.</p> : app.documents.map((doc) => (
                   <div className="document-row" key={doc.id}>
                     <span className="file-badge"><FileText size={17} /></span>
@@ -225,7 +225,7 @@ export default function StaffApplicationPage() {
           {tab === "checks" && (
             <>
               <Card>
-                <div className="card-head"><div><span className="eyebrow">Скоринг</span><h2>Скоринг: {score} из 100</h2></div><Badge tone={risk.tone}>{risk.label}</Badge></div>
+                <div className="card-head"><div><h2>Скоринг: {score} из 100</h2></div><Badge tone={risk.tone}>{risk.label}</Badge></div>
                 <ProgressBar value={score} tone={score >= 70 ? "success" : score >= 40 ? "warning" : "danger"} />
                 <p className="muted small">Диапазон: 0–100, выше — надёжнее.</p>
                 <div className="factor-list">
@@ -238,7 +238,7 @@ export default function StaffApplicationPage() {
                 </div>
               </Card>
               <Card>
-                <div className="card-head"><div><span className="eyebrow">Кредитная логика</span><h2>Предварительное решение</h2></div>{app.decision_draft && <Badge tone={app.decision_draft.outcome === "approve" ? "success" : app.decision_draft.outcome === "reject" ? "danger" : "warning"}>{app.decision_draft.summary}</Badge>}</div>
+                <div className="card-head"><div><h2>Предварительное решение</h2></div>{app.decision_draft && <Badge tone={app.decision_draft.outcome === "approve" ? "success" : app.decision_draft.outcome === "reject" ? "danger" : "warning"}>{app.decision_draft.summary}</Badge>}</div>
                 {app.decision_draft ? (
                   <>
                     <ul className="reason-list">{app.decision_draft.reasons.map((reason, index) => <li key={index}><CheckCircle2 size={15} /> {reason}</li>)}</ul>
@@ -256,7 +256,7 @@ export default function StaffApplicationPage() {
 
           {tab === "history" && (
             <Card>
-              <div className="card-head"><div><span className="eyebrow">Аудит и события</span><h2>История заявки</h2></div></div>
+              <div className="card-head"><div><h2>История заявки</h2></div></div>
               <Timeline events={app.events} />
             </Card>
           )}
@@ -264,7 +264,7 @@ export default function StaffApplicationPage() {
 
         <aside className="staff-detail-aside">
           <Card className={`decision-card ${app.status === "IN_REVIEW" ? "decision-active" : ""}`}>
-            <div className="card-head"><div><span className="eyebrow">Финальное решение</span><h2>Панель сотрудника</h2></div><ShieldCheck size={21} /></div>
+            <div className="card-head"><div><h2>Панель сотрудника</h2></div><ShieldCheck size={21} /></div>
             {app.status === "IN_REVIEW" && app.can_decide ? (
               <>
                 {(action === "approve" || action === "approve_changed") && (app.risk_override_reasons?.length ?? 0) > 0 && (
@@ -329,7 +329,7 @@ export default function StaffApplicationPage() {
 
           {app.previous_decisions.length > 0 && (
             <Card>
-              <div className="card-head"><div><span className="eyebrow">Свежий взгляд</span><h2>Прошлые заявки клиента</h2></div><ShieldAlert size={19} /></div>
+              <div className="card-head"><div><h2>Прошлые заявки клиента</h2></div><ShieldAlert size={19} /></div>
               <div className="previous-decisions">
                 {app.previous_decisions.map((item) => (
                   <div className="previous-decision" key={item.id}>

@@ -24,7 +24,7 @@ export default function CompanyPage() {
   if (!company) {
     return (
       <div className="page-stack">
-        <PageHeader eyebrow="Профиль" title="Компания" description="Реквизиты и финансовые показатели компании." />
+        <PageHeader title="Компания" description="Реквизиты и финансовые показатели компании." />
         <Alert tone="warning" title="Компания не привязана">Укажите ИНН при создании заявки — профиль заполнится автоматически.</Alert>
       </div>
     );
@@ -33,7 +33,6 @@ export default function CompanyPage() {
   return (
     <div className="page-stack">
       <PageHeader
-        eyebrow="Профиль"
         title={company.name}
         description="Реквизиты из реестра."
         actions={<Button variant="secondary" icon={<RefreshCw size={16} />} onClick={() => query.refetch()}>Обновить</Button>}

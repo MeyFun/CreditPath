@@ -65,7 +65,6 @@ export default function AdminAudit() {
   return (
     <div className="page-stack">
       <PageHeader
-        eyebrow="Безопасность и соответствие"
         title="Журнал аудита"
         actions={<Button icon={<ShieldCheck size={17} />} loading={verify.isPending} onClick={() => verify.mutate()}>Проверить целостность</Button>}
       />

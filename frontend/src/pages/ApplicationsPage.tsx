@@ -58,7 +58,6 @@ export default function ApplicationsPage() {
   return (
     <div className="page-stack">
       <PageHeader
-        eyebrow="Кредитный портфель"
         title="Мои заявки"
         description="Все заявки и черновики."
         actions={<Link className="btn btn-primary" to="/app/applications/new"><Plus size={17} /> Подать новую заявку</Link>}

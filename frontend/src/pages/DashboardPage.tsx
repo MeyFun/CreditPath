@@ -71,7 +71,7 @@ export default function DashboardPage() {
     <div className="page-stack">
       <div className="welcome-row">
         <div>
-          <span className="eyebrow">Личный кабинет заёмщика</span>
+          
           <h1>Добрый день, {firstName}!</h1>
           <p>Рады видеть вас в CreditPath. Ключевые показатели и статусы — под рукой.</p>
         </div>
@@ -126,7 +126,7 @@ export default function DashboardPage() {
         <Card className="company-card">
           <div className="card-head">
             <div>
-              <span className="eyebrow">Профиль компании</span>
+              
               <h2>{company?.name ?? "Компания пока не привязана"}</h2>
             </div>
             {company && <Badge tone={company.status === "Действующая" ? "success" : "danger"}>{company.status}</Badge>}
@@ -165,7 +165,7 @@ export default function DashboardPage() {
       <Card className="apps-card">
         <div className="card-head">
           <div>
-            <span className="eyebrow">Кредитный портфель</span>
+            
             <h2>Заявки на финансирование</h2>
           </div>
           <div className="card-head-actions">

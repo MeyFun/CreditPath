@@ -51,7 +51,6 @@ export default function AdminUsers() {
   return (
     <div className="page-stack">
       <PageHeader
-        eyebrow="Администрирование"
         title="Пользователи и роли"
         description="Выдача ролей клиента и сотрудника."
       />
