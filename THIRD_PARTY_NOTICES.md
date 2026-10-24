@@ -6,21 +6,23 @@ CreditPath — демонстрационный прототип. Ниже пе�
 
 | Компонент | Версия | Лицензия |
 |---|---|---|
-| FastAPI | 0.115.12 | MIT |
-| Starlette (транзитивно) | 0.46.2 | BSD-3-Clause |
+| FastAPI | 0.162.0 | MIT |
+| Starlette (транзитивно) | 1.9.0 | BSD-3-Clause |
+| annotated-doc (транзитивно, FastAPI) | 0.0.5 | MIT |
+| opentelemetry-api (транзитивно, FastAPI) | 1.45.1 | Apache-2.0 |
 | Uvicorn | 0.34.0 | BSD-3-Clause |
 | SQLAlchemy | 2.0.38 | MIT |
 | Alembic | 1.15.1 | MIT |
 | psycopg / psycopg-binary | 3.2.6 | LGPL-3.0 |
 | Pydantic | 2.11.1 | MIT |
 | pydantic-settings | 2.8.1 | MIT |
-| PyJWT | 2.10.1 | MIT |
+| PyJWT | 2.15.0 | MIT |
 | argon2-cffi | 23.1.0 | MIT |
 | httpx | 0.28.1 | BSD-3-Clause |
 | PyYAML | 6.0.2 | MIT |
-| python-multipart | 0.0.20 | Apache-2.0 |
-| python-dotenv | 1.0.1 | BSD-3-Clause |
-| pytest | 8.3.5 | MIT |
+| python-multipart | 0.0.32 | Apache-2.0 |
+| python-dotenv | 1.2.2 | BSD-3-Clause |
+| pytest | 9.0.3 | MIT |
 | pytest-cov | 6.0.0 | MIT |
 | Swagger UI (`swagger-ui-dist`) | 5.20.0 | Apache-2.0 |
 
@@ -32,12 +34,12 @@ Self-hosted файлы Swagger UI находятся в `backend/app/static/swag
 |---|---|---|
 | React | 18.3.1 | MIT |
 | React DOM | 18.3.1 | MIT |
-| React Router | 6.30.0 | MIT |
+| React Router | 6.30.6 | MIT |
 | TanStack Query | 5.74.4 | MIT |
 | lucide-react (иконки) | 0.468.0 | ISC |
 | @fontsource-variable/onest (шрифт Onest) | 5.3.1 | OFL-1.1 (шрифт), MIT (пакет) |
 | TypeScript | 5.7.3 | Apache-2.0 |
-| Vite | 6.0.7 | MIT |
+| Vite | 6.4.5 | MIT |
 | @vitejs/plugin-react | 4.3.4 | MIT |
 | @types/react | 18.3.18 | MIT |
 | @types/react-dom | 18.3.5 | MIT |

@@ -1,3 +1,5 @@
+annotated-doc==0.0.5
+    # via fastapi
 annotated-types==0.8.0
     # via pydantic
 anyio==4.15.1
@@ -6,7 +8,7 @@ anyio==4.15.1
     #   watchfiles
 click==8.5.0
     # via uvicorn
-fastapi==0.115.12
+fastapi==0.162.0
     # via -r mocks/registry/requirements.txt
 h11==0.16.0
     # via uvicorn
@@ -14,6 +16,8 @@ httptools==0.9.0
     # via uvicorn
 idna==3.20
     # via anyio
+opentelemetry-api==1.45.1
+    # via fastapi
 pydantic==2.14.1
     # via fastapi
 pydantic-core==2.50.1
@@ -22,17 +26,21 @@ python-dotenv==1.2.4
     # via uvicorn
 pyyaml==6.0.3
     # via uvicorn
-starlette==0.46.2
+starlette==1.9.0
     # via fastapi
 typing-extensions==4.16.0
     # via
     #   anyio
     #   fastapi
+    #   opentelemetry-api
     #   pydantic
     #   pydantic-core
+    #   starlette
     #   typing-inspection
 typing-inspection==0.4.4
-    # via pydantic
+    # via
+    #   fastapi
+    #   pydantic
 uvicorn==0.34.0
     # via -r mocks/registry/requirements.txt
 uvloop==0.23.0

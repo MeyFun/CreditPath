@@ -6,7 +6,7 @@ from decimal import Decimal
 from pathlib import Path
 
 os.environ["DATABASE_URL"] = "sqlite:///./test_creditpath.db"
-os.environ["JWT_SECRET"] = "test-secret-only"
+os.environ["JWT_SECRET"] = "test-secret-only-not-for-production-use"
 os.environ["DEMO_PASSWORD"] = "DemoPass123!"
 os.environ["UPLOAD_DIR"] = ".test_uploads"
 os.environ["SEED_DEMO"] = "true"

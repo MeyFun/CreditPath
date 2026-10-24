@@ -37,7 +37,9 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const hint = useQuery({ queryKey: ["demo-hint"], queryFn: api.auth.demoHint });
 
-  const destination = (location.state as { from?: string } | null)?.from;
+  const from = (location.state as { from?: string } | null)?.from;
+  // Только внутренний путь: «//host» и «/\host» браузер прочитал бы как внешний адрес.
+  const destination = from && /^\/(?![/\\])/.test(from) ? from : undefined;
 
   useEffect(() => {
     if (user) navigate(destination ?? homeForRole(user), { replace: true });

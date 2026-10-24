@@ -5,6 +5,7 @@ import logging
 import threading
 import time
 import uuid
+from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from datetime import datetime, timezone
 from pathlib import Path
@@ -57,8 +58,20 @@ def configure_logging() -> None:
 configure_logging()
 logger = logging.getLogger("creditpath.api")
 
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)
+    logger.info("CreditPath API запущен", extra={"environment": settings.environment})
+    if settings.resume_pipelines:
+        # В отдельном потоке: недоступный мок не должен задерживать старт API.
+        threading.Thread(target=resume_stalled_pipelines, name="resume-pipelines", daemon=True).start()
+    yield
+
+
 app = FastAPI(
     title="CreditPath API",
+    lifespan=lifespan,
     description=(
         "Прототип кредитного конвейера для малого и микробизнеса. "
         "Реестр и кредитная история смоделированы локальными сервисами на синтетических данных. "
@@ -186,12 +199,3 @@ def ready() -> JSONResponse:
         logger.exception("Readiness: база данных недоступна")
         return JSONResponse(status_code=503, content={"status": "not_ready", "database": "unavailable"})
     return JSONResponse(status_code=200, content={"status": "ready", "database": "ok"})
-
-
-@app.on_event("startup")
-def ensure_upload_directory() -> None:
-    Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)
-    logger.info("CreditPath API запущен", extra={"environment": settings.environment})
-    if settings.resume_pipelines:
-        # В отдельном потоке: недоступный мок не должен задерживать старт API.
-        threading.Thread(target=resume_stalled_pipelines, name="resume-pipelines", daemon=True).start()
