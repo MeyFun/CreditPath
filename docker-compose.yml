@@ -62,6 +62,7 @@ services:
       UPLOAD_DIR: ${UPLOAD_DIR:-/data/uploads}
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      RESUME_PIPELINES: ${RESUME_PIPELINES:-true}
     ports:
       - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
     volumes:
