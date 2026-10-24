@@ -1236,12 +1236,14 @@ img { max-width: 100%; }
 /* Смена страниц: короткий кросс-фейд только области контента, меню остаётся на месте. */
 .page { view-transition-name: page; }
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
-/* Старую страницу убираем сразу, новую — проявляем. Две страницы никогда не видны одновременно,
-   поэтому заголовки не наезжают друг на друга; размер области тоже не «перетекает». */
+/* Размер области контента не «перетекает» между страницами. */
 ::view-transition-group(page) { animation: none; }
-::view-transition-old(page) { animation: none; opacity: 0; }
-::view-transition-new(page) { animation: 0.18s cubic-bezier(0.2, 0.8, 0.2, 1) both pageIn; }
-@keyframes pageIn { from { opacity: 0; transform: translateY(4px); } }
+/* Плавно, но по очереди: старая страница уходит за 0,14 с, новая начинает проявляться,
+   когда старой уже почти не видно, — заголовки не накладываются, а смена не выглядит рывком. */
+::view-transition-old(page) { animation: 0.14s cubic-bezier(0.4, 0, 1, 1) both pageOut; }
+::view-transition-new(page) { animation: 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) 0.11s both pageIn; }
+@keyframes pageOut { to { opacity: 0; transform: translateY(-4px); } }
+@keyframes pageIn { from { opacity: 0; transform: translateY(8px); } }
 
 /* Кто попросил меньше движения — получает статичный интерфейс. */
 @media (prefers-reduced-motion: reduce) {
