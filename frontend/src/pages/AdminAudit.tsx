@@ -88,17 +88,17 @@ export default function AdminAudit() {
       ) : (
         <Card className="table-card">
           <div className="table-wrap">
-            <table className="data-table audit-table">
+            <table className="data-table stack-table audit-table">
               <thead><tr><th>Время</th><th>Пользователь</th><th>Действие</th><th>Объект</th><th>Было → стало</th><th>Хеш</th></tr></thead>
               <tbody>
                 {entries.map((entry) => (
-                  <tr key={entry.id} onClick={() => setSelected(entry)} className="clickable-row">
-                    <td><span className="mono">{formatDateTime(entry.created_at)}</span></td>
-                    <td><strong>{entry.actor_label}</strong><small className="block muted">ID {entry.actor_id ?? "system"}</small></td>
-                    <td><Badge tone={entry.action.includes("risk_override") ? "danger" : entry.action.includes("decision") ? "info" : entry.action.includes("role") ? "warning" : "neutral"}>{ACTION_LABELS[entry.action] ?? entry.action}</Badge></td>
-                    <td>{entry.entity_type} {entry.entity_id ? `#${entry.entity_id}` : ""}</td>
-                    <td><span className="audit-change">{summarize(entry.before)} → {summarize(entry.after)}</span></td>
-                    <td><span className="hash"><Hash size={13} /> {entry.entry_hash.slice(0, 10)}…</span></td>
+                  <tr key={entry.id} onClick={() => setSelected(entry)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelected(entry); } }} tabIndex={0} className="clickable-row">
+                    <td data-label="Время"><span className="mono">{formatDateTime(entry.created_at)}</span></td>
+                    <td data-label="Пользователь"><strong>{entry.actor_label}</strong><small className="block muted">ID {entry.actor_id ?? "system"}</small></td>
+                    <td data-label="Действие"><Badge tone={entry.action.includes("risk_override") ? "danger" : entry.action.includes("decision") ? "info" : entry.action.includes("role") ? "warning" : "neutral"}>{ACTION_LABELS[entry.action] ?? entry.action}</Badge></td>
+                    <td data-label="Объект">{entry.entity_type} {entry.entity_id ? `#${entry.entity_id}` : ""}</td>
+                    <td data-label="Изменение"><span className="audit-change">{summarize(entry.before)} → {summarize(entry.after)}</span></td>
+                    <td data-label="Хеш"><span className="hash"><Hash size={13} /> {entry.entry_hash.slice(0, 10)}…</span></td>
                   </tr>
                 ))}
               </tbody>

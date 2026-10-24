@@ -1266,3 +1266,31 @@ img { max-width: 100%; }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
   .hero-route-flow { display: none; }
 }
+
+/* Админские таблицы на телефоне: каждая строка — карточка, подписи берутся из data-label. */
+.clickable-row:focus-visible { outline: 3px solid rgba(215, 25, 32, 0.25); outline-offset: -3px; }
+@media (max-width: 760px) {
+  .stack-table, .stack-table tbody { display: block; min-width: 0; width: 100%; }
+  .stack-table thead { display: none; }
+  .stack-table tr { position: relative; display: grid; grid-template-columns: 1fr; gap: 8px; padding: 14px 4px; border-bottom: 1px solid var(--border); }
+  .stack-table tbody tr:last-child { border-bottom: 0; }
+  .stack-table td { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 0; border: 0; text-align: right; min-width: 0; }
+  .stack-table td[data-label]::before { content: attr(data-label); flex: 0 0 auto; color: var(--muted); font-size: 12px; text-align: left; }
+  .stack-table td.cell-lead { justify-content: flex-start; text-align: left; }
+  .stack-table .row-arrow { margin-left: auto; }
+  .stack-table .audit-change, .stack-table .hash { max-width: 60%; word-break: break-all; }
+}
+
+/* Закреплённая кнопка решения: только на узких экранах и только пока панели не видно. */
+.decision-anchor { display: contents; }
+.sticky-decision { display: none; }
+@media (max-width: 1020px) {
+  .sticky-decision { display: block; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(8px); border-top: 1px solid var(--border); box-shadow: 0 -8px 24px rgba(20, 24, 32, 0.08); animation: stickyUp 0.25s ease-out both; }
+  .sticky-decision .btn { width: 100%; }
+}
+@keyframes stickyUp { from { transform: translateY(100%); } to { transform: none; } }
+@media (max-width: 760px) {
+  .stack-table td > small.block { display: inline; margin-left: 6px; }
+  .stack-table td:has(> small.block) { flex-wrap: wrap; justify-content: flex-start; }
+  .stack-table td:has(> small.block)::before { flex: 0 0 100%; margin-bottom: 2px; }
+}

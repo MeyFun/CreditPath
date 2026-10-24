@@ -56,6 +56,7 @@ export default function StaffApplicationPage() {
   const products = useQuery({ queryKey: ["public-products"], queryFn: api.public.products });
   const [comment, setComment] = useState("");
   const [error, setError] = useState("");
+  const [panelVisible, setPanelVisible] = useState(true);
 
   const app = query.data;
 
@@ -93,6 +94,21 @@ export default function StaffApplicationPage() {
 
   const positiveFactors = useMemo(() => app?.scoring?.factors.filter((factor) => factor.points > 0) ?? [], [app]);
   const negativeFactors = useMemo(() => app?.scoring?.factors.filter((factor) => factor.points < 0) ?? [], [app]);
+
+  // На телефоне панель решения внизу длинной страницы: пока её не видно, держим закреплённую кнопку.
+  const canDecide = query.data?.status === "IN_REVIEW" && Boolean(query.data?.can_decide);
+  useEffect(() => {
+    // У обёртки display: contents нет собственного бокса, поэтому следим за самой карточкой.
+    const panel = document.querySelector("#decision-panel .decision-card");
+    if (!panel || !canDecide) return;
+    const observer = new IntersectionObserver(([entry]) => setPanelVisible(entry.isIntersecting), { threshold: 0.15 });
+    observer.observe(panel);
+    return () => observer.disconnect();
+  }, [canDecide, tab, query.data?.id]);
+
+  function jumpToDecision() {
+    document.querySelector("#decision-panel .decision-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   if (query.isLoading) return <LoadingBlock label="Загружаем карточку заявки…" />;
   if (query.isError || !app) {
@@ -263,6 +279,7 @@ export default function StaffApplicationPage() {
         </div>
 
         <aside className="staff-detail-aside">
+          <div id="decision-panel" className="decision-anchor">
           <Card className={`decision-card ${app.status === "IN_REVIEW" ? "decision-active" : ""}`}>
             <div className="card-head"><div><h2>Панель сотрудника</h2></div><ShieldCheck size={21} /></div>
             {app.status === "IN_REVIEW" && app.can_decide ? (
@@ -314,6 +331,7 @@ export default function StaffApplicationPage() {
               </div>
             )}
           </Card>
+          </div>
 
           <Card>
             <div className="card-head"><h2>Предварительная оценка</h2></div>
@@ -343,6 +361,11 @@ export default function StaffApplicationPage() {
           )}
         </aside>
       </div>
+      {canDecide && !panelVisible && (
+        <div className="sticky-decision">
+          <Button onClick={jumpToDecision} icon={<ShieldCheck size={18} />}>Принять решение</Button>
+        </div>
+      )}
     </div>
   );
 }

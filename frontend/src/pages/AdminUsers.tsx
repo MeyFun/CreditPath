@@ -76,17 +76,17 @@ export default function AdminUsers() {
       ) : (
         <Card className="table-card">
           <div className="table-wrap">
-            <table className="data-table admin-users-table">
+            <table className="data-table stack-table admin-users-table">
               <thead><tr><th>Пользователь</th><th>Логин</th><th>Компания / ИНН</th><th>Роль</th><th>Последний вход</th><th>Действие</th></tr></thead>
               <tbody>
                 {query.data?.map((user) => (
                   <tr key={user.id}>
-                    <td><div className="table-primary"><span className="avatar avatar-small">{user.full_name.split(" ").slice(0, 2).map((part) => part[0]).join("")}</span><div><strong>{user.full_name}</strong><small>{user.is_active ? "Активен" : "Заблокирован"}</small></div></div></td>
-                    <td>@{user.username}</td>
-                    <td>{user.company_inn ? `ИНН ${user.company_inn}` : <span className="muted">—</span>}</td>
-                    <td><Badge tone={user.role === "admin" ? "neutral" : user.role === "employee" ? "info" : "success"}>{ROLE_LABELS[user.role]}</Badge></td>
-                    <td>{user.last_login_at ? formatDateTime(user.last_login_at) : "—"}</td>
-                    <td>
+                    <td className="cell-lead"><div className="table-primary"><span className="avatar avatar-small">{user.full_name.split(" ").slice(0, 2).map((part) => part[0]).join("")}</span><div><strong>{user.full_name}</strong><small>{user.is_active ? "Активен" : "Заблокирован"}</small></div></div></td>
+                    <td data-label="Логин">@{user.username}</td>
+                    <td data-label="Компания / ИНН">{user.company_inn ? `ИНН ${user.company_inn}` : <span className="muted">—</span>}</td>
+                    <td data-label="Роль"><Badge tone={user.role === "admin" ? "neutral" : user.role === "employee" ? "info" : "success"}>{ROLE_LABELS[user.role]}</Badge></td>
+                    <td data-label="Последний вход">{user.last_login_at ? formatDateTime(user.last_login_at) : "—"}</td>
+                    <td className="cell-lead">
                       {user.role === "admin" ? (
                         <span className="muted small">—</span>
                       ) : (

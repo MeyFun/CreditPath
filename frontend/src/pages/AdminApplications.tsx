@@ -87,17 +87,17 @@ function AdminApplicationsList() {
       ) : (
         <Card className="table-card">
           <div className="table-wrap">
-            <table className="data-table">
+            <table className="data-table stack-table">
               <thead><tr><th>Заявка</th><th>Компания</th><th>Сумма</th><th>Статус</th><th>Сотрудник</th><th /></tr></thead>
               <tbody>
                 {query.data?.map((app) => (
                   <tr key={app.id}>
-                    <td><div className="table-primary"><span className="file-badge"><Building2 size={16} /></span><div><strong>{app.product.name}</strong><small>№ {app.number} · {formatDate(app.created_at)}</small></div></div></td>
-                    <td><strong>{app.company_name}</strong><small className="block muted">ИНН {app.company_inn}</small></td>
-                    <td><strong>{formatMoney(app.amount)}</strong><small className="block muted">{app.term_months} мес.</small></td>
-                    <td><StatusBadge status={app.status} /></td>
-                    <td>{app.assigned_employee?.full_name ?? (app.status === "IN_REVIEW" ? <Badge tone="warning">Нужно назначить</Badge> : <span className="muted">—</span>)}</td>
-                    <td><button className="row-arrow" onClick={() => navigate(`/admin/applications/${app.id}`)} aria-label="Открыть"><ArrowRight size={17} /></button></td>
+                    <td className="cell-lead"><div className="table-primary"><span className="file-badge"><Building2 size={16} /></span><div><strong>{app.product.name}</strong><small>№ {app.number} · {formatDate(app.created_at)}</small></div></div></td>
+                    <td data-label="Компания"><strong>{app.company_name}</strong><small className="block muted">ИНН {app.company_inn}</small></td>
+                    <td data-label="Сумма"><strong>{formatMoney(app.amount)}</strong><small className="block muted">{app.term_months} мес.</small></td>
+                    <td data-label="Статус"><StatusBadge status={app.status} /></td>
+                    <td data-label="Сотрудник">{app.assigned_employee?.full_name ?? (app.status === "IN_REVIEW" ? <Badge tone="warning">Нужно назначить</Badge> : <span className="muted">—</span>)}</td>
+                    <td className="cell-lead"><button className="row-arrow" onClick={() => navigate(`/admin/applications/${app.id}`)} aria-label="Открыть"><ArrowRight size={17} /></button></td>
                   </tr>
                 ))}
               </tbody>
