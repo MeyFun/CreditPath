@@ -132,6 +132,8 @@ function ProductsTab() {
   const [purposes, setPurposes] = useState<PurposeRow[]>([]);
   const [error, setError] = useState("");
   const creating = editing === "new";
+  const [removing, setRemoving] = useState<Product | null>(null);
+  const [removeError, setRemoveError] = useState("");
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -160,6 +162,17 @@ function ProductsTab() {
       queryClient.invalidateQueries({ queryKey: ["public-products"] });
     },
     onError: (err) => setError(err instanceof ApiError ? err.message : "Не удалось сохранить продукт")
+  });
+
+  const removal = useMutation({
+    mutationFn: (product: Product) => api.admin.deleteProduct(product.id),
+    onSuccess: () => {
+      push("Продукт удалён", "success");
+      setRemoving(null);
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["public-products"] });
+    },
+    onError: (err) => setRemoveError(err instanceof ApiError ? err.message : "Не удалось удалить продукт")
   });
 
   function openNew() {
@@ -216,7 +229,10 @@ function ProductsTab() {
                 <small>Цели: {product.purposes.map((item) => item.label).join(", ") || "не заданы"}</small>
               </div>
               <div className="inline-meta"><Badge tone={product.is_active ? "success" : "neutral"}>{product.is_active ? "Активен" : "Скрыт"}</Badge>{product.requires_collateral && <Badge tone="info">Залог</Badge>}</div>
-              <Button variant="secondary" className="btn-sm" icon={<Pencil size={14} />} onClick={() => open(product)}>Изменить</Button>
+              <div className="card-head-actions">
+                <Button variant="secondary" className="btn-sm" icon={<Pencil size={14} />} onClick={() => open(product)}>Изменить</Button>
+                <Button variant="ghost" className="btn-sm" icon={<Trash2 size={14} />} aria-label={`Удалить продукт ${product.name}`} onClick={() => { setRemoveError(""); setRemoving(product); }}>Удалить</Button>
+              </div>
             </div>
           ))}
         </div>
@@ -268,6 +284,15 @@ function ProductsTab() {
             <Alert tone="info">Изменение фиксируется в журнале аудита. Новые заявки используют обновлённые параметры.</Alert>
           </div>
         )}
+      </Modal>
+      <Modal
+        open={removing !== null}
+        title={`Удалить продукт «${removing?.name ?? ""}»?`}
+        onClose={() => setRemoving(null)}
+        footer={<><Button variant="secondary" onClick={() => setRemoving(null)}>Отмена</Button><Button variant="danger" loading={removal.isPending} onClick={() => removing && removal.mutate(removing)}>Удалить</Button></>}
+      >
+        <p>Продукт и его цели исчезнут из каталога и мастера заявки. Удалить можно только продукт, по которому ещё не было заявок; иначе скройте его через «Изменить» → «Доступность».</p>
+        {removeError && <Alert tone="danger">{removeError}</Alert>}
       </Modal>
     </>
   );

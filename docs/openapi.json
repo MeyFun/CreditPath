@@ -9,7 +9,7 @@
     "license": {
       "name": "Prototype for hackathon"
     },
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "paths": {
     "/api/auth/login": {
@@ -1928,6 +1928,45 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Администрирование"
+        ],
+        "summary": "Delete Product",
+        "description": "Удаляет продукт без заявок. Продукт с заявками только скрывается: история и аудит ссылаются на него.",
+        "operationId": "delete_product_api_admin_products__product_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Product Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",

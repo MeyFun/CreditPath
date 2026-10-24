@@ -86,7 +86,8 @@
 | `GET /admin/applications/{id}/documents/{document_id}` | Скачать документ |
 | `GET /admin/audit?action=&entity_type=&actor_id=&limit=1..500&offset=` | Журнал аудита |
 | `GET /admin/audit/verify` | Проверка SHA-256-цепочки аудита |
-| `GET /admin/products`, `POST /admin/products`, `PATCH /admin/products/{id}` | Продукты и цели кредитования |
+| `GET /admin/products`, `POST /admin/products`, `PATCH /admin/products/{id}` | Продукты и цели кредитования. Новый продукт сразу виден клиентам в каталоге и мастере заявки; `is_active=false` скрывает его. Цель, по которой есть незавершённые заявки, убрать нельзя (409) |
+| `DELETE /admin/products/{id}` | Удалить продукт, по которому не было заявок (204). Если заявки были — 409: продукт нужно скрыть, история и аудит на него ссылаются |
 | `GET /admin/scoring-config`, `GET /admin/scoring-config/history`, `POST /admin/scoring-config` | Параметры скоринга; новая версия проходит пробный расчёт перед сохранением |
 
 Администратор не принимает кредитных решений.

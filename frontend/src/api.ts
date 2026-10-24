@@ -198,6 +198,7 @@ export const api = {
         method: "PATCH",
         body: JSON.stringify(payload)
       }),
+    deleteProduct: (id: number) => request<void>(`/admin/products/${id}`, { method: "DELETE" }),
     scoringConfig: () => request<ScoringConfig>("/admin/scoring-config"),
     scoringHistory: () => request<ScoringConfig[]>("/admin/scoring-config/history"),
     updateScoringConfig: (config: Record<string, unknown>) =>

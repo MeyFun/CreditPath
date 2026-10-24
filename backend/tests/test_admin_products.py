@@ -79,3 +79,63 @@ def test_admin_user_validation(client):
     assert client.post("/api/admin/users", headers=headers, json=staff_inn).status_code == 422
     bad_inn = {**weak, "password": "Secret123", "company_inn": "9900000018"}
     assert client.post("/api/admin/users", headers=headers, json=bad_inn).status_code == 422
+
+
+def _new_product(client, headers, code: str) -> dict:
+    created = client.post("/api/admin/products", headers=headers, json={**BODY, "code": code})
+    assert created.status_code == 201, created.text
+    return created.json()
+
+
+def test_new_product_and_purpose_reach_client_and_pipeline(client, db, monkeypatch):
+    import app.api.client as client_api
+
+    monkeypatch.setattr(client_api, "run_pipeline", lambda *args, **kwargs: None)
+    monkeypatch.setattr(client_api, "fetch_registry", lambda inn: {"name": "ООО «Северный Ветер»"})
+    admin = login(client, "admin")
+    product = _new_product(client, admin, "FLOW")
+    customer = login(client, "client1")
+
+    catalog = {item["code"]: item for item in client.get("/api/public/products").json()}
+    assert [p["code"] for p in catalog["FLOW"]["purposes"]] == ["trucks", "tools"]
+
+    draft = client.post("/api/client/applications", headers=customer, json={
+        "product_id": product["id"], "amount": 1000000, "term_months": 12, "purpose": "tools",
+        "company_inn": "9900000017", "company_name": "ООО «Северный Ветер»",
+    })
+    assert draft.status_code == 201, draft.text
+    assert draft.json()["purpose_label"] == "Станки"
+    submit = client.post(f"/api/client/applications/{draft.json()['id']}/submit", headers=customer, json={
+        "signer_position": "ceo", "authority_confirmed": True, "consent_bki": True, "consent_personal_data": True,
+    })
+    assert submit.status_code == 202, submit.text
+
+
+def test_hidden_product_disappears_for_client(client):
+    admin = login(client, "admin")
+    product = _new_product(client, admin, "HIDDEN")
+    hidden = client.patch(f"/api/admin/products/{product['id']}", headers=admin, json={"is_active": False})
+    assert hidden.status_code == 200
+
+    assert "HIDDEN" not in {item["code"] for item in client.get("/api/public/products").json()}
+    draft = client.post("/api/client/applications", headers=login(client, "client1"), json={
+        "product_id": product["id"], "amount": 1000000, "term_months": 12, "purpose": "tools",
+    })
+    assert draft.status_code == 404
+
+
+def test_admin_deletes_unused_product_but_not_used_one(client, db):
+    admin = login(client, "admin")
+    unused = _new_product(client, admin, "TEMP")
+
+    removed = client.delete(f"/api/admin/products/{unused['id']}", headers=admin)
+    assert removed.status_code == 204
+    assert "TEMP" not in {item["code"] for item in client.get("/api/admin/products", headers=admin).json()}
+    assert client.delete(f"/api/admin/products/{unused['id']}", headers=admin).status_code == 404
+
+    make_application(db, user=user_by_name(db, "client1"), product_code="OVERDRAFT")
+    overdraft = next(item for item in client.get("/api/admin/products", headers=admin).json() if item["code"] == "OVERDRAFT")
+    blocked = client.delete(f"/api/admin/products/{overdraft['id']}", headers=admin)
+    assert blocked.status_code == 409
+    assert "Скройте" in blocked.json()["detail"]
+    assert client.delete(f"/api/admin/products/{overdraft['id']}", headers=login(client, "client1")).status_code == 403

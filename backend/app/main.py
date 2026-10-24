@@ -77,7 +77,7 @@ app = FastAPI(
         "Реестр и кредитная история смоделированы локальными сервисами на синтетических данных. "
         "Подписание и выдача средств имитируются."
     ),
-    version="1.0.0",
+    version="1.0.1",
     docs_url=None,
     redoc_url=None,
     openapi_url="/openapi.json",
@@ -186,7 +186,7 @@ def swagger_docs() -> HTMLResponse:
 @app.get("/health", tags=["Служебные"])
 @app.get("/healthz", tags=["Служебные"])
 def health() -> dict:
-    return {"status": "ok", "service": "creditpath-backend", "version": "1.0.0"}
+    return {"status": "ok", "service": "creditpath-backend", "version": "1.0.1"}
 
 
 @app.get("/ready", tags=["Служебные"])

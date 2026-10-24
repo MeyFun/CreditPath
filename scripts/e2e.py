@@ -222,7 +222,8 @@ def run() -> None:
         for username in ("client1", "employee1", "employee2", "employee3", "admin"):
             client.login(username)
         products = client.http.get("/public/products").json()
-        check(len(products) == 3, f"Ожидались 3 продукта, получено {len(products)}")
+        # Администратор мог создать свои продукты: проверяем, что демо-продукты на месте.
+        check({"OBOROT", "EQUIPMENT", "OVERDRAFT"} <= {item["code"] for item in products}, "В каталоге нет демо-продуктов")
         by_code = {item["code"]: item for item in products}
 
         missing = client.http.get(f"/public/registry/{NONEXISTENT_INN}", headers=client.headers("client1"))

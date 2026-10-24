@@ -1241,6 +1241,39 @@
               "raw": "{\n  \"role\": \"client\"\n}"
             }
           }
+        },
+        {
+          "name": "Удалить продукт с заявками (409 — такой продукт только скрывается)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/products/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "products",
+                "1"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Продукт с заявками не удаляется', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },

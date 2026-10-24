@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -393,6 +393,35 @@ def update_product(
     db.commit()
     db.refresh(product)
     return product_dict(product)
+
+
+@router.delete("/products/{product_id}", status_code=204)
+def delete_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+) -> Response:
+    """Удаляет продукт без заявок. Продукт с заявками только скрывается: история и аудит ссылаются на него."""
+    product = db.get(Product, product_id)
+    if product is None:
+        raise HTTPException(status_code=404, detail="Продукт не найден")
+    used = db.scalar(select(func.count(Application.id)).where(Application.product_id == product.id))
+    if used:
+        raise HTTPException(
+            status_code=409,
+            detail=f"По продукту есть заявки ({used}), удалить его нельзя. Скройте продукт: клиенты перестанут его видеть.",
+        )
+    write_audit(
+        db,
+        actor=admin,
+        action="product.deleted",
+        entity_type="product",
+        entity_id=product.id,
+        before=product_dict(product),
+    )
+    db.delete(product)
+    db.commit()
+    return Response(status_code=204)
 
 
 @router.get("/scoring-config", response_model=ScoringConfigOut)
