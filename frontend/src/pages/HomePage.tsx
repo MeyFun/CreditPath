@@ -1,27 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
+  ArrowUpRight,
   BadgeCheck,
-  Banknote,
   CheckCircle2,
   ChevronDown,
   Clock3,
-  CreditCard,
   Landmark,
   LineChart,
   MousePointerClick,
-  ShieldCheck,
-  WalletCards
+  ShieldCheck
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import { SiteFooter } from "../components/Footer";
 import { useAuth } from "../auth";
-import { Card, formatMoney, Logo, prefersReducedMotion } from "../components/ui";
+import { formatMoney, Logo, prefersReducedMotion, productTone, ThemeToggle } from "../components/ui";
 import type { Product } from "../types";
-
-const PRODUCT_ICONS = [WalletCards, Banknote, CreditCard];
 
 const FAQ = [
   {
@@ -56,6 +52,12 @@ const STEPS = [
   { icon: BadgeCheck, title: "Решение сотрудника", text: "Заявку проверяет сотрудник банка. Вы видите статус и историю в кабинете." },
   { icon: CheckCircle2, title: "Оферта и выдача", text: "Примите условия, подпишите договор и получите средства — всё в кабинете." }
 ];
+
+/** «Кредит на оборудование» → «Оборудование»: во вкладке калькулятора хватает сути. */
+function shortName(name: string): string {
+  const short = name.replace("Кредит на ", "");
+  return short.charAt(0).toUpperCase() + short.slice(1);
+}
 
 function annuity(amount: number, rate: number, months: number): number {
   const monthly = rate / 100 / 12;
@@ -176,116 +178,109 @@ export default function HomePage() {
 
   return (
     <div className="public-page">
-      <header className="public-header">
-        <Link to="/" className="public-logo">
-          <Logo />
-        </Link>
-        <nav className="public-nav" aria-label="Навигация">
-          <a href="#products">Продукты</a>
-          <a href="#how">Как это работает</a>
-          <a href="#faq">Вопросы и ответы</a>
-        </nav>
-        <div className="public-actions">
-          {user ? (
-            <Link className="btn btn-primary" to={user.role === "client" ? "/app" : user.role === "employee" ? "/staff" : "/admin/users"}>
-              Открыть кабинет <ArrowRight size={17} />
-            </Link>
-          ) : (
-            <>
+      <header className="public-header-bar">
+        <div className="public-header">
+          <Link to="/" className="public-logo">
+            <Logo />
+          </Link>
+          <nav className="public-nav" aria-label="Навигация">
+            <a href="#products">Продукты</a>
+            <a href="#calculator">Калькулятор</a>
+            <a href="#how">Как это работает</a>
+            <a href="#faq">Вопросы</a>
+          </nav>
+          <div className="public-actions">
+            <ThemeToggle className="theme-toggle-on-dark" />
+            {user ? (
+              <Link className="btn btn-primary" to={user.role === "client" ? "/app" : user.role === "employee" ? "/staff" : "/admin/users"}>
+                Открыть кабинет <ArrowRight size={17} />
+              </Link>
+            ) : (
               <Link className="btn btn-primary" to="/login">Войти <ArrowRight size={17} /></Link>
-            </>
-          )}
+            )}
+          </div>
         </div>
       </header>
 
-      <main>
-        <section className="hero">
-          <div className="hero-copy">
-            <span className="eyebrow"><span className="live-dot" /> Кредиты для ИП и ООО</span>
-            <h1>До 50 млн ₽ на оборот, оборудование или овердрафт</h1>
+      <main className="landing">
+        <section className="bento bento-hero">
+          <div className="tile tile-rose hero-tile">
+            <h1>Кредит для бизнеса без&nbsp;визита в&nbsp;банк</h1>
             <p>
-              Заявка онлайн за 10 минут: реквизиты заполнятся по ИНН, предварительная оценка
-              появится сразу после отправки, а решение сотрудника банка — в вашем кабинете.
+              До 50 млн ₽ на оборот, оборудование или овердрафт. Реквизиты подтянутся по ИНН,
+              предварительная оценка — сразу после отправки, решение сотрудника — в кабинете.
             </p>
             <div className="hero-actions">
-              <Link className="btn btn-primary btn-lg" to={user ? "/app/applications/new" : "/login"} state={{ from: "/app/applications/new" }}>
+              <Link className="btn btn-dark btn-lg" to={user ? "/app/applications/new" : "/login"} state={{ from: "/app/applications/new" }}>
                 Подать заявку <ArrowRight size={18} />
               </Link>
-              <a className="btn btn-secondary btn-lg" href="#products">Подобрать продукт</a>
+              <a className="btn btn-outline-dark btn-lg" href="#calculator">Рассчитать платёж</a>
             </div>
-            <div className="hero-stats">
-              <div><strong>до 50 млн ₽</strong><span>лимит финансирования</span></div>
-              <div><strong>от 13,8%</strong><span>ставка по продуктам</span></div>
-              <div><strong>~10 минут</strong><span>на подачу заявки</span></div>
-            </div>
+            <dl className="hero-facts">
+              <div><dt>Лимит</dt><dd>до 50 млн ₽</dd></div>
+              <div><dt>Ставка</dt><dd>от 13,8%</dd></div>
+              <div><dt>Заявка</dt><dd>~10 минут</dd></div>
+            </dl>
           </div>
-          <HeroDemo />
+          <div className="tile tile-graphite demo-tile">
+            <p className="demo-tile-caption">Так выглядит заявка в кабинете</p>
+            <HeroDemo />
+          </div>
         </section>
 
-        <section className="section" id="products">
+        <section className="bento-section" id="products">
           <div className="section-heading">
-            
-            <h2>Кредитные продукты для вашего бизнеса</h2>
-            <p>Три сценария финансирования с разными требованиями и условиями.</p>
+            <h2>Три продукта под разные задачи</h2>
+            <p>Цвет продукта сохраняется в калькуляторе, заявке и кабинете — так его легко узнать.</p>
           </div>
           {productsQuery.isLoading ? (
-            <div className="product-grid" role="status" aria-label="Загружаем продукты…">
+            <div className="product-row" role="status" aria-label="Загружаем продукты…">
               {[0, 1, 2].map((item) => (
-                <div className="card skeleton-card" key={item}>
-                  <span className="sk sk-circle" />
+                <div className="tile skeleton-card" key={item}>
                   <span className="sk" style={{ width: "60%" }} />
-                  <span className="sk sk-thin" style={{ width: "90%" }} />
+                  <span className="sk sk-title" />
                   <span className="sk sk-block" />
                 </div>
               ))}
             </div>
           ) : (
-            <div className="product-grid">
-              {products.map((product, index) => {
-                const Icon = PRODUCT_ICONS[index % PRODUCT_ICONS.length];
-                return (
-                  <Card className="product-card" key={product.code}>
-                    <div className="product-top">
-                      <span className="product-icon"><Icon size={22} /></span>
-                      <span className={`badge ${product.requires_collateral ? "badge-info" : "badge-success"}`}>
-                        {product.requires_collateral ? "Залог — оборудование" : "Без залога"}
-                      </span>
-                    </div>
-                    <h3>{product.name}</h3>
-                    <p>{product.short_description}</p>
-                    <div className="product-specs">
-                      <div><span>Сумма</span><strong>{formatMoney(product.min_amount)} — {formatMoney(product.max_amount)}</strong></div>
-                      <div><span>Срок</span><strong>{product.min_term_months} — {product.max_term_months} мес.</strong></div>
-                      <div><span>Ставка</span><strong className="accent-text">от {product.rate.toFixed(1).replace(".", ",")}% годовых</strong></div>
-                    </div>
-                    <button className="btn btn-secondary btn-full" onClick={() => selectProduct(product)}>
-                      Рассчитать условия <ArrowRight size={16} />
-                    </button>
-                  </Card>
-                );
-              })}
+            <div className="product-row">
+              {products.map((product) => (
+                <button type="button" className={`tile tile-${productTone(product.code)} product-promo`} key={product.code} onClick={() => selectProduct(product)}>
+                  <span className="product-promo-head">
+                    <strong>{product.name}</strong>
+                    <span>{product.requires_collateral ? "Залог — приобретаемое оборудование" : "Без залога"}</span>
+                  </span>
+                  <span className="product-promo-rate">от {product.rate.toFixed(1).replace(".", ",")}%</span>
+                  <span className="product-promo-terms">
+                    <span>до {formatMoney(product.max_amount)}</span>
+                    <span>до {product.max_term_months} мес.</span>
+                  </span>
+                  <span className="product-promo-desc">{product.short_description}</span>
+                  <span className="tile-arrow" aria-hidden="true"><ArrowUpRight size={22} /></span>
+                </button>
+              ))}
             </div>
           )}
         </section>
 
-        <section className="section calcular" id="calculator">
+        <section className="bento-section" id="calculator">
           <div className="section-heading">
-            
-            <h2>Рассчитайте параметры кредитования</h2>
-            <p>Предварительный расчёт. Итоговые условия определяются после проверок и решения сотрудника.</p>
+            <h2>Сколько платить в месяц</h2>
+            <p>Предварительный расчёт. Итоговые условия — после проверок и решения сотрудника.</p>
           </div>
-          <div className="calculator-grid">
-            <Card className="calculator">
+          <div className={`tile calc-tile calc-tone-${productTone(activeProduct?.code)}`}>
+            <div className="calculator">
               <div className="calc-tabs" role="tablist">
                 {products.map((product) => (
                   <button
                     key={product.code}
                     role="tab"
                     aria-selected={activeProduct?.code === product.code}
-                    className={activeProduct?.code === product.code ? "active" : ""}
+                    className={`calc-tab-${productTone(product.code)} ${activeProduct?.code === product.code ? "active" : ""}`}
                     onClick={() => setActiveCode(product.code)}
                   >
-                    {product.name.replace("Кредит на ", "")}
+                    {shortName(product.name)}
                   </button>
                 ))}
               </div>
@@ -318,49 +313,47 @@ export default function HomePage() {
                   {!([6, 12, 24, 36].some((v) => v === term)) && <p className="muted small">Выбранный срок: {term} мес.</p>}
                 </>
               )}
-            </Card>
-            <Card className="calc-result">
-              <span className="eyebrow">Ориентировочный платёж</span>
+            </div>
+            <div className="calc-result">
+              <span className="calc-result-label">Ежемесячный платёж</span>
               <div className="calc-payment">{formatMoney(payment)}<small>/ мес.</small></div>
               <div className="calc-lines">
                 <div><span>Продукт</span><strong>{activeProduct?.name}</strong></div>
-                <div><span>Процентная ставка</span><strong>{activeProduct?.rate.toFixed(1).replace(".", ",")}% годовых</strong></div>
+                <div><span>Ставка</span><strong>{activeProduct?.rate.toFixed(1).replace(".", ",")}% годовых</strong></div>
                 <div><span>Сумма</span><strong>{formatMoney(amount)}</strong></div>
                 <div><span>Переплата</span><strong>{formatMoney(payment * term - amount)}</strong></div>
               </div>
-              <div className="calc-security"><ShieldCheck size={18} /><span>Никаких скрытых комиссий. Данные для расчёта не покидают продукт.</span></div>
-              <Link className="btn btn-primary btn-full" to={user ? "/app/applications/new" : "/login"} state={{ from: "/app/applications/new" }}>
-                Перейти к заявке <ArrowRight size={16} />
+              <Link className="btn btn-primary btn-full btn-lg" to={user ? "/app/applications/new" : "/login"} state={{ from: "/app/applications/new" }}>
+                Перейти к заявке <ArrowRight size={17} />
               </Link>
-              <p className="muted small">Расчёт предварительный и не является офертой.</p>
-            </Card>
+              <p className="calc-note"><ShieldCheck size={16} /> Без скрытых комиссий. Расчёт не является офертой.</p>
+            </div>
           </div>
         </section>
 
-        <section className="section" id="how">
-          <div className="section-heading centered">
-            
-            <h2>Как это работает</h2>
-            <p>Четыре этапа, и на каждом видно, что происходит с заявкой и что нужно от вас.</p>
+        <section className="bento-section" id="how">
+          <div className="section-heading">
+            <h2>Путь заявки — от ИНН до денег на счёте</h2>
+            <p>На каждом этапе видно, что происходит с заявкой и что нужно от вас.</p>
           </div>
-          <div className="steps-grid">
+          <ol className="tile journey">
             {STEPS.map((step, index) => {
               const Icon = step.icon;
               return (
-                <div className="how-step" key={step.title}>
-                  <div className="how-top"><span className="step-number">{index + 1}</span><span className="step-icon"><Icon size={21} /></span></div>
+                <li className="journey-step" key={step.title}>
+                  <span className="journey-index">{index + 1}</span>
+                  <span className="journey-icon"><Icon size={22} /></span>
                   <h3>{step.title}</h3>
                   <p>{step.text}</p>
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ol>
         </section>
 
-        <section className="section faq-section" id="faq">
-          <div className="section-heading centered">
-            
-            <h2>Часто задаваемые вопросы</h2>
+        <section className="bento-section faq-layout" id="faq">
+          <div className="section-heading faq-heading">
+            <h2>Вопросы и ответы</h2>
             <p>Требования, документы, сроки и что значит каждое решение банка.</p>
           </div>
           <div className="faq-list">
@@ -368,7 +361,7 @@ export default function HomePage() {
               <div className={`faq-item ${openFaq === index ? "open" : ""}`} key={item.q}>
                 <button onClick={() => setOpenFaq(openFaq === index ? null : index)} aria-expanded={openFaq === index}>
                   <span>{item.q}</span>
-                  <ChevronDown size={19} />
+                  <ChevronDown size={20} />
                 </button>
                 {openFaq === index && <p>{item.a}</p>}
               </div>
@@ -376,15 +369,13 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="cta-section">
+        <section className="tile tile-accent cta-tile">
           <div>
-            
             <h2>Узнайте предварительное решение уже сегодня</h2>
-            <p>Подайте заявку за 10 минут — статус, вопросы банка и оферта придут в кабинет.</p>
+            <p>Статус, вопросы банка и оферта придут в кабинет — без звонков и визитов.</p>
           </div>
           <div className="cta-actions">
-            <Link className="btn btn-primary btn-lg" to={user ? "/app" : "/login"}>{user ? "Открыть кабинет" : "Войти в кабинет"} <ArrowRight size={18} /></Link>
-            <a className="btn btn-secondary btn-lg" href="#calculator">Рассчитать платёж</a>
+            <Link className="btn btn-light btn-lg" to={user ? "/app" : "/login"}>{user ? "Открыть кабинет" : "Войти в кабинет"} <ArrowRight size={18} /></Link>
           </div>
         </section>
       </main>

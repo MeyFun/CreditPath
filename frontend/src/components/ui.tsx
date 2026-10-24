@@ -6,7 +6,9 @@ import {
   FileText,
   Info,
   LoaderCircle,
+  Moon,
   Route,
+  Sun,
   TriangleAlert,
   X
 } from "lucide-react";
@@ -23,7 +25,7 @@ import {
   type ReactNode,
   type SelectHTMLAttributes
 } from "react";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import type { Event } from "../types";
 
 export function formatMoney(value: number | null | undefined, fraction = 0): string {
@@ -496,6 +498,67 @@ export function useDebouncedValue<T>(value: T, delay = 300): T {
 
 export function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/** Цвет плитки продукта: один и тот же на главной, в каталоге и в мастере заявки. */
+export function productTone(code: string | undefined): "lilac" | "cyan" | "lemon" {
+  if (code === "EQUIPMENT") return "cyan";
+  if (code === "OVERDRAFT") return "lemon";
+  return "lilac";
+}
+
+type Theme = "light" | "dark";
+const THEME_KEY = "creditpath-theme";
+const DARK_QUERY = "(prefers-color-scheme: dark)";
+
+function activeTheme(): Theme {
+  const chosen = document.documentElement.dataset.theme;
+  if (chosen === "light" || chosen === "dark") return chosen;
+  return window.matchMedia(DARK_QUERY).matches ? "dark" : "light";
+}
+
+/** Переключатель темы. Пока пользователь не выбрал тему, следуем системной; выбор запоминаем. */
+export function ThemeToggle({ className = "" }: { className?: string }) {
+  const [theme, setTheme] = useState<Theme>(activeTheme);
+
+  useEffect(() => {
+    const query = window.matchMedia(DARK_QUERY);
+    const follow = () => setTheme(activeTheme());
+    query.addEventListener("change", follow);
+    return () => query.removeEventListener("change", follow);
+  }, []);
+
+  function toggle(event: React.MouseEvent<HTMLButtonElement>) {
+    const next: Theme = theme === "dark" ? "light" : "dark";
+    const root = document.documentElement;
+    const apply = () => {
+      root.dataset.theme = next;
+      try {
+        localStorage.setItem(THEME_KEY, next);
+      } catch {
+        // Без хранилища тема продержится до перезагрузки.
+      }
+      setTheme(next);
+    };
+    const doc = document as Document & { startViewTransition?: (update: () => void) => { finished: Promise<void> } };
+    if (!doc.startViewTransition || prefersReducedMotion()) {
+      apply();
+      return;
+    }
+    // Новая тема раскрывается кругом от кнопки.
+    const rect = event.currentTarget.getBoundingClientRect();
+    root.style.setProperty("--reveal-x", `${rect.left + rect.width / 2}px`);
+    root.style.setProperty("--reveal-y", `${rect.top + rect.height / 2}px`);
+    root.classList.add("theme-switching");
+    doc.startViewTransition(() => flushSync(apply)).finished.finally(() => root.classList.remove("theme-switching"));
+  }
+
+  const label = theme === "dark" ? "Включить светлую тему" : "Включить тёмную тему";
+  return (
+    <button type="button" className={`theme-toggle ${className}`} onClick={toggle} aria-label={label} title={label}>
+      <span className="theme-toggle-icon" key={theme}>{theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}</span>
+    </button>
+  );
 }
 
 /** Галочка одобрения рисуется штрихом: сначала круг, затем сама отметка. */

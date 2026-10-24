@@ -35,7 +35,7 @@ Self-hosted файлы Swagger UI находятся в `backend/app/static/swag
 | React Router | 6.30.0 | MIT |
 | TanStack Query | 5.74.4 | MIT |
 | lucide-react (иконки) | 0.468.0 | ISC |
-| @fontsource-variable/inter (шрифт Inter) | 5.3.0 | OFL-1.1 (шрифт), MIT (пакет) |
+| @fontsource-variable/onest (шрифт Onest) | 5.3.1 | OFL-1.1 (шрифт), MIT (пакет) |
 | TypeScript | 5.7.3 | Apache-2.0 |
 | Vite | 6.0.7 | MIT |
 | @vitejs/plugin-react | 4.3.4 | MIT |
@@ -57,7 +57,7 @@ Self-hosted файлы Swagger UI находятся в `backend/app/static/swag
 
 ## Шрифты и иконки
 
-- Шрифт Inter (SIL Open Font License 1.1) подключается из npm-пакета `@fontsource-variable/inter` и собирается Vite в статические файлы фронтенда. Внешние CDN не используются, поэтому CSP `font-src 'self'` не меняется.
+- Шрифт Onest (SIL Open Font License 1.1) подключается из npm-пакета `@fontsource-variable/onest` и собирается Vite в статические файлы фронтенда. Внешние CDN не используются, поэтому CSP `font-src 'self'` не меняется.
 - Иконки интерфейса — `lucide-react` (ISC). Логотип CreditPath — собственная SVG-композиция.
 - Изображения макетов в `docs/design/` являются исходными материалами команды/хакатона и используются только в документации.
 

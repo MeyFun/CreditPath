@@ -17,7 +17,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { api, ApiError } from "../api";
 import { SiteFooter } from "../components/Footer";
 import { homeForRole, useAuth } from "../auth";
-import { Alert, Button, Field, Input, Logo } from "../components/ui";
+import { Alert, Button, Field, Input, Logo, ThemeToggle } from "../components/ui";
 
 const DEMO_ACCOUNTS = [
   { username: "client1", title: "Клиент", text: "ООО «Северный Ветер», торговля", icon: UserRound, tone: "red" },
@@ -71,6 +71,7 @@ export default function AuthPage() {
         <div className="auth-header-right">
           <span className="secure-pill"><ShieldCheck size={16} /> Безопасное соединение</span>
           <a href="/#faq">Помощь</a>
+          <ThemeToggle />
         </div>
       </header>
 

@@ -21,7 +21,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { SiteFooter } from "./Footer";
 import { useAuth } from "../auth";
-import { Logo, prefersReducedMotion } from "./ui";
+import { Logo, prefersReducedMotion, ThemeToggle } from "./ui";
 import type { Role } from "../types";
 
 type Area = "client" | "employee" | "admin";
@@ -118,10 +118,13 @@ export function AppShell({ role }: { role: Area }) {
           <Menu size={22} />
         </button>
         <Logo compact />
-        <Link className="icon-button badge-host" to={notificationPath} aria-label="Уведомления">
-          <Bell size={20} />
-          {(notifications.data?.unread ?? 0) > 0 && <span className="badge-count">{notifications.data?.unread}</span>}
-        </Link>
+        <div className="mobile-header-actions">
+          <ThemeToggle className="theme-toggle-compact" />
+          <Link className="icon-button badge-host" to={notificationPath} aria-label="Уведомления">
+            <Bell size={20} />
+            {(notifications.data?.unread ?? 0) > 0 && <span className="badge-count">{notifications.data?.unread}</span>}
+          </Link>
+        </div>
       </header>
 
       <aside className={`sidebar ${open ? "sidebar-open" : ""}`}>
@@ -171,6 +174,7 @@ export function AppShell({ role }: { role: Area }) {
             {user.company_inn && <span className="muted">ИНН {user.company_inn}</span>}
           </div>
           <div className="topbar-actions">
+            <ThemeToggle />
             <Link className="topbar-bell" to={notificationPath} aria-label="Центр уведомлений">
               <Bell size={19} />
               {(notifications.data?.unread ?? 0) > 0 && <span className="badge-count">{notifications.data?.unread}</span>}

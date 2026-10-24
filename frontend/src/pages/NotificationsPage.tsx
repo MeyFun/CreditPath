@@ -105,7 +105,7 @@ export default function NotificationsPage() {
                       <span className="notif-icon" aria-hidden="true"><Icon size={18} strokeWidth={2.2} /></span>
                       <div className="notif-main">
                         <div className="notif-head">
-                          <strong>{item.title}</strong>
+                          <strong>{!item.is_read && <span className="notif-dot" aria-label="Не прочитано" />}{item.title}</strong>
                           <time dateTime={item.created_at}>{timeLabel(item.created_at)}</time>
                         </div>
                         <p>{item.body}</p>
