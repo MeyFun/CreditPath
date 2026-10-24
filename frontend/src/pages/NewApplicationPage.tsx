@@ -425,8 +425,8 @@ export default function NewApplicationPage() {
         <div className="wizard-title-row">
           <div>
             
-            <h1>Оформление кредита для бизнеса</h1>
-            <p>Пять шагов, без бумажных справок.</p>
+            <h1>Новая заявка на кредит</h1>
+            <p>Около 10 минут. Черновик сохраняется на каждом шаге.</p>
           </div>
           <div className="wizard-save">
             {draftId && <Button variant="ghost" onClick={() => setConfirmDelete(true)} icon={<Trash2 size={16} />}>Удалить черновик</Button>}

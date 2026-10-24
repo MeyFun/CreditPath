@@ -1,4 +1,4 @@
-import { ArrowUpRight, Clock3, Mail, MapPin, Phone } from "lucide-react";
+import { Clock3, Mail, MapPin, Phone } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button, Logo, Modal } from "./ui";
@@ -85,7 +85,6 @@ export function SiteFooter({ compact = false }: { compact?: boolean }) {
         <div className="footer-brand">
           <Logo />
           <p>Кредиты для малого бизнеса онлайн: заявка, проверки и решение — в одном кабинете.</p>
-          <Link className="footer-cta" to="/register">Открыть кабинет <ArrowUpRight size={16} /></Link>
         </div>
         <nav aria-label="Продукты">
           <h4>Продукты</h4>

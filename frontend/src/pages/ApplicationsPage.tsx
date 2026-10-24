@@ -4,18 +4,15 @@ import { useDeferredValue, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../api";
 import {
-  applicationProgress,
   Button,
   Card,
   EmptyState,
-  formatDate,
   formatMoney,
   formatShortDate,
   Input,
   LoadingBlock,
   Modal,
   PageHeader,
-  ProgressBar,
   StatusBadge,
   useToast
 } from "../components/ui";
@@ -90,51 +87,40 @@ export default function ApplicationsPage() {
           />
         </Card>
       ) : (
-        <div className="application-list">
-          {query.data!.map((app) => (
-            <Card className="application-card" key={app.id}>
-              <div className="app-card-main">
-                <div className="app-card-top">
-                  <span className="file-badge"><FileText size={18} /></span>
-                  <span className="app-number">№ {app.number}</span>
+        <Card className="app-table">
+          <div className="app-row app-row-head" aria-hidden="true">
+            <span>Заявка</span><span>Сумма</span><span>Статус</span><span>Обновлено</span><span />
+          </div>
+          {query.data!.map((app) => {
+            const href = app.status === "DRAFT" ? `/app/applications/new?draft=${app.id}` : `/app/applications/${app.id}`;
+            const note = app.status === "NEED_INFO"
+              ? "Банк ждёт ваш ответ"
+              : app.assigned_employee ? app.assigned_employee.full_name : app.client_status;
+            return (
+              <div className={`app-row ${app.status === "NEED_INFO" ? "app-row-attention" : ""}`} key={app.id}>
+                <div className="app-row-main">
+                  <Link className="app-row-link" to={href}>{app.product.name}</Link>
+                  <small>№ {app.number} · {app.purpose_label} · {app.term_months} мес.</small>
+                </div>
+                <div className="app-row-amount">
+                  <strong>{formatMoney(app.approved_amount ?? app.amount)}</strong>
+                  <small>{app.approved_amount ? `одобрено${app.approved_rate ? ` · ${app.approved_rate}%` : ""}` : `от ${app.product.rate.toFixed(1).replace(".", ",")}%`}</small>
+                </div>
+                <div className="app-row-status">
                   <StatusBadge status={app.status} />
-                  <span className="app-date">{formatShortDate(app.submitted_at ?? app.created_at)}</span>
+                  <small className={app.status === "NEED_INFO" ? "warning-text" : ""}>{note}</small>
                 </div>
-                <div className="app-card-body">
-                  <div>
-                    <h3>{app.product.name}</h3>
-                    <p>{app.purpose_label} · {app.term_months} мес. · ставка от {app.product.rate.toFixed(1).replace(".", ",")}%</p>
-                    {app.status === "NEED_INFO" && <p className="warning-text">Требуется ответ на запрос уточнений</p>}
-                    {app.status === "REJECTED" && <p className="muted">Решение принято. Причина доступна в карточке заявки.</p>}
-                  </div>
-                  <div className="app-amount">
-                    <span>{app.approved_amount ? "Одобренная сумма" : "Запрошенная сумма"}</span>
-                    <strong>{formatMoney(app.approved_amount ?? app.amount)}</strong>
-                    {app.approved_term_months && <small>{app.approved_term_months} мес. · {app.approved_rate}%</small>}
-                  </div>
-                </div>
-                <div className="app-card-progress">
-                  <ProgressBar value={applicationProgress(app.status)} />
-                  <span>{app.assigned_employee ? `Сотрудник: ${app.assigned_employee.full_name}` : app.client_status}</span>
+                <time className="app-row-date">{formatShortDate(app.updated_at)}</time>
+                <div className="app-row-actions">
+                  {app.status === "DRAFT" && (
+                    <button className="icon-button app-row-delete" onClick={() => setToDelete(app)} aria-label={`Удалить черновик № ${app.number}`} title="Удалить черновик"><Trash2 size={17} /></button>
+                  )}
+                  <ArrowRight size={17} className="app-row-arrow" aria-hidden="true" />
                 </div>
               </div>
-              <div className="app-card-side">
-                <div>
-                  <span className="muted small">Обновлено</span>
-                  <strong>{formatDate(app.updated_at)}</strong>
-                </div>
-                {app.status === "DRAFT" ? (
-                  <div className="app-card-actions">
-                    <button className="icon-button" onClick={() => setToDelete(app)} aria-label={`Удалить черновик № ${app.number}`} title="Удалить черновик"><Trash2 size={17} /></button>
-                    <Link className="btn btn-primary btn-sm" to={`/app/applications/new?draft=${app.id}`}>Продолжить <ArrowRight size={15} /></Link>
-                  </div>
-                ) : (
-                  <Link className="btn btn-secondary btn-sm" to={`/app/applications/${app.id}`}>Открыть заявку <ArrowRight size={15} /></Link>
-                )}
-              </div>
-            </Card>
-          ))}
-        </div>
+            );
+          })}
+        </Card>
       )}
       <Modal
         open={Boolean(toDelete)}

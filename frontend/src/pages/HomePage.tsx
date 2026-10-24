@@ -120,11 +120,11 @@ export default function HomePage() {
       <main>
         <section className="hero">
           <div className="hero-copy">
-            <span className="eyebrow"><span className="live-dot" /> Кредитный конвейер для малого бизнеса</span>
-            <h1>Кредит для бизнеса без визита в банк</h1>
+            <span className="eyebrow"><span className="live-dot" /> Кредиты для ИП и ООО</span>
+            <h1>До 50 млн ₽ на оборот, оборудование или овердрафт</h1>
             <p>
-              Единый кабинет для ИП и компаний: подберите продукт, проверьте ИНН,
-              отправьте заявку и следите за решением.
+              Заявка онлайн за 10 минут: реквизиты заполнятся по ИНН, предварительная оценка
+              появится сразу после отправки, а решение сотрудника банка — в вашем кабинете.
             </p>
             <div className="hero-actions">
               <Link className="btn btn-primary btn-lg" to={user ? "/app/applications/new" : "/login"} state={{ from: "/app/applications/new" }}>
@@ -282,7 +282,7 @@ export default function HomePage() {
           <div className="section-heading centered">
             
             <h2>Как это работает</h2>
-            <p>От заявки до решения — четыре понятных этапа, каждый со статусом в кабинете.</p>
+            <p>Четыре этапа, и на каждом видно, что происходит с заявкой и что нужно от вас.</p>
           </div>
           <div className="steps-grid">
             {STEPS.map((step, index) => {
@@ -302,7 +302,7 @@ export default function HomePage() {
           <div className="section-heading centered">
             
             <h2>Часто задаваемые вопросы</h2>
-            <p>Всё, что нужно знать о правилах и этапах финансирования.</p>
+            <p>Требования, документы, сроки и что значит каждое решение банка.</p>
           </div>
           <div className="faq-list">
             {FAQ.map((item, index) => (
@@ -320,8 +320,8 @@ export default function HomePage() {
         <section className="cta-section">
           <div>
             
-            <h2>Подайте заявку и наблюдайте за решением онлайн</h2>
-            <p>Решение по заявке и все уведомления — в личном кабинете.</p>
+            <h2>Узнайте предварительное решение уже сегодня</h2>
+            <p>Подайте заявку за 10 минут — статус, вопросы банка и оферта придут в кабинет.</p>
           </div>
           <div className="cta-actions">
             <Link className="btn btn-primary btn-lg" to={user ? "/app" : "/register"}>Создать кабинет <ArrowRight size={18} /></Link>

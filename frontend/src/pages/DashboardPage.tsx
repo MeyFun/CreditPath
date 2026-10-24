@@ -3,13 +3,11 @@ import {
   ArrowRight,
   BellRing,
   Building2,
-  CheckCircle2,
   Clock3,
   FileText,
   Plus,
   ShieldCheck,
-  Sparkles,
-  WalletCards
+  Sparkles
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
@@ -23,6 +21,7 @@ import {
   formatMoney,
   formatShortDate,
   LoadingBlock,
+  plural,
   StatusBadge
 } from "../components/ui";
 import type { ApplicationSummary } from "../types";
@@ -54,6 +53,13 @@ function nextAction(applications: ApplicationSummary[]) {
   return { ...pick, copy };
 }
 
+/** Подзаголовок говорит, что происходит сейчас, а не приветствует общими словами. */
+function greetingLine(needsAction: number, active: number): string {
+  if (needsAction) return `${needsAction} ${plural(needsAction, "заявка ждёт", "заявки ждут", "заявок ждут")} вашего ответа.`;
+  if (active) return `${active} ${plural(active, "заявка", "заявки", "заявок")} на рассмотрении — от вас сейчас ничего не требуется.`;
+  return "Подберите продукт и подайте заявку: предварительная оценка — сразу после отправки.";
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const query = useQuery({ queryKey: ["client-dashboard"], queryFn: api.client.dashboard });
@@ -71,9 +77,8 @@ export default function DashboardPage() {
     <div className="page-stack">
       <div className="welcome-row">
         <div>
-          
-          <h1>Добрый день, {firstName}!</h1>
-          <p>Рады видеть вас в CreditPath. Ключевые показатели и статусы — под рукой.</p>
+          <h1>Добрый день, {firstName}</h1>
+          <p>{greetingLine(data.counts.needs_action ?? 0, data.counts.active ?? 0)}</p>
         </div>
         <div className="welcome-actions">
           <Link className="btn btn-secondary" to="/app/products">Подобрать продукт</Link>
@@ -103,30 +108,33 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      <div className="kpi-grid">
-        <Card className="kpi-card">
-          <span className="kpi-icon kpi-icon-red"><WalletCards size={20} /></span>
-          <div><span>Доступный лимит</span><strong>{formatMoney(data.total_approved_amount || 7_500_000)}</strong><small>Рассчитан по одобренным заявкам</small></div>
-        </Card>
-        <Card className="kpi-card">
-          <span className="kpi-icon kpi-icon-blue"><Clock3 size={20} /></span>
-          <div><span>В работе</span><strong>{data.counts.active ?? 0}</strong><small>{data.counts.needs_action ? `${data.counts.needs_action} требует действия` : "Нет срочных действий"}</small></div>
-        </Card>
-        <Card className="kpi-card">
-          <span className="kpi-icon kpi-icon-green"><CheckCircle2 size={20} /></span>
-          <div><span>Одобрено</span><strong>{data.counts.approved ?? 0}</strong><small>Решений по заявкам</small></div>
-        </Card>
-        <Card className="kpi-card">
-          <span className="kpi-icon kpi-icon-amber"><BellRing size={20} /></span>
-          <div><span>Уведомления</span><strong>{data.unread_notifications}</strong><small>{data.unread_notifications ? "Есть непрочитанные" : "Всё прочитано"}</small></div>
-        </Card>
-      </div>
+      <Card className="kpi-strip">
+        <div className="kpi-cell kpi-cell-accent">
+          <span>Доступный лимит</span>
+          <strong>{formatMoney(data.total_approved_amount || 7_500_000)}</strong>
+          <small>По одобренным заявкам</small>
+        </div>
+        <div className="kpi-cell">
+          <span>В работе</span>
+          <strong>{data.counts.active ?? 0}</strong>
+          <small className={data.counts.needs_action ? "warning-text" : ""}>{data.counts.needs_action ? `${data.counts.needs_action} ждёт вашего ответа` : "Срочных действий нет"}</small>
+        </div>
+        <div className="kpi-cell">
+          <span>Одобрено</span>
+          <strong>{data.counts.approved ?? 0}</strong>
+          <small>Решений по заявкам</small>
+        </div>
+        <Link className="kpi-cell kpi-cell-link" to="/app/notifications">
+          <span>Уведомления</span>
+          <strong>{data.unread_notifications}</strong>
+          <small>{data.unread_notifications ? "Есть непрочитанные" : "Всё прочитано"}</small>
+        </Link>
+      </Card>
 
       <div className="dashboard-grid">
         <Card className="company-card">
           <div className="card-head">
             <div>
-              
               <h2>{company?.name ?? "Компания пока не привязана"}</h2>
             </div>
             {company && <Badge tone={company.status === "Действующая" ? "success" : "danger"}>{company.status}</Badge>}
@@ -165,7 +173,6 @@ export default function DashboardPage() {
       <Card className="apps-card">
         <div className="card-head">
           <div>
-            
             <h2>Заявки на финансирование</h2>
           </div>
           <div className="card-head-actions">

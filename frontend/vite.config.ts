@@ -1,22 +1,25 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+// API_TARGET позволяет поднять второй стенд рядом, не занимая порт 8000.
+const api = process.env.API_TARGET ?? "http://localhost:8000";
+
 export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
     proxy: {
-      "/api": "http://localhost:8000",
-      "/docs": "http://localhost:8000",
-      "/openapi.json": "http://localhost:8000"
+      "/api": api,
+      "/docs": api,
+      "/openapi.json": api
     }
   },
   preview: {
     port: 4173,
     proxy: {
-      "/api": "http://localhost:8000",
-      "/docs": "http://localhost:8000",
-      "/openapi.json": "http://localhost:8000"
+      "/api": api,
+      "/docs": api,
+      "/openapi.json": api
     }
   },
   build: {

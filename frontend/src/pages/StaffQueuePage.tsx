@@ -3,10 +3,8 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock3,
-  FileText,
   Filter,
   Search,
-  ShieldCheck,
   Sparkles,
 } from "lucide-react";
 import { useDeferredValue, useState } from "react";
@@ -51,12 +49,12 @@ export default function StaffQueuePage() {
       <PageHeader
         title="Очередь заявок"
       />
-      <div className="kpi-grid staff-kpi">
-        <Card className="kpi-card"><span className="kpi-icon kpi-icon-red"><FileText size={20} /></span><div><span>В очереди</span><strong>{stats.data?.in_review ?? "—"}</strong><small>Ожидают решения</small></div></Card>
-        <Card className="kpi-card"><span className="kpi-icon kpi-icon-amber"><Clock3 size={20} /></span><div><span>Ждут клиента</span><strong>{stats.data?.need_info ?? "—"}</strong><small>Запрошены уточнения</small></div></Card>
-        <Card className="kpi-card"><span className="kpi-icon kpi-icon-blue"><ShieldCheck size={20} /></span><div><span>Всего назначено</span><strong>{stats.data?.total_assigned ?? "—"}</strong><small>За всё время</small></div></Card>
-        <Card className="kpi-card"><span className="kpi-icon kpi-icon-green"><CheckCircle2 size={20} /></span><div><span>Одобрено</span><strong>{formatMoney(stats.data?.approved_total)}</strong><small>Сумма по решениям</small></div></Card>
-      </div>
+      <Card className="kpi-strip">
+        <div className="kpi-cell kpi-cell-accent"><span>Ждут решения</span><strong>{stats.data?.in_review ?? "—"}</strong><small>Назначены вам</small></div>
+        <div className="kpi-cell"><span>Ждут клиента</span><strong>{stats.data?.need_info ?? "—"}</strong><small>Запрошены уточнения</small></div>
+        <div className="kpi-cell"><span>Всего назначено</span><strong>{stats.data?.total_assigned ?? "—"}</strong><small>За всё время</small></div>
+        <div className="kpi-cell"><span>Одобрено</span><strong>{formatMoney(stats.data?.approved_total)}</strong><small>Сумма по решениям</small></div>
+      </Card>
 
       <div className="queue-toolbar">
         <div className="tabs-row">

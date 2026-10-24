@@ -505,17 +505,6 @@ img { max-width: 100%; }
 .next-action-body h2 { font-size: 18px; margin: 2px 0 4px; }
 .next-action-body p { color: var(--muted); font-size: 12.5px; max-width: 690px; }
 .next-action-actions { display: flex; flex-direction: column; gap: 5px; flex: 0 0 auto; }
-.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 13px; }
-.kpi-card { display: flex; align-items: flex-start; gap: 11px; padding: 16px; }
-.kpi-icon { width: 38px; height: 38px; flex: 0 0 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-.kpi-icon-red { background: var(--accent-soft); color: var(--accent); }
-.kpi-icon-blue { background: var(--info-soft); color: var(--info); }
-.kpi-icon-green { background: var(--success-soft); color: var(--success); }
-.kpi-icon-amber { background: var(--warning-soft); color: var(--warning); }
-.kpi-card > div { display: flex; flex-direction: column; }
-.kpi-card span { font-size: 11.5px; color: var(--muted); }
-.kpi-card strong { font-size: 23px; letter-spacing: -0.02em; margin: 3px 0 1px; line-height: 1.1; }
-.kpi-card small { font-size: 10.5px; color: #9299a3; }
 .dashboard-grid { display: grid; grid-template-columns: 1.35fr 0.65fr; gap: 16px; }
 .company-card { padding: 20px; }
 .company-meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; border-top: 1px solid var(--border); padding-top: 14px; }
@@ -556,26 +545,7 @@ img { max-width: 100%; }
 .search-box { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; min-width: 250px; background: #fff; color: var(--muted); }
 .search-box .input { border: 0; padding: 8px 0; box-shadow: none; background: transparent; font-size: 12.5px; }
 .search-box .input:focus { box-shadow: none; }
-.application-list { display: flex; flex-direction: column; gap: 11px; }
-.application-card { display: flex; gap: 20px; align-items: stretch; padding: 18px 20px; }
-.app-card-main { flex: 1; min-width: 0; }
-.app-card-top { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-bottom: 11px; }
 .app-number { font-size: 11.5px; color: var(--muted); font-family: var(--mono); }
-.app-date { margin-left: auto; color: var(--muted); font-size: 11px; }
-.app-card-body { display: flex; justify-content: space-between; gap: 24px; }
-.app-card-body h3 { font-size: 17px; margin-bottom: 4px; }
-.app-card-body p { color: var(--muted); font-size: 12px; }
-.app-amount { display: flex; flex-direction: column; align-items: flex-end; flex: 0 0 auto; }
-.app-amount span { color: var(--muted); font-size: 10.5px; }
-.app-amount strong { font-size: 19px; letter-spacing: -0.02em; }
-.app-amount small { font-size: 10.5px; color: var(--muted); }
-.app-card-progress { display: flex; align-items: center; gap: 12px; margin-top: 13px; }
-.app-card-progress .progress { flex: 1; }
-.app-card-progress span { color: var(--muted); font-size: 10.5px; white-space: nowrap; }
-.app-card-side { border-left: 1px solid var(--border); padding-left: 18px; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; flex: 0 0 150px; }
-.app-card-side > div { display: flex; flex-direction: column; align-items: flex-end; }
-.app-card-side strong { font-size: 11.5px; }
-.application-card:hover { border-color: #f0cdd0; }
 .product-page-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
 .product-detail-card { display: flex; flex-direction: column; }
 .product-detail-card h2 { font-size: 22px; margin-bottom: 8px; }
@@ -793,7 +763,6 @@ img { max-width: 100%; }
 .result-rejected { background: linear-gradient(160deg, #fff, #fffafa); }
 
 /* Employee */
-.staff-kpi { margin-bottom: 1px; }
 .queue-toolbar { display: flex; justify-content: space-between; gap: 16px; align-items: center; flex-wrap: wrap; }
 .queue-filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .filter-select { display: flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: #fff; border-radius: 8px; padding: 0 10px; color: var(--muted); }
@@ -910,8 +879,6 @@ img { max-width: 100%; }
   .hero { gap: 30px; padding-top: 48px; }
   .public-nav { gap: 20px; }
   .stepper-copy small { display: none; }
-  .kpi-grid { grid-template-columns: 1fr 1fr; }
-  .app-card-side { flex-basis: 130px; }
   .staff-header-metrics { gap: 14px; }
 }
 @media (max-width: 1020px) {
@@ -997,15 +964,8 @@ img { max-width: 100%; }
   .next-action { flex-direction: column; align-items: flex-start; }
   .next-action-actions { width: 100%; flex-direction: row; }
   .next-action-actions .btn { flex: 1; }
-  .kpi-grid { grid-template-columns: 1fr 1fr; }
-  .kpi-card { padding: 13px; }
-  .kpi-card strong { font-size: 19px; }
   .company-meta-grid { grid-template-columns: 1fr 1fr; }
   .dashboard-footer-grid { grid-template-columns: 1fr; }
-  .application-card { flex-direction: column; gap: 12px; }
-  .app-card-side { border-left: 0; border-top: 1px solid var(--border); padding: 10px 0 0; flex-direction: row; align-items: center; flex-basis: auto; }
-  .app-card-side > div { align-items: flex-start; }
-  .app-card-body { gap: 12px; }
   .filter-card { flex-direction: column; align-items: stretch; }
   .search-box { min-width: 0; }
   .queue-toolbar { flex-direction: column; align-items: stretch; }
@@ -1052,7 +1012,6 @@ img { max-width: 100%; }
   .hero-stats > div + div { padding-left: 8px; }
   .hero-actions .btn { width: 100%; }
   .steps-grid { grid-template-columns: 1fr; }
-  .kpi-grid { grid-template-columns: 1fr; }
   .stepper { grid-template-columns: 1fr; }
   .stepper-item:last-child { grid-column: auto; }
   .auth-header .logo-text { display: none; }
@@ -1089,8 +1048,6 @@ img { max-width: 100%; }
 .field-error::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: 0 0 6px; }
 .consent-hint { margin: 10px 0 0; }
 .offer-expired { display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 12px; background: var(--warning-soft); color: var(--warning); font-size: 13.5px; font-weight: 500; }
-.app-card-actions { display: flex; align-items: center; gap: 6px; }
-.app-card-actions .icon-button:hover { color: var(--danger); background: var(--danger-soft); }
 
 @media (max-width: 760px) {
   .toast-stack { top: 12px; bottom: auto; right: 50%; transform: translateX(50%); }
@@ -1104,8 +1061,6 @@ img { max-width: 100%; }
 .footer-brand .logo-tagline { color: #8b93a0; }
 .footer-brand .logo-mark { box-shadow: none; }
 .footer-brand p { font-size: 13.5px; line-height: 1.6; max-width: 300px; margin: 18px 0 20px; color: #a9b0bb; }
-.footer-cta { display: inline-flex; align-items: center; gap: 6px; color: #fff; font-weight: 600; font-size: 14px; padding: 10px 16px; border-radius: 10px; background: var(--accent); transition: background 0.18s; }
-.footer-cta:hover { background: var(--accent-dark); }
 .footer-main h4 { color: #fff; font-size: 13px; font-weight: 600; margin-bottom: 14px; }
 .footer-main nav { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
 .footer-main nav a, .footer-link { color: #b9bfc9; font-size: 13.5px; line-height: 1.35; text-align: left; background: none; border: 0; padding: 0; transition: color 0.15s; }
@@ -1139,3 +1094,72 @@ img { max-width: 100%; }
   .footer-bottom { flex-direction: column; gap: 4px; margin-top: 30px; }
   .app-footer { flex-direction: column; align-items: flex-start; }
 }
+
+
+/* «Мои заявки»: плотный список-таблица, как в банковских кабинетах. Вся строка кликабельна. */
+.app-table { padding: 4px 0; overflow: hidden; }
+.app-row {
+  position: relative; display: grid; align-items: center; gap: 18px;
+  grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr) minmax(0, 1.5fr) 110px 56px;
+  padding: 14px 22px; border-top: 1px solid var(--border); transition: background 0.15s;
+}
+.app-row-head { border-top: 0; padding-top: 12px; padding-bottom: 10px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.app-row:not(.app-row-head):hover { background: #fbfbfc; }
+.app-row-attention { box-shadow: inset 3px 0 0 var(--warning); }
+.app-row-main { display: flex; flex-direction: column; min-width: 0; }
+.app-row-link { font-weight: 600; font-size: 15px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app-row-link::after { content: ""; position: absolute; inset: 0; }
+.app-row:hover .app-row-link { color: var(--accent); }
+.app-row-link:focus-visible { outline: none; }
+.app-row:has(.app-row-link:focus-visible) { outline: 3px solid rgba(215, 25, 32, 0.25); outline-offset: -3px; }
+.app-row small { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app-row-amount { display: flex; flex-direction: column; }
+.app-row-amount strong { font-size: 15px; }
+.app-row-status { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.app-row-status small { max-width: 100%; }
+.app-row-date { color: var(--muted); font-size: 13px; }
+.app-row-actions { position: relative; z-index: 1; display: flex; align-items: center; justify-content: flex-end; gap: 4px; pointer-events: none; }
+.app-row-delete { pointer-events: auto; }
+.app-row-delete:hover { color: var(--danger); background: var(--danger-soft); }
+.app-row-arrow { color: #b4bac3; transition: transform 0.15s, color 0.15s; }
+.app-row:hover .app-row-arrow { color: var(--accent); transform: translateX(3px); }
+
+@media (max-width: 1020px) {
+  .app-row { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1.3fr) 44px; }
+  .app-row-date { display: none; }
+  .app-row-head span:nth-child(4) { display: none; }
+}
+@media (max-width: 760px) {
+  .app-row-head { display: none; }
+  .app-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; padding: 14px 16px; }
+  .app-row-main { grid-column: 1; }
+  .app-row-amount { grid-column: 2; grid-row: 1; align-items: flex-end; }
+  .app-row-status { grid-column: 1 / -1; }
+  .app-row-actions { position: absolute; right: 10px; bottom: 10px; }
+  .app-row-arrow { display: none; }
+}
+
+
+/* Показатели одной полосой с разделителями вместо четырёх одинаковых карточек. */
+.kpi-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 0; overflow: hidden; }
+.kpi-cell { display: flex; flex-direction: column; gap: 2px; padding: 18px 22px; border-left: 1px solid var(--border); min-width: 0; color: inherit; }
+.kpi-cell:first-child { border-left: 0; }
+.kpi-cell > span { color: var(--muted); font-size: 13px; font-weight: 500; }
+.kpi-cell strong { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi-cell small { color: var(--muted); font-size: 12px; }
+.kpi-cell-accent strong { color: var(--accent); }
+.kpi-cell-link { transition: background 0.15s; }
+.kpi-cell-link:hover { background: #fbfbfc; }
+@media (max-width: 760px) {
+  .kpi-strip { grid-template-columns: 1fr 1fr; }
+  .kpi-cell { padding: 14px 16px; }
+  .kpi-cell:nth-child(3) { border-left: 0; }
+  .kpi-cell:nth-child(n+3) { border-top: 1px solid var(--border); }
+  .kpi-cell strong { font-size: 21px; }
+}
+.demo-access-head > span:first-child { font-size: 12.5px; color: var(--muted); }
+.auth-metrics strong { white-space: nowrap; }
+
+/* Подписи таблиц и роль в сайдбаре — обычным регистром, без капса. */
+.data-table th { text-transform: none; letter-spacing: 0; font-size: 12px; }
+.role-chip { text-transform: none; letter-spacing: 0; font-size: 12px; font-weight: 600; }
