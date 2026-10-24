@@ -9,7 +9,8 @@
     { "key": "employeeToken", "value": "" },
     { "key": "adminToken", "value": "" },
     { "key": "clientApplicationId", "value": "" },
-    { "key": "employeeApplicationId", "value": "" }
+    { "key": "employeeApplicationId", "value": "" },
+    { "key": "draftApplicationId", "value": "" }
   ],
   "item": [
     {
@@ -172,6 +173,18 @@
               "raw": "{{baseUrl}}/client/applications/{{clientApplicationId}}",
               "host": ["{{baseUrl}}"],
               "path": ["client", "applications", "{{clientApplicationId}}"]
+            }
+          }
+        },
+        {
+          "name": "Удалить черновик (204; отправленную заявку удалить нельзя — 409)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clientToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/client/applications/{{draftApplicationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["client", "applications", "{{draftApplicationId}}"]
             }
           }
         }

@@ -629,6 +629,44 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "Кабинет клиента"
+        ],
+        "summary": "Delete Draft",
+        "operationId": "delete_draft_api_client_applications__application_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "application_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Application Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/client/applications/{application_id}/submit": {
@@ -2736,6 +2774,14 @@
             "type": "boolean",
             "title": "Related Party",
             "default": false
+          },
+          "risk_override_reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Risk Override Reasons",
+            "default": []
           }
         },
         "type": "object",

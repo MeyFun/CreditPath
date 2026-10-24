@@ -227,6 +227,18 @@ def run() -> None:
         check(missing.status_code == 404, "Несуществующий ИНН должен возвращать 404 на форме")
         print(f"✓ Несуществующий ИНН {NONEXISTENT_INN}: 404 на проверке формы")
 
+        # Черновик можно удалить, отправленную заявку — нет.
+        sample = by_code[SCENARIOS[0]["product"]]
+        draft = client.post("/client/applications", "client1", {
+            "product_id": sample["id"], "amount": SCENARIOS[0]["amount"], "term_months": SCENARIOS[0]["term"],
+            "purpose": SCENARIOS[0]["purpose"], "company_inn": SCENARIOS[0]["inn"], "collateral": False,
+        })
+        removed = client.http.delete(f"/client/applications/{draft['id']}", headers=client.headers("client1"))
+        check(removed.status_code == 204, f"Черновик должен удаляться: {removed.status_code} {removed.text}")
+        again = client.http.get(f"/client/applications/{draft['id']}", headers=client.headers("client1"))
+        check(again.status_code == 404, "Удалённый черновик не должен открываться")
+        print("✓ Черновик удаляется (204) и больше не открывается (404)")
+
         for index, scenario in enumerate(SCENARIOS, start=1):
             print(f"\n[{index}/{len(SCENARIOS)}] {scenario['name']} · {scenario['inn']}")
             product = by_code[scenario["product"]]
