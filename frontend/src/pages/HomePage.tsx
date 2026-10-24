@@ -100,18 +100,31 @@ const HERO_STAGES = [
   { label: "Оферта", badge: "Одобрено", tone: "success", event: "Оферта готова: 5 млн ₽ на 24 месяца" }
 ] as const;
 
-const STAGE_MS = 2600;
+const STAGE_MS = 3200;
+const FADE_MS = 450;
 
 /** Окно кабинета в hero: заявка сама проходит путь от отправки до одобрения. */
 function HeroDemo() {
   const reduced = prefersReducedMotion();
   const [stage, setStage] = useState(reduced ? HERO_STAGES.length - 1 : 0);
+  // Перед новым кругом карточка мягко гаснет: прогресс не «отматывается» назад на глазах.
+  const [fading, setFading] = useState(false);
 
   useEffect(() => {
     if (reduced) return;
+    const last = stage === HERO_STAGES.length - 1;
     // На одобрении задерживаемся дольше: это главный момент сцены.
-    const delay = stage === HERO_STAGES.length - 1 ? STAGE_MS * 1.8 : STAGE_MS;
-    const timer = window.setTimeout(() => setStage((value) => (value + 1) % HERO_STAGES.length), delay);
+    const timer = window.setTimeout(() => {
+      if (!last) {
+        setStage(stage + 1);
+        return;
+      }
+      setFading(true);
+      window.setTimeout(() => {
+        setStage(0);
+        setFading(false);
+      }, FADE_MS);
+    }, last ? STAGE_MS * 1.6 : STAGE_MS);
     return () => window.clearTimeout(timer);
   }, [stage, reduced]);
 
@@ -131,13 +144,13 @@ function HeroDemo() {
             <span key={item} className={index === 1 ? "active" : ""}><i />{item}</span>
           ))}
         </div>
-        <div className="mini-main">
+        <div className={`mini-main ${fading ? "fading" : ""}`}>
           <div className="mini-head">
             <div>
               <small>Заявка CP-2026-7F3A</small>
               <strong>Оборотный кредит</strong>
             </div>
-            <span key={current.badge} className={`badge badge-${current.tone} hero-badge`}><span className="badge-dot" />{current.badge}</span>
+            <span className={`badge badge-${current.tone} mini-badge`}><span className="badge-dot" /><span key={current.badge} className="mini-soft-in">{current.badge}</span></span>
           </div>
           <div className={`mini-offer ${approved ? "approved" : ""}`}>
             <small>{approved ? "Одобрено банком" : "Запрошено"}</small>
@@ -149,7 +162,7 @@ function HeroDemo() {
             </div>
             {approved && <span className="mini-offer-check"><CheckCircle2 size={22} /></span>}
           </div>
-          <ol className="mini-track" style={{ ["--progress" as string]: `${(stage / (HERO_STAGES.length - 1)) * 100}%` }}>
+          <ol className="mini-track" style={{ ["--p" as string]: String(stage / (HERO_STAGES.length - 1)) }}>
             {HERO_STAGES.map((item, index) => {
               const done = index < stage || approved;
               return (
@@ -160,14 +173,14 @@ function HeroDemo() {
               );
             })}
           </ol>
-          <div className="mini-event" key={stage}>
-            <span className="mini-event-dot" />
-            <span>{current.event}</span>
+          <div className="mini-event">
+            <span className="mini-event-dot" key={stage} />
+            <span key={current.event} className="mini-soft-in">{current.event}</span>
             <small>только что</small>
           </div>
         </div>
       </div>
-      <div className={`mini-float ${stage >= 2 ? "visible" : ""}`}>
+      <div className={`mini-float ${stage >= 2 && !fading ? "visible" : ""}`}>
         <span className="mini-float-score">82</span>
         <div><small>Предварительная оценка</small><strong>низкий риск</strong></div>
       </div>

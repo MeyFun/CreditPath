@@ -1236,7 +1236,6 @@ img { max-width: 100%; }
 @keyframes routeFlow { to { stroke-dashoffset: -17; } }
 @keyframes nodeHalo { 0% { transform: scale(0.6); opacity: 0.9; } 100% { transform: scale(1.9); opacity: 0; } }
 
-.hero-badge { animation: badgeSwap 0.35s ease-out both; }
 @keyframes badgeSwap { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
 .hero-offer { position: relative; transition: background 0.5s, border-color 0.5s; }
 .hero-offer-approved { background: var(--success-soft); border-color: color-mix(in srgb, var(--success) 22%, transparent); }
@@ -1429,29 +1428,33 @@ img { max-width: 100%; }
 .mini-nav i { width: 14px; height: 14px; border-radius: 4px; background: var(--surface-3); flex: 0 0 14px; }
 .mini-nav .active { background: var(--accent-soft); color: var(--accent-text); font-weight: 650; }
 .mini-nav .active i { background: color-mix(in srgb, var(--accent) 45%, transparent); }
-.mini-main { padding: 20px 22px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.mini-main { padding: 20px 22px; display: flex; flex-direction: column; gap: 16px; min-width: 0; transition: opacity 0.45s ease, transform 0.45s ease; }
+.mini-main.fading { opacity: 0; transform: translateY(4px); }
+.mini-badge { transition: background-color 0.6s ease, color 0.6s ease; }
+.mini-soft-in { display: inline-block; animation: miniSoftIn 0.5s ease both; }
+@keyframes miniSoftIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
 .mini-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
 .mini-head small { display: block; font-size: 12.5px; color: var(--muted); }
 .mini-head strong { font-size: 17px; }
-.mini-offer { position: relative; padding: 16px 18px; border-radius: var(--radius-sm); background: var(--surface-soft); border: 1px solid var(--border); transition: background 0.5s, border-color 0.5s; }
-.mini-offer small { font-size: 12.5px; color: var(--muted); transition: color 0.4s; }
+.mini-offer { position: relative; padding: 16px 18px; border-radius: var(--radius-sm); background: var(--surface-soft); border: 1px solid var(--border); transition: background-color 0.7s ease, border-color 0.7s ease; }
+.mini-offer small { font-size: 12.5px; color: var(--muted); font-weight: 600; transition: color 0.6s ease; }
 .mini-offer strong { display: block; font-size: 30px; font-weight: 800; letter-spacing: -0.035em; margin: 2px 0 8px; }
 .mini-offer-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--muted); }
 .mini-offer-meta b { color: var(--text); font-weight: 650; }
 .mini-offer.approved { background: var(--success-soft); border-color: color-mix(in srgb, var(--success) 30%, transparent); }
-.mini-offer.approved small { color: var(--success); font-weight: 650; }
+.mini-offer.approved small { color: var(--success); }
 .mini-offer-check { position: absolute; top: 14px; right: 14px; color: var(--success); animation: checkPop 0.45s ease-out both; }
-.mini-track { --progress: 0%; position: relative; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); }
-.mini-track::before, .mini-track::after { content: ""; position: absolute; top: 11px; left: 12.5%; height: 2px; border-radius: 2px; }
-.mini-track::before { right: 12.5%; background: var(--surface-3); }
-.mini-track::after { width: calc((100% - 25%) * var(--progress) / 100%); background: var(--accent); transition: width 0.9s cubic-bezier(0.65, 0, 0.35, 1); }
-.mini-track li { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); transition: color 0.3s; }
-.mini-track-dot { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--surface); border: 2px solid var(--surface-3); transition: background 0.3s, border-color 0.3s, color 0.3s; }
+.mini-track { --p: 0; position: relative; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); }
+.mini-track::before, .mini-track::after { content: ""; position: absolute; top: 11px; left: 12.5%; right: 12.5%; height: 2px; border-radius: 2px; }
+.mini-track::before { background: var(--surface-3); }
+.mini-track::after { background: var(--accent); transform-origin: left; transform: scaleX(var(--p)); transition: transform 1.1s cubic-bezier(0.65, 0, 0.35, 1); }
+.mini-track li { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--muted); transition: color 0.5s ease; }
+.mini-track-dot { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--surface); border: 2px solid var(--surface-3); transition: background-color 0.5s ease, border-color 0.5s ease, color 0.5s ease, transform 0.5s var(--ease); }
 .mini-track li.done { color: var(--text); }
 .mini-track li.done .mini-track-dot { background: var(--success); border-color: var(--success); color: var(--surface); }
-.mini-track li.now { color: var(--accent-text); font-weight: 650; }
-.mini-track li.now .mini-track-dot { border-color: var(--accent); color: var(--accent-text); }
-.mini-event { display: flex; align-items: center; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13px; color: var(--muted-dark); animation: badgeSwap 0.4s ease-out both; }
+.mini-track li.now { color: var(--accent-text); }
+.mini-track li.now .mini-track-dot { border-color: var(--accent); color: var(--accent-text); transform: scale(1.12); }
+.mini-event { display: flex; align-items: center; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13px; color: var(--muted-dark); }
 .mini-event span:nth-child(2) { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mini-event small { color: var(--muted); font-size: 12px; white-space: nowrap; }
 .mini-event-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex: 0 0 8px; animation: dotRing 1.2s ease-out 2; }
