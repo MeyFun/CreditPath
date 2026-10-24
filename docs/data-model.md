@@ -53,6 +53,8 @@ erDiagram
         int product_id FK
         string company_inn
         string company_name
+        string authority_basis "profile | registry | power_of_attorney"
+        int authority_document_id "документ-доверенность"
         numeric amount
         int term_months
         string purpose
