@@ -544,12 +544,6 @@ img { max-width: 100%; }
 .search-box .input:focus { box-shadow: none; }
 .app-number { font-size: 11.5px; color: var(--muted); font-family: var(--mono); }
 .product-page-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
-.product-detail-card { display: flex; flex-direction: column; }
-.product-detail-card h2 { font-size: 22px; margin-bottom: 8px; }
-.product-detail-card > p { color: var(--muted); font-size: 13px; min-height: 62px; }
-.purpose-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
-.purpose-list span { display: flex; align-items: center; gap: 6px; color: var(--muted-dark); font-size: 11.5px; }
-.purpose-list svg { color: var(--success); }
 .company-hero { display: grid; grid-template-columns: 1.4fr 0.6fr; gap: 16px; }
 .company-summary { display: flex; align-items: center; gap: 17px; flex-wrap: wrap; }
 .company-logo { width: 64px; height: 64px; border-radius: 16px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; }
@@ -569,20 +563,6 @@ img { max-width: 100%; }
 .founders > div { display: flex; align-items: center; gap: 9px; }
 .founders > div > div { display: flex; flex-direction: column; }
 .founders small { font-size: 11px; color: var(--muted); }
-.notification-list { display: flex; flex-direction: column; gap: 9px; }
-.notification-card { display: flex; gap: 12px; padding: 16px 18px; }
-.notification-card.unread .notif-head strong { font-weight: 700; }
-.notification-card:not(.unread) .notif-head strong { font-weight: 500; }
-.notification-card.unread .notif-dot { background: var(--accent); }
-.notification-warning.unread .notif-dot { background: var(--warning); }
-.notification-success.unread .notif-dot { background: var(--success); }
-.notif-dot { width: 8px; height: 8px; border-radius: 50%; background: #cfd5dc; flex: 0 0 8px; margin-top: 7px; }
-.notif-body { flex: 1; }
-.notif-head { display: flex; justify-content: space-between; gap: 16px; }
-.notif-head strong { font-size: 13.5px; }
-.notif-head time { color: var(--muted); font-size: 10.5px; }
-.notif-body p { color: var(--muted-dark); font-size: 12.5px; margin: 4px 0 7px; }
-.notif-actions { display: flex; gap: 16px; align-items: center; }
 
 /* Wizard */
 .wizard-page { max-width: 1250px; margin: 0 auto; }
@@ -1256,10 +1236,12 @@ img { max-width: 100%; }
 /* Смена страниц: короткий кросс-фейд только области контента, меню остаётся на месте. */
 .page { view-transition-name: page; }
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
-::view-transition-old(page) { animation: 0.14s ease-in both pageOut; }
-::view-transition-new(page) { animation: 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both pageIn; }
-@keyframes pageOut { to { opacity: 0; } }
-@keyframes pageIn { from { opacity: 0; transform: translateY(6px); } }
+/* Старую страницу убираем сразу, новую — проявляем. Две страницы никогда не видны одновременно,
+   поэтому заголовки не наезжают друг на друга; размер области тоже не «перетекает». */
+::view-transition-group(page) { animation: none; }
+::view-transition-old(page) { animation: none; opacity: 0; }
+::view-transition-new(page) { animation: 0.18s cubic-bezier(0.2, 0.8, 0.2, 1) both pageIn; }
+@keyframes pageIn { from { opacity: 0; transform: translateY(4px); } }
 
 /* Кто попросил меньше движения — получает статичный интерфейс. */
 @media (prefers-reduced-motion: reduce) {
@@ -1295,4 +1277,79 @@ img { max-width: 100%; }
   .stack-table td > small.block { display: inline; margin-left: 6px; }
   .stack-table td:has(> small.block) { flex-wrap: wrap; justify-content: flex-start; }
   .stack-table td:has(> small.block)::before { flex: 0 0 100%; margin-bottom: 2px; }
+}
+
+
+/* Каталог продуктов: ключевые цифры крупно, условия — строгой сеткой, кнопка всегда на одной высоте. */
+.product-page-grid { align-items: stretch; }
+.product-tile { display: flex; flex-direction: column; gap: 18px; padding: 24px; position: relative; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s; }
+.product-tile::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--accent); transform: scaleX(0); transform-origin: left; transition: transform 0.3s ease; }
+.product-tile:hover { border-color: var(--accent-line); box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+.product-tile:hover::before { transform: scaleX(1); }
+.product-tile-head { display: flex; gap: 14px; align-items: flex-start; }
+.product-tile-head .product-icon { flex: 0 0 44px; width: 44px; height: 44px; }
+.product-tile-head h2 { font-size: 20px; line-height: 1.25; margin-bottom: 4px; }
+.product-tile-tag { font-size: 12.5px; font-weight: 600; color: var(--success); }
+.product-tile-tag.with-collateral { color: var(--muted-dark); }
+.product-tile-desc { color: var(--muted); font-size: 13.5px; line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; min-height: calc(13.5px * 1.55 * 3); }
+.product-tile-figures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-soft); }
+.product-tile-figures > div { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; min-width: 0; }
+.product-tile-figures > div:nth-child(3) { border-left: 1px solid var(--border); }
+.product-tile-figures > div:not(.figure-rate) { border-top: 1px solid var(--border); }
+/* Ставка — главная цифра продукта: отдельной строкой во всю ширину. */
+.product-tile-figures .figure-rate { grid-column: 1 / -1; flex-direction: row; align-items: baseline; gap: 8px; }
+.product-tile-figures .figure-rate dt { margin-right: auto; align-self: center; }
+.product-tile-figures .figure-rate dd { font-size: 26px; letter-spacing: -0.02em; }
+.product-tile-figures dt { color: var(--muted); font-size: 12px; }
+.product-tile-figures dd { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
+.product-tile-figures small { color: var(--muted); font-size: 11.5px; }
+.product-tile-figures .figure-rate dd { color: var(--accent); }
+.product-tile-label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+.product-tile-purposes ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.product-tile-purposes li { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--muted-dark); }
+.product-tile-purposes li svg { flex: 0 0 14px; color: var(--success); }
+.product-tile-foot { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.product-tile-foot > span { color: var(--muted); font-size: 12.5px; }
+@media (max-width: 760px) {
+  .product-tile-figures dd { font-size: 15px; }
+  .product-tile-foot { flex-direction: column; align-items: stretch; }
+  .product-tile-foot .btn { width: 100%; }
+}
+
+/* Уведомления: лента по дням, тип читается по иконке, непрочитанное — кромкой и жирным заголовком. */
+.notif-filter { align-self: flex-start; }
+.notif-count { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 6px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 11.5px; font-weight: 700; }
+.notif-feed { display: flex; flex-direction: column; gap: 22px; }
+.notif-day-title { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 8px 4px; letter-spacing: 0; }
+.notif-group { padding: 0; overflow: hidden; }
+/* Статусные уведомления — спокойный серо-стальной тон, цветом выделяем только то, что требует внимания. */
+.notif-item { --tone: #8a93a3; --tone-soft: var(--info-soft); position: relative; display: flex; gap: 14px; padding: 16px 20px; border-top: 1px solid var(--border); transition: background 0.15s; }
+.notif-item:first-child { border-top: 0; }
+.notif-item:hover { background: #fbfbfc; }
+.notif-item.unread { background: linear-gradient(90deg, color-mix(in srgb, var(--tone-soft) 70%, #fff), #fff 60%); }
+.notif-item.unread::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--tone); }
+.notif-action { --tone: var(--accent); --tone-soft: var(--accent-soft); }
+.notif-warning { --tone: var(--warning); --tone-soft: var(--warning-soft); }
+.notif-danger { --tone: var(--danger); --tone-soft: var(--danger-soft); }
+.notif-success { --tone: var(--success); --tone-soft: var(--success-soft); }
+.notif-icon { flex: 0 0 38px; width: 38px; height: 38px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; background: var(--tone-soft); color: var(--tone); }
+.notif-item:not(.unread) .notif-icon { background: #f2f3f6; color: var(--muted); }
+.notif-main { flex: 1; min-width: 0; }
+.notif-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+.notif-head strong { font-size: 14.5px; font-weight: 600; color: var(--text); }
+.notif-item:not(.unread) .notif-head strong { font-weight: 500; color: var(--muted-dark); }
+.notif-head time { flex: 0 0 auto; color: var(--muted); font-size: 12.5px; }
+.notif-main p { color: var(--muted-dark); font-size: 13.5px; line-height: 1.5; margin: 3px 0 10px; }
+.notif-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.notif-kind { font-size: 11.5px; font-weight: 600; color: var(--tone); background: var(--tone-soft); padding: 3px 8px; border-radius: 999px; }
+.notif-item:not(.unread) .notif-kind { color: var(--muted); background: #f2f3f6; }
+.notif-open { display: inline-flex; align-items: center; gap: 5px; font-size: 13.5px; font-weight: 600; color: var(--accent); }
+.notif-open svg { transition: transform 0.15s; }
+.notif-open:hover svg { transform: translateX(3px); }
+.notif-read { margin-left: auto; width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; transition: color 0.15s, border-color 0.15s; }
+.notif-read:hover { color: var(--success); border-color: color-mix(in srgb, var(--success) 40%, transparent); }
+@media (max-width: 760px) {
+  .notif-item { padding: 14px 14px; gap: 11px; }
+  .notif-icon { flex-basis: 34px; width: 34px; height: 34px; }
+  .notif-head { flex-direction: column; gap: 2px; }
 }
