@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class UserOut(BaseModel):
@@ -17,20 +17,6 @@ class UserOut(BaseModel):
     is_active: bool
     created_at: datetime
     last_login_at: datetime | None = None
-
-
-class RegisterRequest(BaseModel):
-    username: str = Field(min_length=3, max_length=32, pattern=r"^[A-Za-z0-9_.-]+$")
-    password: str = Field(min_length=8, max_length=128)
-    full_name: str = Field(min_length=2, max_length=160)
-    company_inn: str | None = Field(default=None, min_length=10, max_length=12)
-
-    @field_validator("password")
-    @classmethod
-    def password_strength(cls, value: str) -> str:
-        if not any(char.isdigit() for char in value) or not any(char.isalpha() for char in value):
-            raise ValueError("Пароль должен содержать буквы и цифры")
-        return value
 
 
 class LoginRequest(BaseModel):
@@ -137,6 +123,8 @@ class ApplicationOut(BaseModel):
     product: ProductOut
     company_inn: str | None
     company_name: str | None
+    authority_basis: str | None = None
+    authority_document_id: int | None = None
     amount: float
     term_months: int
     purpose: str
@@ -202,6 +190,8 @@ class DecisionRequest(BaseModel):
     approved_amount: float | None = Field(default=None, gt=0, allow_inf_nan=False)
     approved_term_months: int | None = Field(default=None, ge=1, le=120)
     comment: str | None = Field(default=None, max_length=4000)
+    # Обязательно при одобрении заявки, поданной по доверенности.
+    authority_verified: bool = False
 
 
 SIGNER_POSITIONS = {

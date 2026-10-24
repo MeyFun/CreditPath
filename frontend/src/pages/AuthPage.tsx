@@ -19,8 +19,6 @@ import { SiteFooter } from "../components/Footer";
 import { homeForRole, useAuth } from "../auth";
 import { Alert, Button, Field, Input, Logo } from "../components/ui";
 
-type Tab = "login" | "register";
-
 const DEMO_ACCOUNTS = [
   { username: "client1", title: "Клиент", text: "ООО «Северный Ветер», торговля", icon: UserRound, tone: "red" },
   { username: "client3", title: "Клиент · связанное лицо", text: "ИП Кузнецова, родственница employee3", icon: Building2, tone: "blue" },
@@ -28,17 +26,12 @@ const DEMO_ACCOUNTS = [
   { username: "admin", title: "Администратор", text: "Роли, справочники, аудит", icon: ShieldCheck, tone: "dark" }
 ];
 
-export default function AuthPage({ initialTab = "login" }: { initialTab?: Tab }) {
-  const { user, login, register } = useAuth();
+export default function AuthPage() {
+  const { user, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [tab, setTab] = useState<Tab>(initialTab);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [inn, setInn] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [agreement, setAgreement] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -53,7 +46,6 @@ export default function AuthPage({ initialTab = "login" }: { initialTab?: Tab })
   function chooseDemo(account: string) {
     setUsername(account);
     setPassword(hint.data?.password_hint ?? "");
-    setTab("login");
     setError("");
   }
 
@@ -66,37 +58,6 @@ export default function AuthPage({ initialTab = "login" }: { initialTab?: Tab })
       navigate(destination ?? homeForRole(logged), { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Не удалось войти. Попробуйте ещё раз.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleRegister(event: React.FormEvent) {
-    event.preventDefault();
-    setError("");
-    if (password !== confirm) {
-      setError("Пароли не совпадают");
-      return;
-    }
-    if (!agreement) {
-      setError("Подтвердите согласие с условиями сервиса");
-      return;
-    }
-    setLoading(true);
-    try {
-      const created = await register({
-        username: username.trim(),
-        password,
-        full_name: fullName.trim(),
-        ...(inn.trim() ? { company_inn: inn.trim() } : {})
-      });
-      navigate(destination ?? homeForRole(created), { replace: true });
-    } catch (err) {
-      if (err instanceof ApiError && err.details?.length) {
-        setError(err.details.map((item) => item.message).join("; "));
-      } else {
-        setError(err instanceof ApiError ? err.message : "Не удалось зарегистрироваться");
-      }
     } finally {
       setLoading(false);
     }
@@ -115,83 +76,43 @@ export default function AuthPage({ initialTab = "login" }: { initialTab?: Tab })
 
       <main className="auth-layout">
         <section className="auth-panel">
-          <div className="auth-tabs">
-            <button className={tab === "login" ? "active" : ""} onClick={() => { setTab("login"); setError(""); }}>Вход</button>
-            <button className={tab === "register" ? "active" : ""} onClick={() => { setTab("register"); setError(""); }}>Регистрация</button>
-          </div>
-
-          {tab === "login" ? (
-            <>
-              <h1>Вход в личный кабинет</h1>
-              <p className="auth-subtitle">Единый вход для клиентов, сотрудников банка и администраторов.</p>
-              <form onSubmit={handleLogin} className="auth-form">
-                <Field label="Логин" required>
-                  <div className="input-icon-wrap"><UserRound size={18} /><Input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Логин" autoComplete="username" required /></div>
-                </Field>
-                <Field label="Пароль" required>
-                  <div className="input-icon-wrap">
-                    <KeyRound size={18} />
-                    <Input type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Введите пароль" autoComplete="current-password" required />
-                    <button type="button" className="icon-button input-eye" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}>
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                </Field>
-                {error && <Alert tone="danger">{error}</Alert>}
-                <Button type="submit" loading={loading} icon={<ArrowRight size={18} />}>Войти в кабинет</Button>
-              </form>
-              <details className="demo-access">
-                <summary>Тестовые данные</summary>
-                <div className="demo-access-head">
-                  <span>Выберите роль — логин и пароль заполнятся сами.</span>
-                  {hint.data?.password_hint && <span>Пароль: <code>{hint.data.password_hint}</code></span>}
-                </div>
-                <div className="demo-account-grid">
-                  {DEMO_ACCOUNTS.map((account) => {
-                    const Icon = account.icon;
-                    return (
-                      <button type="button" key={account.username} className="demo-account" onClick={() => chooseDemo(account.username)}>
-                        <span className={`demo-icon demo-icon-${account.tone}`}><Icon size={18} /></span>
-                        <span><strong>{account.title}</strong><small>{account.text}</small><em>@{account.username}</em></span>
-                        <ArrowRight size={16} />
-                      </button>
-                    );
-                  })}
-                </div>
-              </details>
-            </>
-          ) : (
-            <>
-              <h1>Регистрация в кабинете</h1>
-              <p className="auth-subtitle">Создайте профиль предпринимателя: подтверждение по почте или телефону не нужно.</p>
-              <form onSubmit={handleRegister} className="auth-form">
-                <Field label="Логин" hint="От 3 до 32 символов: буквы, цифры, точка, дефис." required>
-                  <div className="input-icon-wrap"><UserRound size={18} /><Input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Придумайте логин" minLength={3} maxLength={32} pattern="[A-Za-z0-9_.-]+" required /></div>
-                </Field>
-                <Field label="Фамилия и имя" required>
-                  <Input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Например, Иванов Иван" minLength={2} required />
-                </Field>
-                <Field label="ИНН компании или ИП" hint="Необязательно. Можно указать позже — в мастере заявки.">
-                  <Input value={inn} onChange={(event) => setInn(event.target.value.replace(/\D/g, "").slice(0, 12))} placeholder="10 или 12 цифр" inputMode="numeric" />
-                </Field>
-                <div className="auth-two-columns">
-                  <Field label="Пароль" hint="Минимум 8 символов, буквы и цифры." required>
-                    <Input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Придумайте пароль" minLength={8} required autoComplete="new-password" />
-                  </Field>
-                  <Field label="Повторите пароль" required>
-                    <Input type="password" value={confirm} onChange={(event) => setConfirm(event.target.value)} placeholder="Ещё раз" minLength={8} required autoComplete="new-password" />
-                  </Field>
-                </div>
-                <label className="checkbox-row">
-                  <input type="checkbox" checked={agreement} onChange={(event) => setAgreement(event.target.checked)} />
-                  <span>Я принимаю условия использования сервиса и даю согласие на обработку персональных данных.</span>
-                </label>
-                {error && <Alert tone="danger">{error}</Alert>}
-                <Button type="submit" loading={loading} icon={<ArrowRight size={18} />}>Зарегистрироваться</Button>
-              </form>
-              <p className="auth-switch">Уже есть доступ? <button onClick={() => setTab("login")}>Войти</button></p>
-            </>
-          )}
+          <h1>Вход в личный кабинет</h1>
+          <p className="auth-subtitle">Доступ выдаёт банк при подключении к сервису. Единый вход для клиентов, сотрудников и администраторов.</p>
+          <form onSubmit={handleLogin} className="auth-form">
+            <Field label="Логин" required>
+              <div className="input-icon-wrap"><UserRound size={18} /><Input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Логин" autoComplete="username" required /></div>
+            </Field>
+            <Field label="Пароль" required>
+              <div className="input-icon-wrap">
+                <KeyRound size={18} />
+                <Input type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Введите пароль" autoComplete="current-password" required />
+                <button type="button" className="icon-button input-eye" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </Field>
+            {error && <Alert tone="danger">{error}</Alert>}
+            <Button type="submit" loading={loading} icon={<ArrowRight size={18} />}>Войти в кабинет</Button>
+          </form>
+          <details className="demo-access">
+            <summary>Тестовые данные</summary>
+            <div className="demo-access-head">
+              <span>Выберите роль — логин и пароль заполнятся сами.</span>
+              {hint.data?.password_hint && <span>Пароль: <code>{hint.data.password_hint}</code></span>}
+            </div>
+            <div className="demo-account-grid">
+              {DEMO_ACCOUNTS.map((account) => {
+                const Icon = account.icon;
+                return (
+                  <button type="button" key={account.username} className="demo-account" onClick={() => chooseDemo(account.username)}>
+                    <span className={`demo-icon demo-icon-${account.tone}`}><Icon size={18} /></span>
+                    <span><strong>{account.title}</strong><small>{account.text}</small><em>@{account.username}</em></span>
+                    <ArrowRight size={16} />
+                  </button>
+                );
+              })}
+            </div>
+          </details>
         </section>
 
         <aside className="auth-aside">

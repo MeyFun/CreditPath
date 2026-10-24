@@ -8,51 +8,19 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..db import get_db
-from ..models import ROLE_CLIENT, User
-from ..schemas import LoginRequest, RegisterRequest, TokenResponse, UserOut
+from ..models import User
+from ..schemas import LoginRequest, TokenResponse, UserOut
 from ..security import (
     client_ip,
     create_access_token,
     get_current_user,
-    hash_password,
     login_rate_limiter,
     login_user_rate_limiter,
     verify_password,
 )
 from ..services.audit import write_audit
-from ..services.inn import validate_inn
 
 router = APIRouter(prefix="/auth", tags=["Авторизация"])
-
-
-@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-def register(payload: RegisterRequest, request: Request, db: Session = Depends(get_db)) -> TokenResponse:
-    if db.scalar(select(User).where(User.username == payload.username.lower())) is not None:
-        raise HTTPException(status_code=409, detail="Логин уже занят")
-    if payload.company_inn:
-        valid, message = validate_inn(payload.company_inn)
-        if not valid:
-            raise HTTPException(status_code=422, detail=message)
-    user = User(
-        username=payload.username.lower(),
-        password_hash=hash_password(payload.password),
-        full_name=payload.full_name.strip(),
-        role=ROLE_CLIENT,
-        company_inn=payload.company_inn,
-    )
-    db.add(user)
-    db.flush()
-    write_audit(
-        db,
-        actor=user,
-        action="auth.registered",
-        entity_type="user",
-        entity_id=user.id,
-        after={"username": user.username, "role": user.role},
-    )
-    db.commit()
-    token, expires_in = create_access_token(user)
-    return TokenResponse(access_token=token, expires_in=expires_in, user=UserOut.model_validate(user))
 
 
 @router.post("/login", response_model=TokenResponse)

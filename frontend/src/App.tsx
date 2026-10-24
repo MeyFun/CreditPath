@@ -30,7 +30,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<AuthPage />} />
-      <Route path="/register" element={<AuthPage initialTab="register" />} />
+      <Route path="/register" element={<Navigate to="/login" replace />} />
       <Route path="/app" element={<RequireRole roles={["client"]}><AppShell role="client" /></RequireRole>}>
         <Route index element={<DashboardPage />} />
         <Route path="applications" element={<ApplicationsPage />} />

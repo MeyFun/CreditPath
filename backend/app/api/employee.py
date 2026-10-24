@@ -20,6 +20,7 @@ from ..schemas import (
 from ..security import require_employee
 from ..services.assignment import chain_reviewer_ids
 from ..services.audit import write_audit
+from ..services.authority import POWER_OF_ATTORNEY
 from ..services.notifications import notify
 from ..services.scoring_config import get_active_config
 from ..services.serializers import application_base_dict, application_detail_dict
@@ -174,6 +175,12 @@ def decide(
         )
     if payload.action in {"reject", "need_info"} and not (payload.comment or "").strip():
         raise HTTPException(status_code=422, detail="Для этого решения обязателен комментарий")
+    if (
+        payload.action in {"approve", "approve_changed"}
+        and application.authority_basis == POWER_OF_ATTORNEY
+        and not payload.authority_verified
+    ):
+        raise HTTPException(status_code=422, detail="Перед одобрением проверьте доверенность заявителя")
     product = db.get(Product, application.product_id)
     before = {
         "status": application.status,
@@ -361,6 +368,8 @@ def decide(
             "approved_term_months": approved_term,
             "product_id": product.id,
             "comment": comment,
+            "authority_basis": application.authority_basis,
+            "authority_verified": payload.authority_verified,
         },
     )
 

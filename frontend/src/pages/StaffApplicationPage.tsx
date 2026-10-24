@@ -36,6 +36,18 @@ import {
 
 type DecisionAction = "approve" | "approve_changed" | "need_info" | "reject";
 
+const AUTHORITY_LABELS: Record<string, string> = {
+  profile: "Компания из профиля клиента",
+  registry: "Руководитель или учредитель по ЕГРЮЛ",
+  power_of_attorney: "Доверенность (МЧД)"
+};
+
+/** Служебные шаги подачи сотруднику не нужны: о новой заявке он узнаёт из «Новая заявка в работе». */
+function staffVisible(event: { event_type: string; status_to?: string | null }): boolean {
+  if (event.event_type === "APPLICATION_SUBMITTED") return false;
+  return !(event.event_type === "STATUS_CHANGE" && (event.status_to === "SUBMITTED" || event.status_to === "IN_REVIEW"));
+}
+
 export default function StaffApplicationPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -57,8 +69,10 @@ export default function StaffApplicationPage() {
   const [comment, setComment] = useState("");
   const [error, setError] = useState("");
   const [panelVisible, setPanelVisible] = useState(true);
+  const [authorityVerified, setAuthorityVerified] = useState(false);
 
   const app = query.data;
+  const byAttorney = app?.authority_basis === "power_of_attorney";
 
   useEffect(() => {
     if (!app) return;
@@ -75,6 +89,7 @@ export default function StaffApplicationPage() {
         ...(action === "approve_changed"
           ? { product_id: Number(productId), approved_amount: Number(amount), approved_term_months: Number(term) }
           : {}),
+        authority_verified: authorityVerified,
         comment
       }),
     onSuccess: (data) => {
@@ -124,6 +139,10 @@ export default function StaffApplicationPage() {
   function submitDecision() {
     setError("");
     if (!action) return;
+    if ((action === "approve" || action === "approve_changed") && byAttorney && !authorityVerified) {
+      setError("Перед одобрением проверьте доверенность заявителя и отметьте это");
+      return;
+    }
     if ((action === "reject" || action === "need_info") && comment.trim().length < 3) {
       setError("Для отказа и запроса данных обязателен комментарий");
       return;
@@ -193,6 +212,20 @@ export default function StaffApplicationPage() {
                   <div><span>Цель</span><strong>{app.purpose_label}</strong></div>
                   <div><span>Обеспечение</span><strong>{app.collateral ? "Да" : "Нет"}</strong></div>
                 </div>
+              </Card>
+              <Card>
+                <div className="card-head"><div><h2><ShieldCheck size={19} /> Полномочия заявителя</h2></div><Badge tone={byAttorney ? "warning" : "success"}>{byAttorney ? "Нужна проверка" : "Подтверждены"}</Badge></div>
+                <p>{AUTHORITY_LABELS[app.authority_basis ?? ""] ?? "Не указано (заявка подана до проверки полномочий)"}</p>
+                {byAttorney && (() => {
+                  const poa = app.documents.find((doc) => doc.id === app.authority_document_id);
+                  return poa ? (
+                    <div className="document-row">
+                      <span className="file-badge"><FileText size={17} /></span>
+                      <div><strong>{poa.original_name}</strong><small>Доверенность · {formatDate(poa.created_at)}</small></div>
+                      <button className="icon-button" onClick={() => downloadDocument(app.id, poa.id, poa.original_name, "employee")} aria-label="Скачать доверенность"><Download size={17} /></button>
+                    </div>
+                  ) : <Alert tone="danger">Файл доверенности не найден — запросите его у клиента.</Alert>;
+                })()}
               </Card>
               {company && (
                 <Card>
@@ -273,7 +306,7 @@ export default function StaffApplicationPage() {
           {tab === "history" && (
             <Card>
               <div className="card-head"><div><h2>История заявки</h2></div></div>
-              <Timeline key={app.id} events={app.events} />
+              <Timeline key={app.id} events={app.events.filter(staffVisible)} />
             </Card>
           )}
         </div>
@@ -316,6 +349,9 @@ export default function StaffApplicationPage() {
                     <Field label={action === "reject" || action === "need_info" ? "Комментарий для клиента" : "Комментарий (необязательно)"} required={action === "reject" || action === "need_info"}>
                       <textarea className="input textarea" rows={3} value={comment} onChange={(event) => setComment(event.target.value)} placeholder={action === "reject" ? "Понятная причина отказа" : action === "need_info" ? "Что именно нужно уточнить" : "Комментарий к решению"} />
                     </Field>
+                    {byAttorney && (action === "approve" || action === "approve_changed") && (
+                      <label className="checkbox-row"><input type="checkbox" checked={authorityVerified} onChange={(event) => setAuthorityVerified(event.target.checked)} /><span>Доверенность проверена: выдана компанией, действует и даёт право подавать кредитную заявку.</span></label>
+                    )}
                     {error && <Alert tone="danger">{error}</Alert>}
                     <Button onClick={submitDecision} loading={decide.isPending} className="btn-full">{actionTitle[action]}</Button>
                   </div>

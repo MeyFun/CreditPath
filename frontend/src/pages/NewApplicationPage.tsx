@@ -15,6 +15,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api, ApiError } from "../api";
+import { useAuth } from "../auth";
 import {
   Alert,
   Button,
@@ -28,7 +29,7 @@ import {
   Stepper,
   useToast
 } from "../components/ui";
-import type { DocumentItem, Product, RegistryCompany } from "../types";
+import type { AuthorityBasis, DocumentItem, Product, RegistryCompany } from "../types";
 
 const STEPS = [
   { title: "Цель и продукт", description: "Что финансируем" },
@@ -83,7 +84,25 @@ function innError(value: string): string {
   return valid ? "" : "Неверная контрольная сумма ИНН — проверьте цифры";
 }
 
-type StepField = "product" | "purpose" | "inn" | "amount" | "term" | "collateral";
+function normalizeName(name: string | null | undefined): string {
+  return (name ?? "").toLowerCase().replace(/ё/g, "е").split(/\s+/).filter(Boolean).join(" ");
+}
+
+/** Та же логика, что и на сервере (services/authority.py): подсказка до отправки. */
+function authorityFor(company: RegistryCompany | null, inn: string, profileInn: string, fullName: string): AuthorityBasis | null {
+  if (!company) return null;
+  if (profileInn && inn === profileInn) return "profile";
+  const people = [company.director, ...(company.founders ?? []).map((item) => item.name)].map(normalizeName);
+  return people.includes(normalizeName(fullName)) ? "registry" : "power_of_attorney";
+}
+
+const AUTHORITY_TEXT: Record<AuthorityBasis, string> = {
+  profile: "Компания из вашего профиля — полномочия подтверждены",
+  registry: "Вы указаны руководителем или учредителем в ЕГРЮЛ — полномочия подтверждены по реестру",
+  power_of_attorney: "По доверенности (МЧД) — её проверит сотрудник банка"
+};
+
+type StepField = "product" | "purpose" | "inn" | "amount" | "term" | "collateral" | "poa";
 interface StepProblem {
   field: StepField;
   message: string;
@@ -108,6 +127,8 @@ export default function NewApplicationPage() {
   const fileInput = useRef<HTMLInputElement>(null);
   const draftParam = Number(searchParams.get("draft") ?? 0);
   const productParam = searchParams.get("product");
+  const { user } = useAuth();
+  const profileInn = user?.company_inn ?? "";
 
   const productsQuery = useQuery({ queryKey: ["public-products"], queryFn: api.public.products });
   const draftQuery = useQuery({
@@ -121,7 +142,12 @@ export default function NewApplicationPage() {
   const [initialized, setInitialized] = useState(!draftParam);
   const [productId, setProductId] = useState<number | null>(null);
   const [purpose, setPurpose] = useState("");
-  const [inn, setInn] = useState("");
+  // Новая заявка сразу подставляет компанию из профиля; клиент может указать другую.
+  const [inn, setInn] = useState(draftParam ? "" : profileInn);
+  const [editingInn, setEditingInn] = useState(!profileInn);
+  const [poaId, setPoaId] = useState<number | null>(null);
+  const [uploadingPoa, setUploadingPoa] = useState(false);
+  const poaInput = useRef<HTMLInputElement>(null);
   const [company, setCompany] = useState<RegistryCompany | null>(null);
   const [amount, setAmount] = useState(3_000_000);
   const [term, setTerm] = useState(24);
@@ -130,7 +156,7 @@ export default function NewApplicationPage() {
   const [registryLoading, setRegistryLoading] = useState(false);
   const [registryError, setRegistryError] = useState("");
   // Черновик открыт с ИНН, но без снимка реестра: перепроверяем ИНН автоматически.
-  const [autoVerify, setAutoVerify] = useState(false);
+  const [autoVerify, setAutoVerify] = useState(!draftParam && Boolean(profileInn));
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -152,6 +178,8 @@ export default function NewApplicationPage() {
 
   const products = productsQuery.data ?? [];
   const product = products.find((item) => item.id === productId) ?? null;
+  const authority = authorityFor(company, inn, profileInn, user?.full_name ?? "");
+  const needsPoa = authority === "power_of_attorney";
 
   useEffect(() => {
     if (!products.length) return;
@@ -176,6 +204,8 @@ export default function NewApplicationPage() {
     setProductId(data.product.id);
     setPurpose(data.purpose);
     setInn(data.company_inn ?? "");
+    setEditingInn(!profileInn || data.company_inn !== profileInn);
+    setPoaId(data.authority_document_id ?? null);
     setAmount(data.amount);
     setTerm(data.term_months);
     setCollateral(data.collateral);
@@ -309,6 +339,9 @@ export default function NewApplicationPage() {
     if (current === 1 && !company) {
       return { field: "inn", message: registryError || "Нажмите «Проверить», чтобы найти компанию по ИНН" };
     }
+    if (current === 3 && needsPoa && !poaId) {
+      return { field: "poa", message: "Приложите доверенность (МЧД): вы не указаны руководителем компании в реестре" };
+    }
     if (current === 2 && product) {
       if (amountError) return { field: "amount", message: amountError };
       if (termError) return { field: "term", message: termError };
@@ -396,6 +429,36 @@ export default function NewApplicationPage() {
     }
   }
 
+  async function uploadPoa(files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+    setError("");
+    setProblem(null);
+    setUploadingPoa(true);
+    try {
+      const id = await ensureDraft();
+      const uploaded = await api.client.upload(id, file, "power_of_attorney");
+      setDocuments((current) => [...current, uploaded]);
+      setPoaId(uploaded.id);
+      queryClient.invalidateQueries({ queryKey: ["application-draft", id] });
+      push("Доверенность загружена", "success");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Не удалось загрузить доверенность");
+    } finally {
+      setUploadingPoa(false);
+      if (poaInput.current) poaInput.current.value = "";
+    }
+  }
+
+  function restoreProfileCompany() {
+    setInn(profileInn);
+    setEditingInn(false);
+    setCompany(null);
+    setRegistryError("");
+    setProblem(null);
+    setAutoVerify(true);
+  }
+
   async function submit() {
     setError("");
     setSubmitting(true);
@@ -479,13 +542,31 @@ export default function NewApplicationPage() {
 
           {step === 1 && (
             <div className={`wizard-step step-${direction}`}>
-              <div className="step-heading"><span className="step-chip">Шаг 2 из 5</span><h2>Сведения о компании</h2><p>Введите ИНН — реквизиты заполнятся автоматически.</p></div>
+              <div className="step-heading"><span className="step-chip">Шаг 2 из 5</span><h2>Сведения о компании</h2><p>{editingInn ? "Введите ИНН — реквизиты заполнятся автоматически." : "Подставили компанию из вашего профиля. Если заявка от другой компании — укажите её ИНН."}</p></div>
+              {!editingInn ? (
+                <div className="profile-company">
+                  <div><span className="eyebrow">Компания из профиля</span><strong>{company?.name ?? (registryLoading ? "Проверяем в реестре…" : `ИНН ${inn}`)}</strong><small>ИНН {inn}</small></div>
+                  <Button variant="secondary" onClick={() => { setEditingInn(true); requestAnimationFrame(() => document.getElementById("wizard-inn")?.focus()); }}>Указать другую компанию</Button>
+                </div>
+              ) : (
+              <>
               <Field label="ИНН организации (10 цифр) или ИП (12 цифр)" required error={company ? "" : registryError || (problem?.field === "inn" ? problem.message : "")}>
                 <div className="inn-row">
                   <div className="input-icon-wrap"><Building2 size={18} /><Input id="wizard-inn" value={inn} aria-invalid={!company && Boolean(registryError || problem?.field === "inn")} onChange={(event) => { setInn(event.target.value.replace(/\D/g, "").slice(0, 12)); setCompany(null); setRegistryError(""); setProblem(null); }} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void verifyInn(); } }} inputMode="numeric" placeholder="10 или 12 цифр" /></div>
                   <Button variant="secondary" onClick={verifyInn} loading={registryLoading} icon={registryLoading ? undefined : <RefreshCw size={16} />}>Проверить</Button>
                 </div>
               </Field>
+              {profileInn && <button type="button" className="text-link" onClick={restoreProfileCompany}>Вернуть компанию из профиля</button>}
+              </>
+              )}
+              {!editingInn && registryError && !company && <Alert tone="danger">{registryError}</Alert>}
+              {authority && (
+                <Alert tone={needsPoa ? "warning" : "success"} title={needsPoa ? "Нужна доверенность" : "Полномочия подтверждены"}>
+                  {needsPoa
+                    ? "Вы не указаны руководителем или учредителем этой компании в ЕГРЮЛ. На шаге «Документы» приложите доверенность (МЧД) — её проверит сотрудник банка."
+                    : AUTHORITY_TEXT[authority]}
+                </Alert>
+              )}
               {company && registryError && <Alert tone="warning">{registryError}</Alert>}
               {company && (company.revenue == null || company.profit == null) && (
                 <Alert tone="warning" title="В реестре нет финансовых показателей">
@@ -510,7 +591,7 @@ export default function NewApplicationPage() {
                   <p className="registry-address">{company.address}</p>
                 </div>
               )}
-              <details className="demo-access">
+              {editingInn && <details className="demo-access">
                 <summary>Тестовые данные</summary>
                 <div className="demo-inn-list">
                   {DEMO_INNS.map(([value, label]) => (
@@ -519,7 +600,7 @@ export default function NewApplicationPage() {
                     </button>
                   ))}
                 </div>
-              </details>
+              </details>}
             </div>
           )}
 
@@ -556,7 +637,18 @@ export default function NewApplicationPage() {
 
           {step === 3 && (
             <div className={`wizard-step step-${direction}`}>
-              <div className="step-heading"><span className="step-chip">Шаг 4 из 5</span><h2>Документы компании</h2><p>Необязательный шаг. PDF, JPEG или PNG, до 10 МБ.</p></div>
+              <div className="step-heading"><span className="step-chip">Шаг 4 из 5</span><h2>Документы компании</h2><p>{needsPoa ? "Обязательна доверенность (МЧД), остальное — по желанию." : "Необязательный шаг."} PDF, JPEG или PNG, до 10 МБ.</p></div>
+              {needsPoa && (
+                <div className={`poa-slot ${poaId ? "done" : ""} ${problem?.field === "poa" ? "invalid" : ""}`}>
+                  <span className="file-badge">{poaId ? <Check size={17} /> : <ShieldCheck size={17} />}</span>
+                  <div>
+                    <strong>Доверенность на подачу заявки (МЧД)</strong>
+                    <small>{poaId ? `Загружена: ${documents.find((doc) => doc.id === poaId)?.original_name ?? "файл"}. Сотрудник банка проверит её перед решением.` : "Нужна, потому что вы не указаны руководителем компании в реестре."}</small>
+                  </div>
+                  <Button variant={poaId ? "secondary" : "primary"} loading={uploadingPoa} onClick={() => poaInput.current?.click()} icon={uploadingPoa ? undefined : <UploadCloud size={16} />}>{poaId ? "Заменить" : "Загрузить"}</Button>
+                  <input ref={poaInput} type="file" hidden accept=".pdf,.jpg,.jpeg,.png" onChange={(event) => uploadPoa(event.target.files)} />
+                </div>
+              )}
               <button type="button" className="upload-zone" onClick={() => fileInput.current?.click()} disabled={uploading}>
                 {uploading ? <LoaderCircle className="spin" size={28} /> : <UploadCloud size={30} />}
                 <strong>{uploading ? "Загружаем…" : "Нажмите, чтобы выбрать файлы"}</strong>
@@ -587,6 +679,7 @@ export default function NewApplicationPage() {
                 <div><span>Цель</span><strong>{product.purposes.find((item) => item.code === purpose)?.label}</strong></div>
                 <div><span>Компания</span><strong>{company?.name ?? "—"}</strong></div>
                 <div><span>ИНН</span><strong>{inn}</strong></div>
+                <div><span>Полномочия</span><strong>{authority ? AUTHORITY_TEXT[authority] : "—"}</strong></div>
                 <div><span>Сумма</span><strong>{formatMoney(amount)}</strong></div>
                 <div><span>Срок</span><strong>{term} мес.</strong></div>
                 <div><span>Ставка</span><strong>от {product.rate.toFixed(1).replace(".", ",")}% годовых</strong></div>

@@ -4,6 +4,7 @@ import shutil
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Literal
 
 from fastapi import (
     APIRouter,
@@ -12,6 +13,7 @@ from fastapi import (
     File,
     Header,
     HTTPException,
+    Query,
     Response,
     UploadFile,
     status,
@@ -49,6 +51,7 @@ from ..schemas import (
 )
 from ..security import get_current_user, require_client
 from ..services.audit import write_audit
+from ..services.authority import resolve_authority
 from ..services.external import ExternalServiceError, fetch_registry
 from ..services.inn import validate_inn
 from ..services.serializers import application_base_dict, application_detail_dict
@@ -106,6 +109,17 @@ def _consents(payload: SubmitRequest) -> dict:
         "consent_personal_data": payload.consent_personal_data,
         "confirmed_at": datetime.now(timezone.utc).isoformat(),
     }
+
+
+def _registry_or_none(inn: str) -> dict | None:
+    # Неизвестный ИНН отклоняем на сервере, а не только в мастере: иначе через API заявка уйдёт в бесконечный NEED_INFO.
+    # Если реестр недоступен, не блокируем — полномочия тогда подтверждает профиль или доверенность.
+    try:
+        return fetch_registry(inn)
+    except ExternalServiceError as exc:
+        if exc.code == "not_found":
+            raise HTTPException(status_code=422, detail="Компания с таким ИНН не найдена в реестре") from exc
+        return None
 
 
 def _event_payload(application: Application) -> dict:
@@ -321,8 +335,6 @@ def create_application(
     )
     db.add(application)
     db.flush()
-    if payload.company_inn and not user.company_inn:
-        user.company_inn = payload.company_inn
     add_event(
         db,
         application,
@@ -383,8 +395,6 @@ def update_application(
     for field in ("amount", "term_months", "purpose", "company_inn", "company_name", "collateral"):
         if field in data and data[field] is not None:
             setattr(application, field, data[field])
-    if application.company_inn and not user.company_inn:
-        user.company_inn = application.company_inn
     write_audit(
         db,
         actor=user,
@@ -474,12 +484,10 @@ def submit_application(
         raise HTTPException(status_code=422, detail="Для этого продукта требуется обеспечение")
     # Неизвестный ИНН отклоняем на сервере, а не только в мастере: иначе через API заявка уйдёт в бесконечный NEED_INFO.
     # Если реестр недоступен, не блокируем отправку — проверка повторится в конвейере.
-    try:
-        registry = fetch_registry(application.company_inn)
+    registry = _registry_or_none(application.company_inn)
+    if registry:
         application.company_name = registry.get("name") or application.company_name
-    except ExternalServiceError as exc:
-        if exc.code == "not_found":
-            raise HTTPException(status_code=422, detail="Компания с таким ИНН не найдена в реестре") from exc
+    application.authority_basis = resolve_authority(user, application, registry)
     if idempotency_key:
         db.add(
             IdempotencyRecord(
@@ -511,7 +519,12 @@ def submit_application(
         action="application.submitted",
         entity_type="application",
         entity_id=application.id,
-        after={"number": application.public_number, "status": application.status, **_consents(payload)},
+        after={
+            "number": application.public_number,
+            "status": application.status,
+            "authority_basis": application.authority_basis,
+            **_consents(payload),
+        },
     )
     try:
         db.commit()
@@ -554,6 +567,10 @@ def respond_info(
             raise HTTPException(status_code=422, detail=reason)
         before["company_inn"] = application.company_inn
         application.company_inn = inn
+        registry = _registry_or_none(inn)
+        if registry:
+            application.company_name = registry.get("name") or application.company_name
+        application.authority_basis = resolve_authority(user, application, registry)
     application.client_comment = payload.comment
     if payload.declared_revenue is not None:
         application.declared_revenue = payload.declared_revenue
@@ -796,6 +813,7 @@ def resubmit(
 async def upload_document(
     application_id: int,
     file: UploadFile = File(...),
+    purpose: Literal["general", "power_of_attorney"] = Query("general"),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> Document:
@@ -830,13 +848,15 @@ async def upload_document(
     )
     db.add(document)
     db.flush()
+    if purpose == "power_of_attorney":
+        application.authority_document_id = document.id
     add_event(
         db,
         application,
         event_type="DOCUMENT_UPLOADED",
         actor=user,
-        comment=f"Загружен документ: {original}",
-        details={"document_id": document.id, "size": len(data)},
+        comment=f"Загружена доверенность: {original}" if purpose == "power_of_attorney" else f"Загружен документ: {original}",
+        details={"document_id": document.id, "size": len(data), "purpose": purpose},
     )
     write_audit(
         db,

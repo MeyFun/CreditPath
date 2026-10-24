@@ -1,5 +1,8 @@
 export type Role = "client" | "employee" | "admin";
 
+/** Основание полномочий заявителя: компания профиля, руководитель по реестру или доверенность. */
+export type AuthorityBasis = "profile" | "registry" | "power_of_attorney";
+
 export interface User {
   id: number;
   username: string;
@@ -50,6 +53,8 @@ export interface ApplicationSummary {
   product: Product;
   company_inn: string | null;
   company_name: string | null;
+  authority_basis?: AuthorityBasis | null;
+  authority_document_id?: number | null;
   amount: number;
   term_months: number;
   purpose: string;

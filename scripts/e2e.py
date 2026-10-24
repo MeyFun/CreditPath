@@ -208,6 +208,8 @@ def decide(client: Client, application_id: int, detail: dict) -> dict:
         }
     else:
         payload = {"action": "approve", "comment": "E2E: проверки пройдены, параметры подтверждены."}
+    # Заявки по доверенности сотрудник одобряет только после её проверки.
+    payload["authority_verified"] = employee_detail.get("authority_basis") == "power_of_attorney"
     result = client.post(f"/employee/applications/{application_id}/decision", username, payload)
     check(result["status"] in {"APPROVED", "APPROVED_CHANGED", "REJECTED"}, f"Неожиданный статус решения: {result['status']}")
     return result
@@ -268,6 +270,15 @@ def run() -> None:
                 )
                 check(upload.status_code == 201, f"Не удалось загрузить документ: {upload.status_code} {upload.text}")
                 print("  ✓ Документ PDF загружен в черновик")
+            else:
+                # Компании сценариев 2+ не из профиля client1: полномочия подтверждаются доверенностью (МЧД).
+                pdf = b"%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<<>>\n%%EOF\n"
+                poa =client.http.post(
+                    f"/client/applications/{application_id}/documents?purpose=power_of_attorney",
+                    headers=client.headers("client1"),
+                    files={"file": ("doverennost.pdf", pdf, "application/pdf")},
+                )
+                check(poa.status_code == 201, f"Не удалось загрузить доверенность: {poa.status_code} {poa.text}")
             key = uuid.uuid4().hex
             submitted = client.post(
                 f"/client/applications/{application_id}/submit",

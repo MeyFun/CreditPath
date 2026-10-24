@@ -77,8 +77,6 @@ export const api = {
   auth: {
     login: (username: string, password: string) =>
       request<TokenResponse>("/auth/login", json({ username, password })),
-    register: (payload: { username: string; password: string; full_name: string; company_inn?: string }) =>
-      request<TokenResponse>("/auth/register", json(payload)),
     me: () => request<User>("/auth/me"),
     demoHint: () =>
       request<{ demo_mode: boolean; password_hint: string; accounts: string[] }>("/auth/demo-hint")
@@ -130,11 +128,11 @@ export const api = {
     remove: (id: number) => request<void>(`/client/applications/${id}`, { method: "DELETE" }),
     resubmit: (id: number) =>
       request<ApplicationDetail>(`/client/applications/${id}/resubmit`, { method: "POST" }),
-    upload: async (id: number, file: File) => {
+    upload: async (id: number, file: File, purpose: "general" | "power_of_attorney" = "general") => {
       const form = new FormData();
       form.append("file", file);
       return request<{ id: number; original_name: string; content_type: string; size_bytes: number; created_at: string }>(
-        `/client/applications/${id}/documents`,
+        `/client/applications/${id}/documents?purpose=${purpose}`,
         { method: "POST", body: form }
       );
     }
@@ -155,6 +153,7 @@ export const api = {
       id: number,
       payload: {
         action: "approve" | "approve_changed" | "need_info" | "reject";
+        authority_verified?: boolean;
         product_id?: number;
         approved_amount?: number;
         approved_term_months?: number;

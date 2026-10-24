@@ -12,47 +12,6 @@
     "version": "1.0.0"
   },
   "paths": {
-    "/api/auth/register": {
-      "post": {
-        "tags": [
-          "Авторизация"
-        ],
-        "summary": "Register",
-        "operationId": "register_api_auth_register_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RegisterRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TokenResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/auth/login": {
       "post": {
         "tags": [
@@ -1017,6 +976,20 @@
             "schema": {
               "type": "integer",
               "title": "Application Id"
+            }
+          },
+          {
+            "name": "purpose",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "general",
+                "power_of_attorney"
+              ],
+              "type": "string",
+              "default": "general",
+              "title": "Purpose"
             }
           }
         ],
@@ -2400,6 +2373,28 @@
             ],
             "title": "Company Name"
           },
+          "authority_basis": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authority Basis"
+          },
+          "authority_document_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authority Document Id"
+          },
           "amount": {
             "type": "number",
             "title": "Amount"
@@ -2856,6 +2851,28 @@
               }
             ],
             "title": "Company Name"
+          },
+          "authority_basis": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authority Basis"
+          },
+          "authority_document_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authority Document Id"
           },
           "amount": {
             "type": "number",
@@ -3371,6 +3388,11 @@
               }
             ],
             "title": "Comment"
+          },
+          "authority_verified": {
+            "type": "boolean",
+            "title": "Authority Verified",
+            "default": false
           }
         },
         "type": "object",
@@ -3911,49 +3933,6 @@
           "full_name"
         ],
         "title": "ProfileUpdateRequest"
-      },
-      "RegisterRequest": {
-        "properties": {
-          "username": {
-            "type": "string",
-            "maxLength": 32,
-            "minLength": 3,
-            "pattern": "^[A-Za-z0-9_.-]+$",
-            "title": "Username"
-          },
-          "password": {
-            "type": "string",
-            "maxLength": 128,
-            "minLength": 8,
-            "title": "Password"
-          },
-          "full_name": {
-            "type": "string",
-            "maxLength": 160,
-            "minLength": 2,
-            "title": "Full Name"
-          },
-          "company_inn": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 12,
-                "minLength": 10
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Company Inn"
-          }
-        },
-        "type": "object",
-        "required": [
-          "username",
-          "password",
-          "full_name"
-        ],
-        "title": "RegisterRequest"
       },
       "RespondInfoRequest": {
         "properties": {

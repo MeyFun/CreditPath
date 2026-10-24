@@ -86,6 +86,10 @@ class Application(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     company_inn: Mapped[str | None] = mapped_column(String(12), nullable=True, index=True)
     company_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Основание полномочий заявителя: profile / registry / power_of_attorney (services/authority.py).
+    authority_basis: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Без внешнего ключа: документы удаляются вместе с черновиком раньше самой заявки.
+    authority_document_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False, index=True)
     amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     term_months: Mapped[int] = mapped_column(Integer, nullable=False)

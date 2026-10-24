@@ -121,6 +121,7 @@ def test_client_can_fix_inn_when_answering_request(client, db, monkeypatch):
     import app.api.client as client_api
 
     monkeypatch.setattr(client_api, "run_pipeline", lambda *args, **kwargs: None)
+    monkeypatch.setattr(client_api, "fetch_registry", lambda inn: {"name": "ООО «Новая»", "director": "Смирнов Артём Владимирович"})
     client1 = user_by_name(db, "client1")
     app = make_application(db, user=client1, status="NEED_INFO")
     headers = login(client, "client1")
@@ -128,10 +129,11 @@ def test_client_can_fix_inn_when_answering_request(client, db, monkeypatch):
                       json={"comment": "Исправил ИНН", "company_inn": "9900000018"})
     assert bad.status_code == 422
     ok = client.post(f"/api/client/applications/{app.id}/respond", headers=headers,
-                     json={"comment": "Исправил ИНН", "company_inn": "9900000031"})
+                     json={"comment": "Исправил ИНН", "company_inn": "9900000024"})
     assert ok.status_code == 202, ok.text
     db.refresh(app)
-    assert app.company_inn == "9900000031"
+    assert app.company_inn == "9900000024"
+    assert app.authority_basis == "registry"
 
 
 def test_payment_schedule_rejects_infinity(client):

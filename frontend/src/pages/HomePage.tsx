@@ -37,8 +37,8 @@ const FAQ = [
     a: "Оборотный кредит и овердрафт доступны без залога. Для кредита на оборудование обеспечением выступает приобретаемая техника или оборудование."
   },
   {
-    q: "Можно ли подать заявку без регистрации?",
-    a: "Каталог, калькулятор и FAQ доступны без входа. Для черновика, отправки заявки, загрузки документов и отслеживания статуса нужна учётная запись."
+    q: "Как получить доступ к кабинету?",
+    a: "Кабинет предназначен для клиентов банка: логин выдаётся при подключении к сервису, отдельная регистрация не нужна. Каталог, калькулятор и ответы на вопросы доступны без входа."
   },
   {
     q: "Как быстро принимается решение?",
@@ -192,8 +192,7 @@ export default function HomePage() {
             </Link>
           ) : (
             <>
-              <Link className="btn btn-ghost" to="/login">Войти</Link>
-              <Link className="btn btn-primary" to="/register">Регистрация <ArrowRight size={17} /></Link>
+              <Link className="btn btn-primary" to="/login">Войти <ArrowRight size={17} /></Link>
             </>
           )}
         </div>
@@ -384,8 +383,8 @@ export default function HomePage() {
             <p>Подайте заявку за 10 минут — статус, вопросы банка и оферта придут в кабинет.</p>
           </div>
           <div className="cta-actions">
-            <Link className="btn btn-primary btn-lg" to={user ? "/app" : "/register"}>Создать кабинет <ArrowRight size={18} /></Link>
-            <Link className="btn btn-secondary btn-lg" to="/login">У меня уже есть доступ</Link>
+            <Link className="btn btn-primary btn-lg" to={user ? "/app" : "/login"}>{user ? "Открыть кабинет" : "Войти в кабинет"} <ArrowRight size={18} /></Link>
+            <a className="btn btn-secondary btn-lg" href="#calculator">Рассчитать платёж</a>
           </div>
         </section>
       </main>

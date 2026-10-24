@@ -8,7 +8,6 @@ interface AuthContextValue {
   user: User | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<User>;
-  register: (payload: { username: string; password: string; full_name: string; company_inn?: string }) => Promise<User>;
   logout: () => void;
   refresh: () => Promise<void>;
 }
@@ -61,13 +60,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return response.user;
   }
 
-  async function register(payload: { username: string; password: string; full_name: string; company_inn?: string }) {
-    const response = await api.auth.register(payload);
-    setToken(response.access_token);
-    setUser(response.user);
-    return response.user;
-  }
-
   function logout() {
     setToken(null);
     setUser(null);
@@ -79,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const value = useMemo(
-    () => ({ user, loading, login, register, logout, refresh }),
+    () => ({ user, loading, login, logout, refresh }),
     [user, loading]
   );
 

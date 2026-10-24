@@ -594,6 +594,15 @@ img { max-width: 100%; }
 .purpose-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 .inn-row { display: flex; gap: 8px; }
 .inn-row .input-icon-wrap { flex: 1; }
+.profile-company { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; background: var(--surface-soft); margin-bottom: 12px; }
+.profile-company > div { display: flex; flex-direction: column; gap: 2px; }
+.profile-company strong { font-size: 17px; }
+.profile-company small { color: var(--muted-dark); }
+.poa-slot { display: flex; align-items: center; gap: 12px; border: 1px dashed var(--warning); background: var(--warning-soft); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+.poa-slot > div { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.poa-slot small { color: var(--muted-dark); }
+.poa-slot.done { border-style: solid; border-color: var(--success); background: var(--success-soft); }
+.poa-slot.invalid { border-color: var(--danger); background: var(--danger-soft); }
 .registry-card { border: 1px solid #d8eadf; background: #fbfefc; border-radius: 12px; padding: 17px; margin: 12px 0; }
 .registry-head { display: flex; gap: 11px; align-items: flex-start; }
 .success-check { width: 32px; height: 32px; flex: 0 0 32px; border-radius: 50%; background: var(--success); color: #fff; display: flex; align-items: center; justify-content: center; }

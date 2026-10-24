@@ -155,6 +155,8 @@ def application_base_dict(
         "product": product_dict(product),
         "company_inn": application.company_inn,
         "company_name": application.company_name,
+        "authority_basis": application.authority_basis,
+        "authority_document_id": application.authority_document_id,
         "amount": float(application.amount),
         "term_months": application.term_months,
         "purpose": application.purpose,
