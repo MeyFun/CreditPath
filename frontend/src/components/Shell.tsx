@@ -117,7 +117,7 @@ export function AppShell({ role }: { role: Area }) {
         <button className="icon-button" onClick={() => setOpen(true)} aria-label="Открыть меню">
           <Menu size={22} />
         </button>
-        <Logo compact />
+        <Link to="/" aria-label="CreditPath — на главную страницу"><Logo compact /></Link>
         <div className="mobile-header-actions">
           <ThemeToggle className="theme-toggle-compact" />
           <Link className="icon-button badge-host" to={notificationPath} aria-label="Уведомления">
@@ -129,7 +129,7 @@ export function AppShell({ role }: { role: Area }) {
 
       <aside className={`sidebar ${open ? "sidebar-open" : ""}`}>
         <div className="sidebar-head">
-          <Link to={role === "client" ? "/app" : role === "employee" ? "/staff" : "/admin/users"}>
+          <Link to="/" className="sidebar-logo" aria-label="CreditPath — на главную страницу">
             <Logo />
           </Link>
           <button className="icon-button sidebar-close" onClick={() => setOpen(false)} aria-label="Закрыть меню">
