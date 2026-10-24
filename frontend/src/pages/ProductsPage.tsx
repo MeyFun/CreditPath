@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Banknote, Check, CreditCard, WalletCards } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
-import { Card, ErrorState, LoadingBlock, PageHeader, productTone } from "../components/ui";
+import { Card, ErrorState, LoadingBlock, PageHeader } from "../components/ui";
 
 const ICONS = [WalletCards, Banknote, CreditCard];
 
@@ -31,7 +31,7 @@ export default function ProductsPage() {
           {query.data?.map((product, index) => {
             const Icon = ICONS[index % ICONS.length];
             return (
-              <Card className={`product-tile tone-${productTone(product.code)}`} key={product.code}>
+              <Card className="product-tile" key={product.code}>
                 <div className="product-tile-head">
                   <span className="product-icon"><Icon size={22} /></span>
                   <div>

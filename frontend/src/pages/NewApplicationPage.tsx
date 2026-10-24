@@ -25,7 +25,6 @@ import {
   Input,
   LoadingBlock,
   Modal,
-  productTone,
   Select,
   Stepper,
   useToast
@@ -523,7 +522,7 @@ export default function NewApplicationPage() {
               <h3 className="subheading">Кредитный продукт</h3>
               <div className="wizard-products">
                 {products.map((item) => (
-                  <button key={item.id} type="button" className={`wizard-product tone-${productTone(item.code)} ${product.id === item.id ? "selected" : ""}`} onClick={() => selectProduct(item)}>
+                  <button key={item.id} type="button" className={`wizard-product ${product.id === item.id ? "selected" : ""}`} onClick={() => selectProduct(item)}>
                     <span className="radio-circle">{product.id === item.id && <span />}</span>
                     <span><strong>{item.name}</strong><small>{item.short_description}</small><em>от {item.rate.toFixed(1).replace(".", ",")}% · {item.min_term_months}–{item.max_term_months} мес.</em></span>
                   </button>
