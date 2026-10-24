@@ -96,7 +96,7 @@ export default function NotificationsPage() {
           {groupByDay(items).map(([day, dayItems]) => (
             <section className="notif-day" key={day}>
               <h2 className="notif-day-title">{day}</h2>
-              <Card className="notif-group">
+              <div className="notif-group">
                 {dayItems.map((item) => {
                   const kind = KIND[item.kind] ?? KIND.info;
                   const Icon = kind.icon;
@@ -121,8 +121,8 @@ export default function NotificationsPage() {
                             </Link>
                           )}
                           {!item.is_read && (
-                            <button className="notif-read" onClick={() => readMutation.mutate(item.id)} title="Отметить прочитанным" aria-label="Отметить прочитанным">
-                              <Check size={15} />
+                            <button className="notif-read" onClick={() => readMutation.mutate(item.id)}>
+                              <Check size={15} /> Прочитано
                             </button>
                           )}
                         </div>
@@ -130,7 +130,7 @@ export default function NotificationsPage() {
                     </article>
                   );
                 })}
-              </Card>
+              </div>
             </section>
           ))}
         </div>
