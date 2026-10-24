@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..models import ScoringConfig
+from .scoring import calculate_score
 
 REQUIRED_TOP_LEVEL = {
     "base_score",
@@ -51,6 +53,32 @@ def validate_config(config: dict[str, Any]) -> None:
         raise ValueError("Срок действия оферты должен быть положительным")
     if not isinstance(config["okved"].get("risky_prefixes"), list):
         raise ValueError("okved.risky_prefixes должен быть списком")
+    _dry_run(config)
+
+
+def _dry_run(config: dict[str, Any]) -> None:
+    """Пробный расчёт по всем веткам факторов: битый параметр ловим при сохранении, а не на заявках клиентов."""
+    today = date.today()
+    risky = [str(prefix) for prefix in config["okved"]["risky_prefixes"]] or [""]
+    registry_cases = [
+        {"registration_date": (today - timedelta(days=100)).isoformat(), "revenue": 1_000_000, "profit": -1, "okved": risky[0]},
+        {"registration_date": "2000-01-01", "revenue": 1_000_000, "profit": 500_000, "okved": ""},
+        {"registration_date": (today - timedelta(days=5 * 365)).isoformat(), "revenue": 1_000_000, "profit": 1},
+    ]
+    bki_cases = [
+        {"active_overdue": True, "current_debt": 10_000_000},
+        {"closed_overdue_12m": True, "current_debt": 1},
+        {"current_debt": 300_000},
+    ]
+    try:
+        for registry, bki, amount in zip(registry_cases, bki_cases, (10_000_000, 1, 300_000)):
+            for collateral in (True, False):
+                result = calculate_score(registry=registry, bki=bki, amount=amount, collateral=collateral, config=config)
+                if not 0 <= result["score"] <= 100:
+                    raise ValueError("Балл вне диапазона 0–100")
+        int(config["decision"]["changed_term_cap_months"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError(f"Параметры скоринга не применимы: {type(exc).__name__}: {exc}") from exc
 
 
 def get_active_config(db: Session) -> tuple[dict[str, Any], ScoringConfig | None]:

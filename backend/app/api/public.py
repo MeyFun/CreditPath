@@ -8,8 +8,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import Product
+from ..models import Product, User
 from ..schemas import ProductOut
+from ..security import get_current_user
 from ..services.external import ExternalServiceError, fetch_registry
 from ..services.finance import payment_schedule
 from ..services.inn import validate_inn
@@ -35,7 +36,8 @@ def product(code: str, db: Session = Depends(get_db)) -> dict:
 
 
 @router.get("/registry/{inn}")
-def registry_lookup(inn: str) -> dict:
+def registry_lookup(inn: str, user: User = Depends(get_current_user)) -> dict:
+    # Только для вошедших: мастер заявки вызывает её с токеном, а гостю финансы компаний ни к чему.
     valid, message = validate_inn(inn)
     if not valid:
         raise HTTPException(status_code=422, detail=message)

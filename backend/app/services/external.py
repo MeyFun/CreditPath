@@ -58,7 +58,3 @@ def fetch_registry(inn: str) -> dict[str, Any]:
 def fetch_bki(inn: str) -> dict[str, Any]:
     return _get(f"{settings.bki_url.rstrip('/')}/bki/{inn}", "bki")
 
-
-def registry_check_data(inn: str) -> dict[str, Any]:
-    data = fetch_registry(inn)
-    return {"found": True, "source": "registry-mock", "company": data}

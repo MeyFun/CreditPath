@@ -47,7 +47,7 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://${POSTGRES_USER:-creditpath}:${POSTGRES_PASSWORD:-creditpath_demo}@db:5432/${POSTGRES_DB:-creditpath}}
-      JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-production}
+      JWT_SECRET: ${JWT_SECRET:-}
       ACCESS_TOKEN_MINUTES: ${ACCESS_TOKEN_MINUTES:-60}
       LOGIN_RATE_LIMIT: ${LOGIN_RATE_LIMIT:-5}
       LOGIN_USER_RATE_LIMIT: ${LOGIN_USER_RATE_LIMIT:-20}

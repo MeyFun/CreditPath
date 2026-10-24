@@ -9,7 +9,7 @@ from typing import Any
 from sqlalchemy import select
 
 from ..db import SessionLocal
-from ..models import Application, EnrichmentSnapshot, Product, User
+from ..models import Application, EnrichmentSnapshot, Product
 from .assignment import assign_reviewer
 from .audit import write_audit
 from .credit_logic import evaluate_application
@@ -246,6 +246,19 @@ def run_pipeline(application_id: int, preferred_employee_id: int | None = None) 
         )
     finally:
         db.close()
+
+
+def resume_stalled_pipelines() -> int:
+    """Конвейер живёт в процессе API: после рестарта дожимаем заявки, застрявшие на автоматических этапах."""
+    db = SessionLocal()
+    try:
+        ids = list(db.scalars(select(Application.id).where(Application.status.in_(PIPELINE_STATUSES))))
+    finally:
+        db.close()
+    for application_id in ids:
+        logger.info("Возобновляем конвейер заявки %s после перезапуска", application_id)
+        run_pipeline(application_id)
+    return len(ids)
 
 
 def _validate_application(application: Application, product: Product) -> str | None:

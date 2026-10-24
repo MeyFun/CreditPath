@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import shutil
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
 
@@ -16,9 +16,7 @@ from fastapi import (
     Query,
     Response,
     UploadFile,
-    status,
 )
-from fastapi.responses import FileResponse
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
@@ -41,7 +39,6 @@ from ..schemas import (
     ApplicationUpdate,
     DashboardOut,
     DocumentOut,
-    MessageOut,
     OfferRequest,
     RespondInfoRequest,
     SIGNER_POSITIONS,
@@ -53,15 +50,24 @@ from ..services.audit import write_audit
 from ..services.authority import resolve_authority
 from ..services.external import ExternalServiceError, fetch_registry
 from ..services.inn import validate_inn
-from ..services.serializers import application_base_dict, application_detail_dict
+from ..services.serializers import (
+    application_base_dict,
+    application_detail_dict,
+    document_response,
+    is_offer_expired,
+    matches_search,
+)
 from ..services.state_machine import (
     APPROVED,
     APPROVED_CHANGED,
+    DISBURSED,
     DRAFT,
     NEED_INFO,
     OFFER_ACCEPTED,
     OFFER_DECLINED,
+    PIPELINE_STATUSES,
     REJECTED,
+    REVIEW_STATUSES,
     SIGNED,
     SUBMITTED,
     add_event,
@@ -72,6 +78,7 @@ from ..services.workflow import run_pipeline
 # Рабочие учётки сотрудника и администратора не могут действовать как заявитель.
 router = APIRouter(prefix="/client", tags=["Кабинет клиента"], dependencies=[Depends(require_client)])
 
+ACTIVE_STATUSES = PIPELINE_STATUSES | REVIEW_STATUSES
 MAX_UPLOAD_BYTES = settings.max_upload_mb * 1024 * 1024
 ALLOWED_TYPES = {
     "application/pdf": ".pdf",
@@ -93,6 +100,12 @@ def _product(db: Session, product_id: int, allow_inactive: bool = False) -> Prod
     if product is None or (not allow_inactive and not product.is_active):
         raise HTTPException(status_code=404, detail="Кредитный продукт не найден")
     return product
+
+
+def _check_purpose(product: Product, purpose: str | None) -> None:
+    codes = {item.get("code") for item in product.purposes or []}
+    if codes and purpose not in codes:
+        raise HTTPException(status_code=422, detail="Выберите цель из списка для этого продукта")
 
 
 def _number() -> str:
@@ -121,6 +134,13 @@ def _registry_or_none(inn: str) -> dict | None:
         return None
 
 
+def _is_approved(application: Application) -> bool:
+    # Истёкшая неподписанная оферта уже не одобрение: деньги по ней не выдадут.
+    if application.status in {APPROVED, APPROVED_CHANGED}:
+        return not is_offer_expired(application)
+    return application.status in {OFFER_ACCEPTED, SIGNED, DISBURSED}
+
+
 def _event_payload(application: Application) -> dict:
     return {
         "number": application.public_number,
@@ -137,29 +157,12 @@ def dashboard(db: Session = Depends(get_db), user: User = Depends(get_current_us
     counts = {
         "total": len(rows),
         "draft": sum(1 for item in rows if item.status == DRAFT),
-        "active": sum(
-            1
-            for item in rows
-            if item.status
-            in {
-                SUBMITTED,
-                "VALIDATION",
-                "ENRICHMENT",
-                "SCORING",
-                "DECISION_DRAFT",
-                "IN_REVIEW",
-                "NEED_INFO",
-            }
-        ),
+        "active": sum(1 for item in rows if item.status in ACTIVE_STATUSES),
         "needs_action": sum(1 for item in rows if item.status == NEED_INFO),
-        "approved": sum(1 for item in rows if item.status in {APPROVED, APPROVED_CHANGED, OFFER_ACCEPTED, SIGNED, "DISBURSED"}),
+        "approved": sum(1 for item in rows if _is_approved(item)),
         "rejected": sum(1 for item in rows if item.status == REJECTED),
     }
-    approved_total = sum(
-        float(item.approved_amount or 0)
-        for item in rows
-        if item.final_outcome in {"approve", "approve_changed"} and item.status != OFFER_DECLINED
-    )
+    approved_total = sum(float(item.approved_amount or 0) for item in rows if _is_approved(item))
     unread = int(
         db.scalar(
             select(func.count(Notification.id)).where(
@@ -173,7 +176,7 @@ def dashboard(db: Session = Depends(get_db), user: User = Depends(get_current_us
     for item in latest:
         product = _product(db, item.product_id, allow_inactive=True)
         assigned = db.get(User, item.assigned_employee_id) if item.assigned_employee_id else None
-        items.append(application_base_dict(db, item, product, assigned=assigned))
+        items.append(application_base_dict(db, item, product, assigned=assigned, internal=False))
     company = None
     if user.company_inn:
         snapshot = db.scalar(
@@ -240,32 +243,21 @@ def list_applications(
     if status_group == "draft":
         query = query.where(Application.status == DRAFT)
     elif status_group == "active":
-        query = query.where(
-            Application.status.in_(
-                [SUBMITTED, "VALIDATION", "ENRICHMENT", "SCORING", "DECISION_DRAFT", "IN_REVIEW", "NEED_INFO"]
-            )
-        )
+        query = query.where(Application.status.in_(ACTIVE_STATUSES))
     elif status_group == "completed":
         query = query.where(
             Application.status.in_(
-                [APPROVED, APPROVED_CHANGED, REJECTED, OFFER_ACCEPTED, OFFER_DECLINED, SIGNED, "DISBURSED"]
+                [APPROVED, APPROVED_CHANGED, REJECTED, OFFER_ACCEPTED, OFFER_DECLINED, SIGNED, DISBURSED]
             )
         )
     rows = db.scalars(query.order_by(Application.created_at.desc())).all()
     if search:
-        needle = search.lower().strip()
-        rows = [
-            item
-            for item in rows
-            if needle in item.public_number.lower()
-            or needle in (item.company_name or "").lower()
-            or needle in (item.company_inn or "")
-        ]
+        rows = [item for item in rows if matches_search(item, search)]
     result = []
     for item in rows:
         product = _product(db, item.product_id, allow_inactive=True)
         assigned = db.get(User, item.assigned_employee_id) if item.assigned_employee_id else None
-        result.append(application_base_dict(db, item, product, assigned=assigned))
+        result.append(application_base_dict(db, item, product, assigned=assigned, internal=False))
     return result
 
 
@@ -280,9 +272,7 @@ def create_application(
         valid, message = validate_inn(payload.company_inn)
         if not valid:
             raise HTTPException(status_code=422, detail=message)
-    purpose_codes = {item.get("code") for item in product.purposes or []}
-    if purpose_codes and payload.purpose not in purpose_codes:
-        raise HTTPException(status_code=422, detail="Выберите цель из списка для этого продукта")
+    _check_purpose(product, payload.purpose)
     previous = None
     if payload.company_inn:
         previous = db.scalar(
@@ -349,7 +339,7 @@ def update_application(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    application = _owned(db, application_id, user)
+    application = _owned(db, application_id, user, lock=True)
     if application.status != DRAFT:
         raise HTTPException(status_code=409, detail="Редактировать можно только черновик")
     before = _event_payload(application)
@@ -363,10 +353,9 @@ def update_application(
         valid, message = validate_inn(data["company_inn"])
         if not valid:
             raise HTTPException(status_code=422, detail=message)
-    if "purpose" in data:
-        codes = {item.get("code") for item in product.purposes or []}
-        if codes and data["purpose"] not in codes:
-            raise HTTPException(status_code=422, detail="Цель не соответствует продукту")
+    if "purpose" in data or "product_id" in data:
+        # При смене продукта старая цель может ему не подходить.
+        _check_purpose(product, data.get("purpose") or application.purpose)
     for field in ("amount", "term_months", "purpose", "company_inn", "company_name", "collateral"):
         if field in data and data[field] is not None:
             setattr(application, field, data[field])
@@ -457,6 +446,8 @@ def submit_application(
         )
     if product.requires_collateral and not application.collateral:
         raise HTTPException(status_code=422, detail="Для этого продукта требуется обеспечение")
+    # В ответе на запрос цель не меняется, поэтому несовпадение здесь зациклило бы заявку в NEED_INFO.
+    _check_purpose(product, application.purpose)
     # Неизвестный ИНН отклоняем на сервере, а не только в мастере: иначе через API заявка уйдёт в бесконечный NEED_INFO.
     # Если реестр недоступен, не блокируем отправку — проверка повторится в конвейере.
     registry = _registry_or_none(application.company_inn)
@@ -702,7 +693,7 @@ def disburse(
     transition_application(
         db,
         application,
-        "DISBURSED",
+        DISBURSED,
         actor=user,
         comment="Демонстрационное зачисление средств подтверждено.",
     )
@@ -737,6 +728,8 @@ def resubmit(
     if source.status != REJECTED:
         raise HTTPException(status_code=409, detail="Повторно подать можно только отклонённую заявку")
     product = _product(db, source.product_id, allow_inactive=True)
+    if not product.is_active:
+        raise HTTPException(status_code=409, detail="Этот продукт больше не выдаётся. Создайте новую заявку на другой продукт.")
     existing = db.scalar(
         select(Application)
         .where(
@@ -785,7 +778,7 @@ def resubmit(
 
 
 @router.post("/applications/{application_id}/documents", response_model=DocumentOut, status_code=201)
-async def upload_document(
+def upload_document(
     application_id: int,
     file: UploadFile = File(...),
     purpose: Literal["general", "power_of_attorney"] = Query("general"),
@@ -802,8 +795,9 @@ async def upload_document(
     suffix = Path(original).suffix.lower()
     if suffix not in {".pdf", ".jpg", ".jpeg", ".png"}:
         raise HTTPException(status_code=415, detail="Недопустимое расширение файла")
-    data = await file.read(MAX_UPLOAD_BYTES + 1)
-    await file.close()
+    # Синхронный обработчик: FastAPI выполнит его в пуле потоков и не заблокирует event loop работой с БД.
+    data = file.file.read(MAX_UPLOAD_BYTES + 1)
+    file.file.close()
     if len(data) > MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=413, detail=f"Файл больше {settings.max_upload_mb} МБ")
     if not _valid_signature(data, content_type):
@@ -869,11 +863,5 @@ def download_document(
     user: User = Depends(get_current_user),
 ) -> Response:
     _owned(db, application_id, user)
-    document = db.get(Document, document_id)
-    if document is None or document.application_id != application_id:
-        raise HTTPException(status_code=404, detail="Документ не найден")
-    path = Path(settings.upload_dir) / f"application_{application_id}" / Path(document.stored_name).name
-    if not path.exists():
-        raise HTTPException(status_code=404, detail="Файл не найден в хранилище")
-    return FileResponse(path, media_type=document.content_type, filename=document.original_name)
+    return document_response(db, application_id, document_id)
 

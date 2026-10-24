@@ -225,7 +225,7 @@ def run() -> None:
         check(len(products) == 3, f"Ожидались 3 продукта, получено {len(products)}")
         by_code = {item["code"]: item for item in products}
 
-        missing = client.http.get(f"/public/registry/{NONEXISTENT_INN}")
+        missing = client.http.get(f"/public/registry/{NONEXISTENT_INN}", headers=client.headers("client1"))
         check(missing.status_code == 404, "Несуществующий ИНН должен возвращать 404 на форме")
         print(f"✓ Несуществующий ИНН {NONEXISTENT_INN}: 404 на проверке формы")
 
@@ -244,7 +244,7 @@ def run() -> None:
         for index, scenario in enumerate(SCENARIOS, start=1):
             print(f"\n[{index}/{len(SCENARIOS)}] {scenario['name']} · {scenario['inn']}")
             product = by_code[scenario["product"]]
-            registry_response = client.http.get(f"/public/registry/{scenario['inn']}")
+            registry_response = client.http.get(f"/public/registry/{scenario['inn']}", headers=client.headers("client1"))
             check(
                 registry_response.status_code == 200,
                 f"Реестр не вернул компанию {scenario['inn']}: {registry_response.status_code}",
@@ -385,7 +385,7 @@ def run() -> None:
 
         # Связанное лицо: заявка client3 никогда не назначается employee3.
         equipment = by_code["EQUIPMENT"]
-        related_company = client.http.get("/public/registry/990000001246").json()["company"]
+        related_company = client.http.get("/public/registry/990000001246", headers=client.headers("client1")).json()["company"]
         related_application = client.post(
             "/client/applications",
             "client3",

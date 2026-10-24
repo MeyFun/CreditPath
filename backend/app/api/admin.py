@@ -1,20 +1,15 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from decimal import Decimal
-from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from ..config import settings
 from ..db import get_db
 from ..models import (
     Application,
     AuditLog,
-    Document,
     Product,
     ROLE_ADMIN,
     ROLE_EMPLOYEE,
@@ -43,7 +38,7 @@ from ..services.external import ExternalServiceError, fetch_registry
 from ..services.inn import validate_inn
 from ..services.notifications import notify, notify_admins
 from ..services.scoring_config import get_active_config, validate_config
-from ..services.serializers import application_base_dict, application_detail_dict, product_dict
+from ..services.serializers import application_base_dict, application_detail_dict, document_response, matches_search, product_dict
 from ..services.state_machine import (
     DRAFT,
     DECISION_DRAFT,
@@ -193,14 +188,7 @@ def all_applications(
         query = query.where(Application.assigned_employee_id.is_(None))
     rows = db.scalars(query.order_by(Application.created_at.desc()).limit(500)).all()
     if search:
-        needle = search.lower()
-        rows = [
-            item
-            for item in rows
-            if needle in item.public_number.lower()
-            or needle in (item.company_name or "").lower()
-            or needle in (item.company_inn or "")
-        ]
+        rows = [item for item in rows if matches_search(item, search)]
     result = []
     for item in rows:
         product = db.get(Product, item.product_id)
@@ -294,8 +282,8 @@ def audit_log(
     action: str | None = None,
     entity_type: str | None = None,
     actor_id: int | None = None,
-    limit: int = 100,
-    offset: int = 0,
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin),
 ) -> list[AuditLog]:
@@ -306,7 +294,7 @@ def audit_log(
         query = query.where(AuditLog.entity_type == entity_type)
     if actor_id:
         query = query.where(AuditLog.actor_id == actor_id)
-    return list(db.scalars(query.order_by(AuditLog.id.desc()).offset(offset).limit(min(limit, 500))).all())
+    return list(db.scalars(query.order_by(AuditLog.id.desc()).offset(offset).limit(limit)).all())
 
 
 @router.get("/audit/verify", response_model=AuditVerifyOut)
@@ -465,10 +453,4 @@ def admin_download_document(
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin),
 ):
-    document = db.get(Document, document_id)
-    if document is None or document.application_id != application_id:
-        raise HTTPException(status_code=404, detail="Документ не найден")
-    path = Path(settings.upload_dir) / f"application_{application_id}" / Path(document.stored_name).name
-    if not path.exists():
-        raise HTTPException(status_code=404, detail="Файл не найден")
-    return FileResponse(path, media_type=document.content_type, filename=document.original_name)
+    return document_response(db, application_id, document_id)

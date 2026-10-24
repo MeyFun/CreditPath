@@ -4,7 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..models import Application, ROLE_EMPLOYEE, User
-from .state_machine import IN_REVIEW, NEED_INFO, REVIEW_STATUSES
+from .state_machine import REVIEW_STATUSES
 
 
 def _chain_application_ids(db: Session, application: Application) -> list[int]:

@@ -21,7 +21,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from .db import Base
 
-ROLE_GUEST = "guest"
 ROLE_CLIENT = "client"
 ROLE_EMPLOYEE = "employee"
 ROLE_ADMIN = "admin"
@@ -240,7 +239,6 @@ __all__ = [
     "ROLE_ADMIN",
     "ROLE_CLIENT",
     "ROLE_EMPLOYEE",
-    "ROLE_GUEST",
     "ROLES",
     "ScoringConfig",
     "User",

@@ -348,7 +348,3 @@ class EmployeeStatsOut(BaseModel):
 class MessageOut(BaseModel):
     message: str
 
-
-class HealthOut(BaseModel):
-    status: str
-    version: str

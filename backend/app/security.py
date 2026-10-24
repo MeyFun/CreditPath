@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import secrets
 import threading
 import time
 from collections import defaultdict, deque
@@ -11,7 +12,6 @@ from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerifyMismatchError
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .config import settings
@@ -33,6 +33,14 @@ def verify_password(password: str, password_hash: str) -> bool:
         return False
 
 
+# Хеш для несуществующего логина: argon2 считается всегда, и по времени ответа логин не угадать.
+_DUMMY_HASH = password_hasher.hash("timing-equalizer")
+
+
+def verify_password_timing_safe(password: str, user: User | None) -> bool:
+    return verify_password(password, user.password_hash if user else _DUMMY_HASH) and user is not None
+
+
 def create_access_token(user: User) -> tuple[str, int]:
     expires_in = settings.access_token_minutes * 60
     now = datetime.now(timezone.utc)
@@ -41,16 +49,10 @@ def create_access_token(user: User) -> tuple[str, int]:
         "role": user.role,
         "iat": now,
         "exp": now + timedelta(seconds=expires_in),
-        "jti": secrets_token(),
+        "jti": secrets.token_urlsafe(18),
     }
     token = jwt.encode(payload, settings.jwt_secret, algorithm="HS256")
     return token, expires_in
-
-
-def secrets_token() -> str:
-    import secrets
-
-    return secrets.token_urlsafe(18)
 
 
 def decode_token(token: str) -> dict[str, Any]:

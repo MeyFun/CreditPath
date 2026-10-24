@@ -1,22 +1,11 @@
 from __future__ import annotations
 
 import math
-from datetime import date, datetime, timezone
-from decimal import Decimal
+from datetime import datetime, timezone
 from typing import Any
 
 from ..models import Application, Product
-
-
-def _months_since(registration_date: str | None) -> int | None:
-    if not registration_date:
-        return None
-    try:
-        registered = date.fromisoformat(registration_date[:10])
-    except ValueError:
-        return None
-    today = date.today()
-    return max(0, (today.year - registered.year) * 12 + today.month - registered.month - (1 if today.day < registered.day else 0))
+from .scoring import age_months
 
 
 def _has_financials(registry: dict[str, Any]) -> bool:
@@ -90,14 +79,14 @@ def evaluate_application(
         reasons.append("Укажите выручку и прибыль за последний год в ответе на запрос — после этого проверки продолжатся автоматически.")
         return _result("need_info", "Нужны дополнительные данные", reasons, score, 0, requested_term, rate, product, [])
 
-    age_months = _months_since(registry.get("registration_date"))
-    if age_months is not None and age_months < int(product.min_business_age_months):
+    business_age = age_months(registry.get("registration_date"))
+    if business_age is not None and business_age < int(product.min_business_age_months):
         return _result(
             "reject",
             "Не выполнено требование продукта",
             [
                 f"Минимальный возраст бизнеса для продукта «{product.name}» — {product.min_business_age_months} мес.",
-                f"Возраст компании по реестру — {age_months} мес.",
+                f"Возраст компании по реестру — {business_age} мес.",
             ],
             score,
             0,

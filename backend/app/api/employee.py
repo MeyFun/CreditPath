@@ -1,16 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import FileResponse
-from sqlalchemy import func, or_, select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, aliased
 
-from ..config import settings
 from ..db import get_db
-from ..models import Application, Document, Product, User
+from ..models import Application, Product, User
 from ..schemas import (
     ApplicationDetail,
     ApplicationOut,
@@ -23,7 +20,7 @@ from ..services.audit import write_audit
 from ..services.authority import POWER_OF_ATTORNEY
 from ..services.notifications import notify
 from ..services.scoring_config import get_active_config
-from ..services.serializers import application_base_dict, application_detail_dict
+from ..services.serializers import application_base_dict, application_detail_dict, document_response, matches_search
 from ..services.state_machine import (
     APPROVED,
     APPROVED_CHANGED,
@@ -124,14 +121,7 @@ def list_applications(
         query = query.where(Application.status == status_filter)
     rows = db.scalars(query.order_by(Application.updated_at.desc())).all()
     if search:
-        needle = search.lower()
-        rows = [
-            item
-            for item in rows
-            if needle in item.public_number.lower()
-            or needle in (item.company_name or "").lower()
-            or needle in (item.company_inn or "")
-        ]
+        rows = [item for item in rows if matches_search(item, search)]
     result = []
     for item in rows:
         product = db.get(Product, item.product_id)
@@ -424,10 +414,4 @@ def download_document(
     user: User = Depends(require_employee),
 ):
     _assigned(db, application_id, user)
-    document = db.get(Document, document_id)
-    if document is None or document.application_id != application_id:
-        raise HTTPException(status_code=404, detail="Документ не найден")
-    path = Path(settings.upload_dir) / f"application_{application_id}" / Path(document.stored_name).name
-    if not path.exists():
-        raise HTTPException(status_code=404, detail="Файл не найден")
-    return FileResponse(path, media_type=document.content_type, filename=document.original_name)
+    return document_response(db, application_id, document_id)

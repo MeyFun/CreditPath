@@ -10,6 +10,7 @@ os.environ["JWT_SECRET"] = "test-secret-only"
 os.environ["DEMO_PASSWORD"] = "DemoPass123!"
 os.environ["UPLOAD_DIR"] = ".test_uploads"
 os.environ["SEED_DEMO"] = "true"
+os.environ["RESUME_PIPELINES"] = "false"
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

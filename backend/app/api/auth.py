@@ -16,7 +16,7 @@ from ..security import (
     get_current_user,
     login_rate_limiter,
     login_user_rate_limiter,
-    verify_password,
+    verify_password_timing_safe,
 )
 from ..services.audit import write_audit
 
@@ -30,7 +30,7 @@ def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)
     login_rate_limiter.check(rate_key)
     login_user_rate_limiter.check(username)
     user = db.scalar(select(User).where(User.username == username))
-    if user is None or not user.is_active or not verify_password(payload.password, user.password_hash):
+    if not verify_password_timing_safe(payload.password, user) or not user.is_active:
         login_rate_limiter.failure(rate_key)
         login_user_rate_limiter.failure(username)
         raise HTTPException(

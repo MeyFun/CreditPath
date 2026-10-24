@@ -4,7 +4,7 @@ from datetime import date, datetime, timezone
 from typing import Any
 
 
-def _age_months(registration_date: str | None) -> int | None:
+def age_months(registration_date: str | None) -> int | None:
     if not registration_date:
         return None
     try:
@@ -50,17 +50,17 @@ def calculate_score(
     add("base", "Базовая оценка", base, "Стартовая оценка профиля", base)
 
     age_cfg = config["age"]
-    age_months = _age_months(registry.get("registration_date"))
-    if age_months is None:
+    months = age_months(registry.get("registration_date"))
+    if months is None:
         add("age", "Возраст бизнеса", 0, "Дата регистрации не получена — фактор не применён")
-    elif age_months < 12:
-        add("age", "Возраст бизнеса", age_cfg["lt_1_year"], f"Бизнес работает менее 1 года ({age_months} мес.)", age_months)
-    elif age_months > 84:
-        add("age", "Возраст бизнеса", age_cfg["gt_7_years"], f"Бизнес работает более 7 лет ({age_months // 12} лет)", age_months)
-    elif age_months >= 36:
-        add("age", "Возраст бизнеса", age_cfg["from_3_to_7_years"], f"Бизнес работает от 3 до 7 лет ({age_months // 12} лет)", age_months)
+    elif months < 12:
+        add("age", "Возраст бизнеса", age_cfg["lt_1_year"], f"Бизнес работает менее 1 года ({months} мес.)", months)
+    elif months > 84:
+        add("age", "Возраст бизнеса", age_cfg["gt_7_years"], f"Бизнес работает более 7 лет ({months // 12} лет)", months)
+    elif months >= 36:
+        add("age", "Возраст бизнеса", age_cfg["from_3_to_7_years"], f"Бизнес работает от 3 до 7 лет ({months // 12} лет)", months)
     else:
-        add("age", "Возраст бизнеса", 0, f"Бизнес работает {age_months} мес. — нейтрально", age_months)
+        add("age", "Возраст бизнеса", 0, f"Бизнес работает {months} мес. — нейтрально", months)
 
     revenue = _money(registry.get("revenue"))
     profit = _money(registry.get("profit"))

@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
+
+from fastapi import HTTPException
+from fastapi.responses import FileResponse
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from ..config import settings
 from ..models import (
     Application,
     ApplicationEvent,
@@ -13,13 +18,10 @@ from ..models import (
     EnrichmentSnapshot,
     Product,
     ROLE_ADMIN,
-    ROLE_CLIENT,
     ROLE_EMPLOYEE,
     User,
 )
 from .state_machine import (
-    APPROVED,
-    APPROVED_CHANGED,
     CLIENT_STATUS_BY_TECHNICAL,
     DRAFT,
     IN_REVIEW,
@@ -108,6 +110,26 @@ def _previous_decisions(db: Session, application: Application) -> list[dict[str,
     return history
 
 
+def matches_search(application: Application, search: str) -> bool:
+    needle = search.lower().strip()
+    return (
+        needle in application.public_number.lower()
+        or needle in (application.company_name or "").lower()
+        or needle in (application.company_inn or "")
+    )
+
+
+def document_response(db: Session, application_id: int, document_id: int) -> FileResponse:
+    """Файл заявки. Право на саму заявку проверяет вызывающий роутер."""
+    document = db.get(Document, document_id)
+    if document is None or document.application_id != application_id:
+        raise HTTPException(status_code=404, detail="Документ не найден")
+    path = Path(settings.upload_dir) / f"application_{application_id}" / Path(document.stored_name).name
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Файл не найден в хранилище")
+    return FileResponse(path, media_type=document.content_type, filename=document.original_name)
+
+
 def user_min(user: User | None) -> dict[str, Any] | None:
     if user is None:
         return None
@@ -133,7 +155,7 @@ def _as_aware(value: datetime | None) -> datetime | None:
     return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
 
 
-def _is_offer_expired(application: Application) -> bool:
+def is_offer_expired(application: Application) -> bool:
     expiry = _as_aware(application.offer_expires_at)
     return expiry is not None and expiry < datetime.now(timezone.utc)
 
@@ -145,6 +167,7 @@ def application_base_dict(
     *,
     assigned: User | None = None,
     documents_count: int | None = None,
+    internal: bool = True,
 ) -> dict[str, Any]:
     return {
         "id": application.id,
@@ -165,7 +188,8 @@ def application_base_dict(
         "created_at": application.created_at,
         "submitted_at": application.submitted_at,
         "updated_at": application.updated_at,
-        "scoring_score": application.scoring_score,
+        # Балл скоринга — внутренняя оценка банка, клиенту не отдаётся.
+        "scoring_score": application.scoring_score if internal else None,
         "final_outcome": application.final_outcome,
         "approved_amount": float(application.approved_amount) if application.approved_amount else None,
         "approved_term_months": application.approved_term_months,
@@ -185,10 +209,10 @@ def application_detail_dict(
     *,
     assigned: User | None = None,
 ) -> dict[str, Any]:
-    base = application_base_dict(db, application, product, assigned=assigned)
     internal = viewer.role in (ROLE_EMPLOYEE, ROLE_ADMIN)
+    base = application_base_dict(db, application, product, assigned=assigned, internal=internal)
     is_owner = application.user_id == viewer.id
-    offer_expired = _is_offer_expired(application)
+    offer_expired = is_offer_expired(application)
     can_decide = (
         viewer.role == ROLE_EMPLOYEE
         and application.status == IN_REVIEW

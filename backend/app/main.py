@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 import time
 import uuid
 from contextvars import ContextVar
@@ -22,6 +23,7 @@ from .api import admin, auth, client, employee, notifications, public
 from .config import settings
 from .db import engine
 from .services.state_machine import InvalidTransition
+from .services.workflow import resume_stalled_pipelines
 
 request_id_ctx: ContextVar[str] = ContextVar("request_id", default="-")
 
@@ -190,3 +192,6 @@ def ready() -> JSONResponse:
 def ensure_upload_directory() -> None:
     Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)
     logger.info("CreditPath API запущен", extra={"environment": settings.environment})
+    if settings.resume_pipelines:
+        # В отдельном потоке: недоступный мок не должен задерживать старт API.
+        threading.Thread(target=resume_stalled_pipelines, name="resume-pipelines", daemon=True).start()
