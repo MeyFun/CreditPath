@@ -472,6 +472,14 @@ def submit_application(
         )
     if product.requires_collateral and not application.collateral:
         raise HTTPException(status_code=422, detail="Для этого продукта требуется обеспечение")
+    # Неизвестный ИНН отклоняем на сервере, а не только в мастере: иначе через API заявка уйдёт в бесконечный NEED_INFO.
+    # Если реестр недоступен, не блокируем отправку — проверка повторится в конвейере.
+    try:
+        registry = fetch_registry(application.company_inn)
+        application.company_name = registry.get("name") or application.company_name
+    except ExternalServiceError as exc:
+        if exc.code == "not_found":
+            raise HTTPException(status_code=422, detail="Компания с таким ИНН не найдена в реестре") from exc
     if idempotency_key:
         db.add(
             IdempotencyRecord(

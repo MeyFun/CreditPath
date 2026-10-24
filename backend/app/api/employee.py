@@ -148,8 +148,10 @@ def get_application(
     product = db.get(Product, application.product_id)
     detail = application_detail_dict(db, application, product, user, assigned=user)
     # Те же правила, что при решении: интерфейс предупреждает ровно о том, что попадёт в аудит.
-    config, _ = get_active_config(db)
-    detail["risk_override_reasons"] = _risk_override_reasons(application, "approve", config)
+    # Конфиг читаем только пока решение возможно: на опросах завершённых заявок он не нужен.
+    if application.status == IN_REVIEW:
+        config, _ = get_active_config(db)
+        detail["risk_override_reasons"] = _risk_override_reasons(application, "approve", config)
     return detail
 
 

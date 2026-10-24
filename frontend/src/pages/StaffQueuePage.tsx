@@ -7,7 +7,7 @@ import {
   Search,
   Sparkles,
 } from "lucide-react";
-import { useDeferredValue, useState } from "react";
+import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../api";
 import {
@@ -19,7 +19,8 @@ import {
   Input,
   LoadingBlock,
   PageHeader,
-  StatusBadge
+  StatusBadge,
+  useDebouncedValue
 } from "../components/ui";
 
 export default function StaffQueuePage() {
@@ -28,14 +29,14 @@ export default function StaffQueuePage() {
   const [search, setSearch] = useState("");
   const [risk, setRisk] = useState("all");
   const stats = useQuery({ queryKey: ["employee-stats"], queryFn: api.employee.stats });
-  const deferredSearch = useDeferredValue(search.trim());
+  const searchQuery = useDebouncedValue(search.trim());
   const applications = useQuery({
-    queryKey: ["employee-applications", scope, deferredSearch],
-    queryFn: () => api.employee.applications(scope, deferredSearch),
+    queryKey: ["employee-applications", scope, searchQuery],
+    queryFn: () => api.employee.applications(scope, searchQuery),
     placeholderData: keepPreviousData,
     refetchInterval: 15000
   });
-  const filtersActive = Boolean(deferredSearch) || risk !== "all";
+  const filtersActive = Boolean(searchQuery) || risk !== "all";
 
   const filtered = (applications.data ?? []).filter((app) => {
     if (risk === "high") return (app.scoring_score ?? 100) < 40;

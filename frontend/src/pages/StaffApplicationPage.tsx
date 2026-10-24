@@ -273,7 +273,7 @@ export default function StaffApplicationPage() {
           {tab === "history" && (
             <Card>
               <div className="card-head"><div><h2>История заявки</h2></div></div>
-              <Timeline events={app.events} />
+              <Timeline key={app.id} events={app.events} />
             </Card>
           )}
         </div>

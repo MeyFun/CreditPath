@@ -79,7 +79,7 @@ export default function ApplicationPage() {
     queryFn: () => api.client.application(applicationId),
     refetchInterval: (data) => applicationPollInterval(data?.state.data?.status)
   });
-  const statusFlash = useStatusChange(query.data?.status);
+  const statusFlash = useStatusChange(query.data?.status, applicationId);
 
   if (query.isLoading) return <LoadingBlock label="Загружаем заявку…" />;
   if (query.isError || !query.data) {
@@ -159,7 +159,7 @@ export default function ApplicationPage() {
 
           <Card>
             <div className="card-head"><div><h2>История событий</h2></div></div>
-            <Timeline events={app.events} />
+            <Timeline key={app.id} events={app.events} />
           </Card>
 
           <Card>

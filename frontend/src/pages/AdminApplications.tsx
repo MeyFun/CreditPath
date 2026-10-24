@@ -8,7 +8,7 @@ import {
   Search,
   UserPlus
 } from "lucide-react";
-import { useDeferredValue, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api";
 import {
@@ -27,7 +27,8 @@ import {
   PageHeader,
   StatusBadge,
   Timeline,
-  useToast
+  useToast,
+  useDebouncedValue
 } from "../components/ui";
 
 const STATUS_OPTIONS = [
@@ -56,10 +57,10 @@ function AdminApplicationsList() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [unassigned, setUnassigned] = useState(false);
-  const deferredSearch = useDeferredValue(search.trim());
+  const searchQuery = useDebouncedValue(search.trim());
   const query = useQuery({
-    queryKey: ["admin-applications", deferredSearch, status, unassigned],
-    queryFn: () => api.admin.applications({ search: deferredSearch, status, unassigned }),
+    queryKey: ["admin-applications", searchQuery, status, unassigned],
+    queryFn: () => api.admin.applications({ search: searchQuery, status, unassigned }),
     placeholderData: keepPreviousData
   });
 
@@ -173,7 +174,7 @@ function AdminApplicationDetail({ applicationId }: { applicationId: number }) {
           </Card>
           <Card>
             <div className="card-head"><h2>История</h2></div>
-            <Timeline events={app.events} />
+            <Timeline key={app.id} events={app.events} />
           </Card>
         </div>
         <aside className="detail-aside">

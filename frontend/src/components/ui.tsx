@@ -484,7 +484,17 @@ export function Timeline({ events, compact = false }: { events: Event[]; compact
   );
 }
 
-function prefersReducedMotion(): boolean {
+/** Значение, которое обновляется только после паузы ввода: поиск не шлёт запрос на каждую букву. */
+export function useDebouncedValue<T>(value: T, delay = 300): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebounced(value), delay);
+    return () => window.clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
+export function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
@@ -524,14 +534,19 @@ export function CountUp({ value, duration = 900 }: { value: number; duration?: n
  * Статус сменился сам (проверки, решение сотрудника) — сообщаем тостом и даём странице
  * короткий флаг для подсветки. Переходы после действий клиента не озвучиваем: о них уже сказал свой тост.
  */
-const AUTOMATIC_FROM = ["SUBMITTED", "VALIDATION", "ENRICHMENT", "SCORING", "DECISION_DRAFT", "IN_REVIEW"];
+// SUBMITTED не включаем: переход из него следует сразу за собственной отправкой клиента.
+const AUTOMATIC_FROM = ["VALIDATION", "ENRICHMENT", "SCORING", "DECISION_DRAFT", "IN_REVIEW"];
 
-export function useStatusChange(status: string | undefined): boolean {
+export function useStatusChange(status: string | undefined, applicationId: number): boolean {
   const { push } = useToast();
   const previous = useRef(status);
+  const previousId = useRef(applicationId);
   const [flash, setFlash] = useState(false);
   useEffect(() => {
-    const before = previous.current;
+    // Открыли другую заявку на той же странице — это не смена статуса.
+    const sameApplication = previousId.current === applicationId;
+    previousId.current = applicationId;
+    const before = sameApplication ? previous.current : undefined;
     previous.current = status;
     if (!before || !status || before === status || !AUTOMATIC_FROM.includes(before)) return;
     const item = STATUS_MAP[status];
@@ -544,7 +559,7 @@ export function useStatusChange(status: string | undefined): boolean {
       window.clearTimeout(timer);
       setFlash(false);
     };
-  }, [status, push]);
+  }, [status, applicationId, push]);
   return flash;
 }
 

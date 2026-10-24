@@ -18,7 +18,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api";
 import { SiteFooter } from "../components/Footer";
 import { useAuth } from "../auth";
-import { Card, formatMoney, Logo } from "../components/ui";
+import { Card, formatMoney, Logo, prefersReducedMotion } from "../components/ui";
 import type { Product } from "../types";
 
 const PRODUCT_ICONS = [WalletCards, Banknote, CreditCard];
@@ -77,7 +77,7 @@ const ROUTE = "M24 410 C 10 300, 30 170, 60 96 S 220 8, 330 22 S 510 90, 500 230
 const ROUTE_NODES = [[24, 410], [60, 96], [330, 22], [500, 230]];
 
 function HeroDemo() {
-  const reduced = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduced = prefersReducedMotion();
   const [stage, setStage] = useState(reduced ? HERO_STAGES.length - 1 : 0);
 
   useEffect(() => {

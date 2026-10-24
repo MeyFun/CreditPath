@@ -253,7 +253,8 @@ export default function NewApplicationPage() {
       term_months: term,
       purpose,
       company_inn: inn || undefined,
-      company_name: company?.name,
+      // Пустая строка, а не undefined: сервер должен забыть название прежней компании.
+      company_name: company?.name ?? "",
       collateral
     });
     setDraftId(created.id);
@@ -270,7 +271,8 @@ export default function NewApplicationPage() {
       term_months: term,
       purpose,
       company_inn: inn || undefined,
-      company_name: company?.name,
+      // Пустая строка, а не undefined: сервер должен забыть название прежней компании.
+      company_name: company?.name ?? "",
       collateral
     });
     setSavedAt(new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }));
@@ -285,7 +287,8 @@ export default function NewApplicationPage() {
       await persist();
       push("Черновик сохранён", "success");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Не удалось сохранить черновик");
+      // Кнопка в шапке: ошибка у нижних кнопок была бы вне экрана, поэтому — тостом.
+      push(err instanceof ApiError ? err.message : "Не удалось сохранить черновик", "danger");
     } finally {
       setSaving(false);
     }

@@ -21,7 +21,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { SiteFooter } from "./Footer";
 import { useAuth } from "../auth";
-import { Logo } from "./ui";
+import { Logo, prefersReducedMotion } from "./ui";
 import type { Role } from "../types";
 
 type Area = "client" | "employee" | "admin";
@@ -101,7 +101,7 @@ export function AppShell({ role }: { role: Area }) {
   // Плавная смена страницы через View Transitions API; без поддержки — обычный переход ссылки.
   function softNavigate(event: MouseEvent<HTMLAnchorElement>, to: string) {
     if (!document.startViewTransition || event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (prefersReducedMotion()) return;
     event.preventDefault();
     document.startViewTransition(() => flushSync(() => navigate(to)));
   }

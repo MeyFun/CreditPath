@@ -104,7 +104,7 @@ export default function ResultPage() {
     queryFn: () => api.client.application(applicationId),
     refetchInterval: (data) => applicationPollInterval(data?.state.data?.status)
   });
-  useStatusChange(query.data?.status);
+  useStatusChange(query.data?.status, applicationId);
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["client-application", applicationId] });

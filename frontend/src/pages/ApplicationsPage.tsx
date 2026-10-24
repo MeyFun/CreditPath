@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, FileText, Plus, Search, Trash2 } from "lucide-react";
-import { useDeferredValue, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../api";
 import {
@@ -14,7 +14,8 @@ import {
   Modal,
   PageHeader,
   StatusBadge,
-  useToast
+  useToast,
+  useDebouncedValue
 } from "../components/ui";
 import type { ApplicationSummary } from "../types";
 
@@ -28,11 +29,10 @@ const FILTERS = [
 export default function ApplicationsPage() {
   const [group, setGroup] = useState("all");
   const [search, setSearch] = useState("");
-  // Отложенное значение: список не мигает лоадером на каждую букву поиска.
-  const deferredSearch = useDeferredValue(search.trim());
+  const searchQuery = useDebouncedValue(search.trim());
   const query = useQuery({
-    queryKey: ["applications", group, deferredSearch],
-    queryFn: () => api.client.applications(group, deferredSearch),
+    queryKey: ["applications", group, searchQuery],
+    queryFn: () => api.client.applications(group, searchQuery),
     placeholderData: keepPreviousData
   });
   const queryClient = useQueryClient();
@@ -81,9 +81,9 @@ export default function ApplicationsPage() {
         <Card>
           <EmptyState
             icon={<FileText size={26} />}
-            title={deferredSearch ? "Ничего не найдено" : "В этом разделе пока пусто"}
-            description={deferredSearch ? "Попробуйте изменить запрос." : "Создайте заявку — это займёт около десяти минут."}
-            action={!deferredSearch ? <Link className="btn btn-primary" to="/app/applications/new"><Plus size={16} /> Создать заявку</Link> : undefined}
+            title={searchQuery ? "Ничего не найдено" : "В этом разделе пока пусто"}
+            description={searchQuery ? "Попробуйте изменить запрос." : "Создайте заявку — это займёт около десяти минут."}
+            action={!searchQuery ? <Link className="btn btn-primary" to="/app/applications/new"><Plus size={16} /> Создать заявку</Link> : undefined}
           />
         </Card>
       ) : (

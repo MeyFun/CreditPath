@@ -1287,6 +1287,8 @@ img { max-width: 100%; }
 @media (max-width: 1020px) {
   .sticky-decision { display: block; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(8px); border-top: 1px solid var(--border); box-shadow: 0 -8px 24px rgba(20, 24, 32, 0.08); animation: stickyUp 0.25s ease-out both; }
   .sticky-decision .btn { width: 100%; }
+  /* Пока кнопка закреплена, низ страницы и футер не прячутся под ней. */
+  .app-main:has(.sticky-decision) { padding-bottom: 76px; }
 }
 @keyframes stickyUp { from { transform: translateY(100%); } to { transform: none; } }
 @media (max-width: 760px) {

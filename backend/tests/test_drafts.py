@@ -50,3 +50,23 @@ def test_resubmit_reuses_existing_draft(client, db):
 
     assert first.status_code == 201
     assert second.json()["id"] == first.json()["id"]
+
+
+def test_submit_rejects_inn_missing_from_registry(client, db, monkeypatch):
+    import app.api.client as client_api
+    from app.services.external import ExternalServiceError
+
+    def not_found(inn):
+        raise ExternalServiceError("registry", "Запись не найдена", "not_found")
+
+    monkeypatch.setattr(client_api, "fetch_registry", not_found)
+    monkeypatch.setattr(client_api, "run_pipeline", lambda *args, **kwargs: None)
+    draft = make_application(db, user=user_by_name(db, "client1"))
+    body = {"signer_position": "ceo", "authority_confirmed": True, "consent_bki": True, "consent_personal_data": True}
+
+    response = client.post(f"/api/client/applications/{draft.id}/submit", headers=login(client, "client1"), json=body)
+
+    assert response.status_code == 422
+    assert "не найдена в реестре" in response.json()["detail"]
+    db.expire_all()
+    assert db.get(Application, draft.id).status == "DRAFT"
