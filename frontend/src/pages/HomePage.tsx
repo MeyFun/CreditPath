@@ -15,7 +15,7 @@ import {
   ShieldCheck,
   WalletCards
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import { SiteFooter } from "../components/Footer";
@@ -247,20 +247,30 @@ function TourScreen({ index }: { index: number }) {
 
 const TOUR_MS = 6000;
 
-/** Тур по этапам: слева шаги, справа экран кабинета. Сам листается, пока посетитель не взаимодействует. */
+/** Тур по этапам: слева шаги, справа экран кабинета. Листается сам, пока виден на экране;
+    после клика по шагу посетитель управляет сам, и автопереключение больше не мешает. */
 function ProcessTour() {
   const reduced = prefersReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [manual, setManual] = useState(reduced);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting), { threshold: 0.35 });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  function choose(index: number) {
+    setManual(true);
+    setActive(index);
+  }
 
   return (
-    <div
-      className="tour"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocusCapture={() => setPaused(true)}
-      onBlurCapture={() => setPaused(false)}
-    >
+    <div className="tour" ref={ref}>
       <ol className="tour-steps" role="tablist" aria-label="Этапы заявки">
         {STEPS.map((step, index) => (
           <li key={step.title}>
@@ -270,15 +280,15 @@ function ProcessTour() {
               aria-selected={index === active}
               aria-controls="tour-panel"
               className={`tour-step ${index === active ? "active" : ""}`}
-              onClick={() => setActive(index)}
+              onClick={() => choose(index)}
             >
               <span className="tour-index">{index + 1}</span>
               <span className="tour-copy"><strong>{step.title}</strong><span>{step.text}</span></span>
-              {index === active && !reduced && (
+              {index === active && !manual && (
                 <span
                   key={active}
                   className="tour-progress"
-                  style={{ animationDuration: `${TOUR_MS}ms`, animationPlayState: paused ? "paused" : "running" }}
+                  style={{ animationDuration: `${TOUR_MS}ms`, animationPlayState: visible ? "running" : "paused" }}
                   onAnimationEnd={() => setActive((value) => (value + 1) % STEPS.length)}
                 />
               )}
@@ -315,6 +325,8 @@ export default function HomePage() {
   const overpayment = Math.max(0, payment * term - amount);
   const principalShare = payment > 0 ? (amount / (payment * term)) * 100 : 100;
   const terms = activeProduct ? TERMS.filter((value) => value >= activeProduct.min_term_months && value <= activeProduct.max_term_months) : TERMS;
+  const maxAmount = Math.max(1, ...products.map((product) => product.max_amount));
+  const maxTerm = Math.max(1, ...products.map((product) => product.max_term_months));
   const fill = activeProduct ? ((amount - activeProduct.min_amount) / (activeProduct.max_amount - activeProduct.min_amount)) * 100 : 0;
 
   function selectProduct(product: Product) {
@@ -386,91 +398,45 @@ export default function HomePage() {
         <section className="landing-section" id="products">
           <div className="landing-heading">
             <h2>Три продукта под разные задачи</h2>
-            <p>Условия рядом — сравните и сразу посчитайте платёж.</p>
+            <p>Выберите продукт — калькулятор ниже сразу пересчитает платёж.</p>
           </div>
           {productsQuery.isLoading ? (
-            <div className="compare-loading card" role="status" aria-label="Загружаем продукты…">
-              <span className="sk sk-title" />
-              <span className="sk sk-block" />
-              <span className="sk sk-block" />
+            <div className="product-rail" role="status" aria-label="Загружаем продукты…">
+              {[0, 1, 2].map((item) => (
+                <div className="card product-card-v2" key={item}><span className="sk" style={{ width: "60%" }} /><span className="sk sk-title" /><span className="sk sk-block" /></div>
+              ))}
             </div>
           ) : (
-            <>
-              <div className="compare card" role="table" aria-label="Сравнение продуктов">
-                <div className="compare-row compare-head" role="row">
-                  <span role="columnheader" />
-                  {products.map((product) => {
-                    const Icon = PRODUCT_ICONS[product.code] ?? WalletCards;
-                    return (
-                      <span role="columnheader" key={product.code} className="compare-product">
-                        <span className="compare-icon"><Icon size={20} /></span>
-                        <strong>{product.name}</strong>
-                        <small>{product.short_description}</small>
+            <div className="product-rail">
+              {products.map((product) => {
+                const Icon = PRODUCT_ICONS[product.code] ?? WalletCards;
+                const selected = activeProduct?.code === product.code;
+                return (
+                  <button type="button" key={product.code} className={`card product-card-v2 ${selected ? "selected" : ""}`} onClick={() => selectProduct(product)} aria-pressed={selected}>
+                    <span className="product-card-head">
+                      <span className="compare-icon"><Icon size={20} /></span>
+                      <span className={`badge ${product.requires_collateral ? "badge-neutral" : "badge-success"}`}>{product.requires_collateral ? "Под залог техники" : "Без залога"}</span>
+                    </span>
+                    <strong className="product-card-name">{product.name}</strong>
+                    <span className="product-card-rate">от {product.rate.toFixed(1).replace(".", ",")}%</span>
+                    <span className="product-meters">
+                      <span className="product-meter">
+                        <span className="product-meter-label">Сумма</span>
+                        <span className="product-meter-track"><span style={{ width: `${(product.max_amount / maxAmount) * 100}%` }} /></span>
+                        <span className="product-meter-value">до {compactMoney(product.max_amount)}</span>
                       </span>
-                    );
-                  })}
-                </div>
-                <div className="compare-row compare-rate" role="row">
-                  <span role="rowheader">Ставка</span>
-                  {products.map((product) => <span role="cell" key={product.code}>от {product.rate.toFixed(1).replace(".", ",")}%</span>)}
-                </div>
-                <div className="compare-row" role="row">
-                  <span role="rowheader">Сумма</span>
-                  {products.map((product) => <span role="cell" key={product.code}>{compactMoney(product.min_amount)} — {compactMoney(product.max_amount)}</span>)}
-                </div>
-                <div className="compare-row" role="row">
-                  <span role="rowheader">Срок</span>
-                  {products.map((product) => <span role="cell" key={product.code}>{product.min_term_months}–{product.max_term_months} мес.</span>)}
-                </div>
-                <div className="compare-row" role="row">
-                  <span role="rowheader">Обеспечение</span>
-                  {products.map((product) => <span role="cell" key={product.code}>{product.requires_collateral ? "Залог — приобретаемое оборудование" : "Без залога"}</span>)}
-                </div>
-                <div className="compare-row" role="row">
-                  <span role="rowheader">Возраст бизнеса</span>
-                  {products.map((product) => <span role="cell" key={product.code}>от {product.min_business_age_months} мес.</span>)}
-                </div>
-                <div className="compare-row" role="row">
-                  <span role="rowheader">Подходит для</span>
-                  {products.map((product) => (
-                    <span role="cell" key={product.code}>
-                      <ul className="compare-purposes">{product.purposes.map((purpose) => <li key={purpose.code}>{purpose.label}</li>)}</ul>
+                      <span className="product-meter">
+                        <span className="product-meter-label">Срок</span>
+                        <span className="product-meter-track"><span style={{ width: `${(product.max_term_months / maxTerm) * 100}%` }} /></span>
+                        <span className="product-meter-value">до {product.max_term_months} мес.</span>
+                      </span>
                     </span>
-                  ))}
-                </div>
-                <div className="compare-row compare-foot" role="row">
-                  <span role="cell" />
-                  {products.map((product) => (
-                    <span role="cell" key={product.code}>
-                      <button type="button" className="btn btn-secondary btn-full" onClick={() => selectProduct(product)}>Рассчитать платёж</button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="compare-cards">
-                {products.map((product) => {
-                  const Icon = PRODUCT_ICONS[product.code] ?? WalletCards;
-                  return (
-                    <article className="card compare-card" key={product.code}>
-                      <div className="compare-product">
-                        <span className="compare-icon"><Icon size={20} /></span>
-                        <strong>{product.name}</strong>
-                        <small>{product.short_description}</small>
-                      </div>
-                      <p className="compare-card-rate">от {product.rate.toFixed(1).replace(".", ",")}%</p>
-                      <dl>
-                        <div><dt>Сумма</dt><dd>{compactMoney(product.min_amount)} — {compactMoney(product.max_amount)}</dd></div>
-                        <div><dt>Срок</dt><dd>{product.min_term_months}–{product.max_term_months} мес.</dd></div>
-                        <div><dt>Обеспечение</dt><dd>{product.requires_collateral ? "Залог" : "Без залога"}</dd></div>
-                        <div><dt>Возраст бизнеса</dt><dd>от {product.min_business_age_months} мес.</dd></div>
-                      </dl>
-                      <button type="button" className="btn btn-secondary btn-full" onClick={() => selectProduct(product)}>Рассчитать платёж</button>
-                    </article>
-                  );
-                })}
-              </div>
-            </>
+                    <span className="product-card-purposes">{product.purposes.map((purpose) => purpose.label).join(", ")}</span>
+                    <span className="product-card-cta">{selected ? "Выбран в калькуляторе" : "Рассчитать платёж"} <ArrowRight size={16} /></span>
+                  </button>
+                );
+              })}
+            </div>
           )}
         </section>
 

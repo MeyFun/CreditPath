@@ -558,6 +558,8 @@ export function SegmentedControl<T extends string | number>({
 type Theme = "light" | "dark";
 const THEME_KEY = "creditpath-theme";
 const DARK_QUERY = "(prefers-color-scheme: dark)";
+let pendingTheme: Theme | null = null;
+let switchId = 0;
 
 function activeTheme(): Theme {
   const chosen = document.documentElement.dataset.theme;
@@ -577,7 +579,9 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
   }, []);
 
   function toggle(event: React.MouseEvent<HTMLButtonElement>) {
-    const next: Theme = theme === "dark" ? "light" : "dark";
+    // Быстрые повторные клики: целевая тема считается от последнего нажатия, а не от ещё не применённой.
+    const next: Theme = (pendingTheme ?? activeTheme()) === "dark" ? "light" : "dark";
+    pendingTheme = next;
     const root = document.documentElement;
     const apply = () => {
       root.dataset.theme = next;
@@ -587,6 +591,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
         // Без хранилища тема продержится до перезагрузки.
       }
       setTheme(next);
+      if (pendingTheme === next) pendingTheme = null;
     };
     const doc = document as Document & { startViewTransition?: (update: () => void) => { finished: Promise<void> } };
     if (!doc.startViewTransition || prefersReducedMotion()) {
@@ -598,7 +603,11 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
     root.style.setProperty("--reveal-x", `${rect.left + rect.width / 2}px`);
     root.style.setProperty("--reveal-y", `${rect.top + rect.height / 2}px`);
     root.classList.add("theme-switching");
-    doc.startViewTransition(() => flushSync(apply)).finished.finally(() => root.classList.remove("theme-switching"));
+    const id = ++switchId;
+    doc.startViewTransition(() => flushSync(apply)).finished.finally(() => {
+      // Прерванный переход не снимает класс, пока идёт следующий.
+      if (id === switchId) root.classList.remove("theme-switching");
+    });
   }
 
   const label = theme === "dark" ? "Включить светлую тему" : "Включить тёмную тему";

@@ -1524,25 +1524,31 @@ img { max-width: 100%; }
 .tour-offer small { font-size: 12.5px; color: var(--muted); }
 .tour-offer strong { font-size: 17px; font-weight: 750; white-space: nowrap; }
 
-/* Сравнение продуктов: одна таблица, ставка — крупно. */
-.compare { padding: 8px 0; overflow: hidden; }
-.compare-row { display: grid; grid-template-columns: 200px repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--border); }
-.compare-row:first-child { border-top: 0; }
-.compare-row > span { padding: 16px 24px; font-size: 15px; }
-.compare-row > span[role="rowheader"] { color: var(--muted); font-size: 14px; }
-.compare-row > span[role="cell"] { border-left: 1px solid var(--border-soft); }
-.compare-head > span { padding-top: 22px; padding-bottom: 22px; }
-.compare-product { display: flex; flex-direction: column; gap: 6px; }
-.compare-product strong { font-size: 18px; letter-spacing: -0.01em; }
-.compare-product small { font-size: 13.5px; color: var(--muted-dark); line-height: 1.45; }
-.compare-icon { width: 40px; height: 40px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 6px; }
-.compare-rate > span[role="cell"] { font-size: 30px; font-weight: 800; letter-spacing: -0.035em; }
-.compare-purposes { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: var(--muted-dark); }
-.compare-foot > span { padding-top: 18px; padding-bottom: 18px; }
-.compare-row:not(.compare-head):not(.compare-foot) { transition: background var(--dur-1); }
-.compare-row:not(.compare-head):not(.compare-foot):hover { background: var(--surface-soft); }
-.compare-cards { display: none; }
-.compare-loading { display: flex; flex-direction: column; gap: 14px; }
+/* Продукты: три компактные карточки. Шкалы показывают сумму и срок относительно самого «длинного» продукта. */
+.product-rail { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.product-card-v2 {
+  display: flex; flex-direction: column; align-items: stretch; gap: 14px; padding: 22px; text-align: left; font: inherit; color: var(--text); cursor: pointer;
+  transition: transform var(--dur-2) var(--ease), border-color var(--dur-1), box-shadow var(--dur-2) var(--ease);
+}
+.product-card-v2:hover { transform: translateY(-4px); border-color: var(--border-strong); box-shadow: var(--shadow-lg); }
+.product-card-v2.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset, var(--shadow); }
+.product-card-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.compare-icon { width: 40px; height: 40px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); display: inline-flex; align-items: center; justify-content: center; flex: 0 0 40px; }
+.product-card-name { font-size: 18px; letter-spacing: -0.01em; }
+.product-card-rate { font-size: 34px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; margin-top: -4px; }
+.product-meters { display: flex; flex-direction: column; gap: 10px; padding: 12px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.product-meter { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: 10px; font-size: 13.5px; }
+.product-meter-label { color: var(--muted); }
+.product-meter-track { height: 6px; border-radius: 6px; background: var(--surface-3); overflow: hidden; }
+.product-meter-track span { display: block; height: 100%; border-radius: inherit; background: color-mix(in srgb, var(--muted) 70%, var(--surface-3)); transition: background var(--dur-2); }
+.product-card-v2:hover .product-meter-track span, .product-card-v2.selected .product-meter-track span { background: var(--accent); }
+.product-meter-value { font-weight: 650; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.product-card-purposes { font-size: 13.5px; line-height: 1.5; color: var(--muted-dark); }
+.product-card-cta { margin-top: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 14.5px; font-weight: 650; color: var(--accent-text); }
+.product-card-cta svg { transition: transform var(--dur-1) var(--ease); }
+.product-card-v2:hover .product-card-cta svg { transform: translateX(3px); }
+.product-card-v2.selected .product-card-cta { color: var(--muted-dark); }
+@media (max-width: 1020px) { .product-rail { grid-template-columns: 1fr; } }
 
 /* Калькулятор */
 .calc-v2 { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); padding: 0; overflow: hidden; }
@@ -1586,13 +1592,13 @@ img { max-width: 100%; }
 
 /* Как гасится кредит: доля долга и процентов, первые платежи. */
 .calc-schedule { margin-top: auto; padding-top: 28px; display: flex; flex-direction: column; gap: 16px; }
-.calc-split-bar { height: 10px; border-radius: 10px; background: color-mix(in srgb, var(--warning) 45%, var(--surface-3)); overflow: hidden; }
-.calc-split-bar span { display: block; height: 100%; background: var(--info); border-radius: inherit; transition: width var(--dur-2) var(--ease); }
+.calc-split-bar { display: flex; height: 10px; border-radius: 10px; background: var(--accent); overflow: hidden; }
+.calc-split-bar span { display: block; height: 100%; background: color-mix(in srgb, var(--muted) 55%, var(--surface-3)); border-right: 2px solid var(--surface); transition: width var(--dur-2) var(--ease); }
 .calc-split-legend { display: flex; flex-wrap: wrap; gap: 6px 20px; margin-top: 8px; font-size: 13.5px; color: var(--muted-dark); }
 .calc-split-legend span { display: inline-flex; align-items: center; gap: 7px; }
 .calc-split-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
-.calc-split-legend .principal { background: var(--info); }
-.calc-split-legend .interest { background: color-mix(in srgb, var(--warning) 45%, var(--surface-3)); }
+.calc-split-legend .principal { background: color-mix(in srgb, var(--muted) 55%, var(--surface-3)); }
+.calc-split-legend .interest { background: var(--accent); }
 .calc-months { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .calc-months th { text-align: right; font-weight: 500; color: var(--muted); padding: 6px 0; border-bottom: 1px solid var(--border); }
 .calc-months td { text-align: right; padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-variant-numeric: tabular-nums; }
@@ -1633,7 +1639,9 @@ img { max-width: 100%; }
 html.theme-switching .page { view-transition-name: none; }
 html.theme-switching body { transition: none; }
 html.theme-switching::view-transition-old(root) { animation: none; }
-html.theme-switching::view-transition-new(root) { animation: themeReveal 0.7s var(--ease) both; }
+html.theme-switching::view-transition-new(root) { animation: themeReveal 0.55s var(--ease) both; }
+/* Во время раскрытия страница остаётся кликабельной: тему можно переключить снова, не дожидаясь конца анимации. */
+::view-transition { pointer-events: none; }
 @keyframes themeReveal {
   from { clip-path: circle(0 at var(--reveal-x, 50%) var(--reveal-y, 0)); }
   to { clip-path: circle(150vmax at var(--reveal-x, 50%) var(--reveal-y, 0)); }
@@ -1669,14 +1677,6 @@ html.theme-switching::view-transition-new(root) { animation: themeReveal 0.7s va
   .tour-screen { padding: 18px; }
   .tour-card { padding: 18px; }
   .tour-offer strong { font-size: 15px; }
-  .compare { display: none; }
-  .compare-cards { display: flex; flex-direction: column; gap: 14px; }
-  .compare-card { display: flex; flex-direction: column; gap: 14px; }
-  .compare-card-rate { font-size: 34px; font-weight: 800; letter-spacing: -0.035em; }
-  .compare-card dl { margin: 0; border-top: 1px solid var(--border); }
-  .compare-card dl > div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 14.5px; }
-  .compare-card dt { color: var(--muted); }
-  .compare-card dd { margin: 0; font-weight: 600; text-align: right; }
   .calc-v2-params, .calc-v2-result { padding: 22px 18px; }
   .calc-v2 .calc-value input { width: 150px; font-size: 22px; }
   .segmented button { padding: 9px 10px; font-size: 13.5px; }
