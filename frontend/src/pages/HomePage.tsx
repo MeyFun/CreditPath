@@ -273,13 +273,12 @@ function TourScreen({ index }: { index: number }) {
 const TOUR_MS = 6000;
 
 /** Тур по этапам: слева шаги, справа экран кабинета. Листается сам, пока виден на экране;
-    после клика по шагу посетитель управляет сам, и автопереключение больше не мешает. */
+    клик по шагу открывает его, и тур продолжает листать уже с него. */
 function ProcessTour() {
   const reduced = prefersReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const [visible, setVisible] = useState(false);
-  const [manual, setManual] = useState(reduced);
 
   useEffect(() => {
     const node = ref.current;
@@ -289,10 +288,6 @@ function ProcessTour() {
     return () => observer.disconnect();
   }, []);
 
-  function choose(index: number) {
-    setManual(true);
-    setActive(index);
-  }
 
   return (
     <div className="tour" ref={ref}>
@@ -305,11 +300,11 @@ function ProcessTour() {
               aria-selected={index === active}
               aria-controls="tour-panel"
               className={`tour-step ${index === active ? "active" : ""}`}
-              onClick={() => choose(index)}
+              onClick={() => setActive(index)}
             >
               <span className="tour-index">{index + 1}</span>
               <span className="tour-copy"><strong>{step.title}</strong><span>{step.text}</span></span>
-              {index === active && !manual && (
+              {index === active && !reduced && (
                 <span
                   key={active}
                   className="tour-progress"
