@@ -130,6 +130,7 @@ function HeroDemo() {
 
   const current = HERO_STAGES[stage];
   const approved = stage === HERO_STAGES.length - 1;
+  const segments = HERO_STAGES.length - 1;
 
   return (
     <div className="app-window" aria-hidden="true">
@@ -162,7 +163,18 @@ function HeroDemo() {
             </div>
             {approved && <span className="mini-offer-check"><CheckCircle2 size={22} /></span>}
           </div>
-          <ol className="mini-track" style={{ ["--p" as string]: String(stage / (HERO_STAGES.length - 1)) }}>
+          <ol className="mini-track">
+            {/* Линия всё время ползёт к следующему этапу и приходит ровно к его началу — без пауз на месте. */}
+            <span
+              key={stage}
+              className="mini-track-fill"
+              aria-hidden="true"
+              style={{
+                ["--from" as string]: String(stage / segments),
+                ["--to" as string]: String(Math.min(stage + 1, segments) / segments),
+                animationDuration: reduced ? "0s" : `${STAGE_MS}ms`
+              }}
+            />
             {HERO_STAGES.map((item, index) => {
               const done = index < stage || approved;
               return (
