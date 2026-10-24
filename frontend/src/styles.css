@@ -6,6 +6,7 @@
   --accent-soft: #fdeff0;
   --accent-line: #f4c9cc;
   --accent-text: #c0161c;
+  --accent-tint: #eca4a7;
   --on-accent: #ffffff;
   /* Нейтральная база с лёгким холодным оттенком. */
   --bg: #f5f6f8;
@@ -56,6 +57,7 @@
   --accent-soft: #392126;
   --accent-line: #5e2a30;
   --accent-text: #f08a8e;
+  --accent-tint: #c4777b;
   --bg: #15171b;
   --surface: #1c1f24;
   --surface-soft: #22262c;
@@ -88,6 +90,7 @@
     --accent-soft: #392126;
     --accent-line: #5e2a30;
     --accent-text: #f08a8e;
+    --accent-tint: #c4777b;
     --bg: #15171b;
     --surface: #1c1f24;
     --surface-soft: #22262c;
@@ -1595,15 +1598,17 @@ img { max-width: 100%; }
 .range-fill::-webkit-slider-thumb:hover { transform: scale(1.12); }
 .range-fill::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); cursor: pointer; }
 
-/* Как гасится кредит: доля долга и процентов, первые платежи. */
+/* Как гасится кредит: доля долга и процентов, первые платежи.
+   Проценты — мягкий розовый тон бренда: заметно, но без тревоги ярко-красного. */
+.calc-schedule { --interest-tone: var(--accent-tint); }
 .calc-schedule { margin-top: auto; padding-top: 28px; display: flex; flex-direction: column; gap: 16px; }
-.calc-split-bar { display: flex; height: 10px; border-radius: 10px; background: var(--accent); overflow: hidden; }
+.calc-split-bar { display: flex; height: 10px; border-radius: 10px; background: var(--interest-tone); overflow: hidden; }
 .calc-split-bar span { display: block; height: 100%; background: color-mix(in srgb, var(--muted) 55%, var(--surface-3)); border-right: 2px solid var(--surface); transition: width var(--dur-2) var(--ease); }
 .calc-split-legend { display: flex; flex-wrap: wrap; gap: 6px 20px; margin-top: 8px; font-size: 13.5px; color: var(--muted-dark); }
 .calc-split-legend span { display: inline-flex; align-items: center; gap: 7px; }
 .calc-split-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
 .calc-split-legend .principal { background: color-mix(in srgb, var(--muted) 55%, var(--surface-3)); }
-.calc-split-legend .interest { background: var(--accent); }
+.calc-split-legend .interest { background: var(--interest-tone); }
 .calc-months { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .calc-months th { text-align: right; font-weight: 500; color: var(--muted); padding: 6px 0; border-bottom: 1px solid var(--border); }
 .calc-months td { text-align: right; padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-variant-numeric: tabular-nums; }
