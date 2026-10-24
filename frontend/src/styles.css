@@ -144,6 +144,7 @@ img { max-width: 100%; }
 :focus:not(:focus-visible) { outline: none; }
 
 .muted { color: var(--muted); }
+small { font-size: 12.5px; }
 .small { font-size: 12.5px; }
 .block { display: block; }
 .mono { font-family: var(--mono); font-size: 12px; }
@@ -1696,3 +1697,17 @@ html.theme-switching::view-transition-new(root) { animation: themeReveal 0.55s v
   .cta-band { flex-direction: column; align-items: flex-start; padding: 30px 22px; }
   .cta-band .btn { width: 100%; }
 }
+
+/* Узкие экраны: ряды кнопок переносятся, а не раздувают страницу. */
+@media (max-width: 760px) {
+  .wizard-save { flex-wrap: wrap; gap: 8px; }
+  .wizard-save .btn { flex: 1 1 auto; }
+  .next-action-actions { flex-wrap: wrap; }
+  .next-action-actions .btn { flex: 1 1 auto; min-width: 0; }
+  .toast-stack { max-width: calc(100vw - 24px); }
+}
+
+/* Счётчик колокольчика не выходит за край мобильной шапки; тип «Нужно действие» читается в обеих темах. */
+.mobile-header .badge-count { top: 0; right: 0; }
+.mobile-header { overflow: hidden; }
+.notif-action { --tone: var(--accent-text); }
