@@ -24,10 +24,6 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 
-class ProfileUpdateRequest(BaseModel):
-    full_name: str = Field(min_length=2, max_length=160)
-
-
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

@@ -330,52 +330,6 @@
         ]
       }
     },
-    "/api/client/company/name": {
-      "put": {
-        "tags": [
-          "Кабинет клиента"
-        ],
-        "summary": "Update Profile",
-        "operationId": "update_profile_api_client_company_name_put",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProfileUpdateRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserOut"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
     "/api/client/applications": {
       "get": {
         "tags": [
@@ -3918,21 +3872,6 @@
         },
         "type": "object",
         "title": "ProductUpdate"
-      },
-      "ProfileUpdateRequest": {
-        "properties": {
-          "full_name": {
-            "type": "string",
-            "maxLength": 160,
-            "minLength": 2,
-            "title": "Full Name"
-          }
-        },
-        "type": "object",
-        "required": [
-          "full_name"
-        ],
-        "title": "ProfileUpdateRequest"
       },
       "RespondInfoRequest": {
         "properties": {

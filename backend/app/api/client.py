@@ -43,7 +43,6 @@ from ..schemas import (
     DocumentOut,
     MessageOut,
     OfferRequest,
-    ProfileUpdateRequest,
     RespondInfoRequest,
     SIGNER_POSITIONS,
     SubmitRequest,
@@ -228,30 +227,6 @@ def company_profile(db: Session = Depends(get_db), user: User = Depends(get_curr
             detail="Данные компании временно недоступны. Попробуйте позже.",
         )
     return {"user": UserOut.model_validate(user), "company": company, "source": source}
-
-
-@router.put("/company/name", response_model=UserOut)
-def update_profile(
-    payload: ProfileUpdateRequest,
-    db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
-) -> User:
-    name = payload.full_name.strip()
-    if len(name) < 2 or len(name) > 160:
-        raise HTTPException(status_code=422, detail="Имя должно содержать от 2 до 160 символов")
-    before = {"full_name": user.full_name}
-    user.full_name = name
-    write_audit(
-        db,
-        actor=user,
-        action="user.profile_updated",
-        entity_type="user",
-        entity_id=user.id,
-        before=before,
-        after={"full_name": name},
-    )
-    db.commit()
-    return user
 
 
 @router.get("/applications", response_model=list[ApplicationOut])

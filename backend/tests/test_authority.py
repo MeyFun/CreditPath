@@ -92,3 +92,11 @@ def test_self_registration_is_disabled(client):
         json={"username": "newbie", "password": "Secret123", "full_name": "Новый Клиент"},
     )
     assert response.status_code in {404, 405}
+
+
+def test_client_cannot_rename_self_to_match_registry(client):
+    # ФИО — проверенный банком атрибут: иначе клиент назвался бы директором чужой компании.
+    response = client.put(
+        "/api/client/company/name", headers=login(client, "client1"), json={"full_name": "Орлов Денис Павлович"}
+    )
+    assert response.status_code in {404, 405}
