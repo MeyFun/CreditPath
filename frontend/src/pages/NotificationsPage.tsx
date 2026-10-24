@@ -110,7 +110,6 @@ export default function NotificationsPage() {
                         </div>
                         <p>{item.body}</p>
                         <div className="notif-actions">
-                          {item.kind !== "info" && <span className="notif-kind">{kind.label}</span>}
                           {item.application_id && (
                             <Link
                               to={`${appPath}/${item.application_id}`}
@@ -120,6 +119,7 @@ export default function NotificationsPage() {
                               Открыть заявку <ArrowRight size={14} />
                             </Link>
                           )}
+                          {item.kind !== "info" && <span className="notif-kind">{kind.label}</span>}
                           {!item.is_read && (
                             <button className="notif-read" onClick={() => readMutation.mutate(item.id)}>
                               <Check size={15} /> Прочитано

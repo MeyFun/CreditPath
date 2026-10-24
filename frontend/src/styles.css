@@ -1711,3 +1711,10 @@ html.theme-switching::view-transition-new(root) { animation: themeReveal 0.55s v
 .mobile-header .badge-count { top: 0; right: 0; }
 .mobile-header { overflow: hidden; }
 .notif-action { --tone: var(--accent-text); }
+
+/* Цели кредитования в окне продукта */
+.purpose-editor { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-soft); }
+.purpose-editor-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.purpose-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; }
+.purpose-row code { font-family: var(--mono); font-size: 12px; color: var(--muted-dark); background: var(--surface-3); border-radius: 6px; padding: 4px 8px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 760px) { .purpose-row { grid-template-columns: minmax(0, 1fr) auto; } .purpose-row code { display: none; } }

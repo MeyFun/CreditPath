@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class UserOut(BaseModel):
@@ -52,6 +52,41 @@ class ProductOut(BaseModel):
     sort_order: int
 
 
+class PurposeIn(BaseModel):
+    code: str = Field(pattern=r"^[a-z][a-z0-9_]{1,39}$")
+    label: str = Field(min_length=2, max_length=120)
+
+
+def _unique_purposes(items: list[PurposeIn]) -> list[PurposeIn]:
+    if not items:
+        raise ValueError("Добавьте хотя бы одну цель кредитования")
+    if len({item.code for item in items}) != len(items):
+        raise ValueError("Коды целей не должны повторяться")
+    return items
+
+
+class ProductCreate(BaseModel):
+    code: str = Field(pattern=r"^[A-Z][A-Z0-9_]{1,31}$")
+    name: str = Field(min_length=2, max_length=120)
+    short_description: str = Field(min_length=2, max_length=255)
+    description: str = Field(default="")
+    min_amount: float = Field(gt=0)
+    max_amount: float = Field(gt=0)
+    min_term_months: int = Field(ge=1, le=120)
+    max_term_months: int = Field(ge=1, le=120)
+    rate: float = Field(gt=0, le=100)
+    min_business_age_months: int = Field(default=0, ge=0, le=120)
+    requires_collateral: bool = False
+    revenue_limit_ratio: float = Field(default=0.4, gt=0, le=1.5)
+    is_active: bool = True
+    purposes: list[PurposeIn]
+
+    @field_validator("purposes")
+    @classmethod
+    def check_purposes(cls, value: list[PurposeIn]) -> list[PurposeIn]:
+        return _unique_purposes(value)
+
+
 class ProductUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=120)
     short_description: str | None = Field(default=None, max_length=255)
@@ -65,6 +100,12 @@ class ProductUpdate(BaseModel):
     requires_collateral: bool | None = None
     revenue_limit_ratio: float | None = Field(default=None, gt=0, le=1.5)
     is_active: bool | None = None
+    purposes: list[PurposeIn] | None = None
+
+    @field_validator("purposes")
+    @classmethod
+    def check_purposes(cls, value: list[PurposeIn] | None) -> list[PurposeIn] | None:
+        return None if value is None else _unique_purposes(value)
 
 
 class ApplicationCreate(BaseModel):
@@ -218,6 +259,21 @@ class RespondInfoRequest(BaseModel):
 
 class OfferRequest(BaseModel):
     accept: bool
+
+
+class UserCreate(BaseModel):
+    username: str = Field(min_length=3, max_length=32, pattern=r"^[A-Za-z0-9_.-]+$")
+    full_name: str = Field(min_length=2, max_length=160)
+    password: str = Field(min_length=8, max_length=128)
+    role: Literal["client", "employee"] = "client"
+    company_inn: str | None = Field(default=None, min_length=10, max_length=12)
+
+    @field_validator("password")
+    @classmethod
+    def password_strength(cls, value: str) -> str:
+        if not any(char.isdigit() for char in value) or not any(char.isalpha() for char in value):
+            raise ValueError("Пароль должен содержать буквы и цифры")
+        return value
 
 
 class RoleUpdateRequest(BaseModel):

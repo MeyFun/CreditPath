@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, RefreshCw, Search, UserCog, Users } from "lucide-react";
+import { ArrowRight, Plus, RefreshCw, Search, UserCog, Users } from "lucide-react";
 import { useState } from "react";
 import { api, ApiError } from "../api";
 import {
@@ -9,6 +9,7 @@ import {
   Card,
   EmptyState,
   ErrorState,
+  Field,
   formatDateTime,
   Input,
   LoadingBlock,
@@ -29,6 +30,9 @@ export default function AdminUsers() {
   const [role, setRole] = useState("");
   const [target, setTarget] = useState<User | null>(null);
   const [error, setError] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ username: "", full_name: "", password: "", role: "client", company_inn: "" });
+  const [createError, setCreateError] = useState("");
   const queryClient = useQueryClient();
   const { push } = useToast();
   const query = useQuery({ queryKey: ["admin-users", search, role], queryFn: () => api.admin.users(search, role) });
@@ -43,6 +47,23 @@ export default function AdminUsers() {
     onError: (err) => setError(err instanceof ApiError ? err.message : "Не удалось изменить роль")
   });
 
+  const create = useMutation({
+    mutationFn: () => api.admin.createUser({ ...form, company_inn: form.company_inn.trim() || undefined }),
+    onSuccess: (created) => {
+      push(`Пользователь @${created.username} создан`, "success");
+      setCreating(false);
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-audit"] });
+    },
+    onError: (err) => setCreateError(err instanceof ApiError ? (err.details?.map((item) => item.message).join("; ") || err.message) : "Не удалось создать пользователя")
+  });
+
+  function openCreate() {
+    setForm({ username: "", full_name: "", password: "", role: "client", company_inn: "" });
+    setCreateError("");
+    setCreating(true);
+  }
+
   function openChange(user: User) {
     setError("");
     setTarget(user);
@@ -52,7 +73,8 @@ export default function AdminUsers() {
     <div className="page-stack">
       <PageHeader
         title="Пользователи и роли"
-        description="Выдача ролей клиента и сотрудника."
+        description="Банк заводит клиентов и сотрудников и выдаёт роли. ИНН в профиле клиента подтверждает его право подавать заявки от этой компании."
+        actions={<Button icon={<Plus size={16} />} onClick={openCreate}>Новый пользователь</Button>}
       />
       <Card className="filter-card">
         <div className="queue-filters">
@@ -131,6 +153,23 @@ export default function AdminUsers() {
             {error && <Alert tone="danger">{error}</Alert>}
           </div>
         )}
+      </Modal>
+      <Modal
+        open={creating}
+        title="Новый пользователь"
+        onClose={() => setCreating(false)}
+        footer={<><Button variant="secondary" onClick={() => setCreating(false)}>Отмена</Button><Button loading={create.isPending} onClick={() => create.mutate()}>Создать</Button></>}
+      >
+        <div className="modal-form">
+          <Field label="Роль"><select className="input" value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value, company_inn: event.target.value === "client" ? form.company_inn : "" })}><option value="client">Клиент</option><option value="employee">Сотрудник банка</option></select></Field>
+          <Field label="ФИО" hint="Для клиента сверяется с руководителем и учредителями по реестру."><Input value={form.full_name} onChange={(event) => setForm({ ...form, full_name: event.target.value })} /></Field>
+          <Field label="Логин" hint="3–32 символа: латиница, цифры, точка, дефис."><Input value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} autoComplete="off" /></Field>
+          <Field label="Временный пароль" hint="Не короче 8 символов, буквы и цифры."><Input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} autoComplete="new-password" /></Field>
+          {form.role === "client" && (
+            <Field label="ИНН компании" hint="Закрепляет компанию за клиентом: по ней заявка подаётся без доверенности. Проверяется по реестру."><Input value={form.company_inn} inputMode="numeric" maxLength={12} onChange={(event) => setForm({ ...form, company_inn: event.target.value.replace(/D/g, "") })} placeholder="10 или 12 цифр" /></Field>
+          )}
+          {createError && <Alert tone="danger">{createError}</Alert>}
+        </div>
       </Modal>
     </div>
   );

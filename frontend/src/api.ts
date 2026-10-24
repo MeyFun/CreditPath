@@ -164,6 +164,7 @@ export const api = {
   admin: {
     users: (search = "", role = "") =>
       request<User[]>(`/admin/users?${search ? `search=${encodeURIComponent(search)}&` : ""}${role ? `role=${role}` : ""}`),
+    createUser: (payload: Record<string, unknown>) => request<User>("/admin/users", json(payload)),
     changeRole: (id: number, role: "client" | "employee") =>
       request<User>(`/admin/users/${id}/role`, {
         method: "PATCH",
@@ -191,6 +192,7 @@ export const api = {
     },
     verifyAudit: () => request<AuditVerification>("/admin/audit/verify"),
     products: () => request<Product[]>("/admin/products"),
+    createProduct: (payload: Record<string, unknown>) => request<Product>("/admin/products", json(payload)),
     updateProduct: (id: number, payload: Record<string, unknown>) =>
       request<Product>(`/admin/products/${id}`, {
         method: "PATCH",

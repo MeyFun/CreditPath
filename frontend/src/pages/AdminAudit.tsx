@@ -38,6 +38,8 @@ const ACTION_LABELS: Record<string, string> = {
   "funds.disbursed_demo": "Средства зачислены",
   "application.draft_deleted": "Черновик удалён",
   "document.uploaded": "Документ загружен",
+  "user.created": "Пользователь создан",
+  "product.created": "Продукт создан",
   "product.updated": "Продукт изменён",
   "scoring_config.updated": "Скоринг обновлён",
   "application.queued_for_admin": "Очередь администратора"

@@ -27,20 +27,34 @@ from ..schemas import (
     AssignRequest,
     AuditOut,
     AuditVerifyOut,
+    ProductCreate,
     ProductOut,
     ProductUpdate,
     RoleUpdateRequest,
+    UserCreate,
     ScoringConfigOut,
     ScoringConfigUpdate,
     UserOut,
 )
-from ..security import require_admin
+from ..security import hash_password, require_admin
 from ..services.assignment import chain_reviewer_ids
 from ..services.audit import verify_audit_chain, write_audit
+from ..services.external import ExternalServiceError, fetch_registry
+from ..services.inn import validate_inn
 from ..services.notifications import notify, notify_admins
 from ..services.scoring_config import get_active_config, validate_config
 from ..services.serializers import application_base_dict, application_detail_dict, product_dict
-from ..services.state_machine import IN_REVIEW, NEED_INFO, add_event
+from ..services.state_machine import (
+    DRAFT,
+    DECISION_DRAFT,
+    ENRICHMENT,
+    IN_REVIEW,
+    NEED_INFO,
+    SCORING,
+    SUBMITTED,
+    VALIDATION,
+    add_event,
+)
 
 router = APIRouter(prefix="/admin", tags=["Администрирование"])
 
@@ -63,6 +77,49 @@ def list_users(
             | User.company_inn.like(needle)
         )
     return list(db.scalars(query.order_by(User.role, User.full_name)).all())
+
+
+@router.post("/users", response_model=UserOut, status_code=201)
+def create_user(
+    payload: UserCreate,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+) -> User:
+    """Банк заводит клиента или сотрудника. ИНН профиля — основание полномочий клиента, поэтому проверяется по реестру."""
+    username = payload.username.lower()
+    if db.scalar(select(User).where(User.username == username)) is not None:
+        raise HTTPException(status_code=409, detail="Логин уже занят")
+    if payload.company_inn:
+        if payload.role != "client":
+            raise HTTPException(status_code=422, detail="ИНН компании задаётся только клиенту")
+        valid, message = validate_inn(payload.company_inn)
+        if not valid:
+            raise HTTPException(status_code=422, detail=message)
+        try:
+            fetch_registry(payload.company_inn)
+        except ExternalServiceError as exc:
+            if exc.code == "not_found":
+                raise HTTPException(status_code=422, detail="Компания с таким ИНН не найдена в реестре") from exc
+    user = User(
+        username=username,
+        password_hash=hash_password(payload.password),
+        full_name=payload.full_name.strip(),
+        role=payload.role,
+        company_inn=payload.company_inn,
+    )
+    db.add(user)
+    db.flush()
+    write_audit(
+        db,
+        actor=admin,
+        action="user.created",
+        entity_type="user",
+        entity_id=user.id,
+        after={"username": user.username, "role": user.role, "company_inn": user.company_inn},
+    )
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 @router.patch("/users/{user_id}/role", response_model=UserOut)
@@ -263,6 +320,46 @@ def all_products(db: Session = Depends(get_db), admin: User = Depends(require_ad
     return [product_dict(item) for item in rows]
 
 
+OPEN_STATUSES = (DRAFT, SUBMITTED, VALIDATION, ENRICHMENT, SCORING, DECISION_DRAFT, IN_REVIEW, NEED_INFO)
+
+
+def _check_product_limits(product: Product) -> None:
+    if float(product.min_amount) >= float(product.max_amount):
+        raise HTTPException(status_code=422, detail="Минимальная сумма должна быть меньше максимальной")
+    if product.min_term_months >= product.max_term_months:
+        raise HTTPException(status_code=422, detail="Минимальный срок должен быть меньше максимального")
+
+
+@router.post("/products", response_model=ProductOut, status_code=201)
+def create_product(
+    payload: ProductCreate,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+) -> dict:
+    if db.scalar(select(Product).where(Product.code == payload.code)) is not None:
+        raise HTTPException(status_code=409, detail="Продукт с таким кодом уже есть")
+    data = payload.model_dump()
+    for field in ("min_amount", "max_amount", "rate", "revenue_limit_ratio"):
+        data[field] = Decimal(str(data[field]))
+    data["purposes"] = [item.model_dump() for item in payload.purposes]
+    data["sort_order"] = (db.scalar(select(func.max(Product.sort_order))) or 0) + 1
+    product = Product(**data)
+    _check_product_limits(product)
+    db.add(product)
+    db.flush()
+    write_audit(
+        db,
+        actor=admin,
+        action="product.created",
+        entity_type="product",
+        entity_id=product.id,
+        after=product_dict(product),
+    )
+    db.commit()
+    db.refresh(product)
+    return product_dict(product)
+
+
 @router.patch("/products/{product_id}", response_model=ProductOut)
 def update_product(
     product_id: int,
@@ -275,14 +372,27 @@ def update_product(
         raise HTTPException(status_code=404, detail="Продукт не найден")
     before = product_dict(product)
     changes = payload.model_dump(exclude_unset=True)
+    if changes.get("purposes") is not None:
+        kept = {item["code"] for item in changes["purposes"]}
+        removed = {item.get("code") for item in product.purposes or []} - kept
+        if removed:
+            busy = db.scalar(
+                select(func.count(Application.id)).where(
+                    Application.product_id == product.id,
+                    Application.purpose.in_(removed),
+                    Application.status.in_(OPEN_STATUSES),
+                )
+            )
+            if busy:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Цель нельзя убрать: по ней есть незавершённые заявки ({busy}). Скройте цель после их обработки.",
+                )
     for field, value in changes.items():
         if field in {"min_amount", "max_amount", "rate", "revenue_limit_ratio"} and value is not None:
             value = Decimal(str(value))
         setattr(product, field, value)
-    if float(product.min_amount) >= float(product.max_amount):
-        raise HTTPException(status_code=422, detail="Минимальная сумма должна быть меньше максимальной")
-    if product.min_term_months >= product.max_term_months:
-        raise HTTPException(status_code=422, detail="Минимальный срок должен быть меньше максимального")
+    _check_product_limits(product)
     write_audit(
         db,
         actor=admin,

@@ -1375,6 +1375,51 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "Администрирование"
+        ],
+        "summary": "Create User",
+        "description": "Банк заводит клиента или сотрудника. ИНН профиля — основание полномочий клиента, поэтому проверяется по реестру.",
+        "operationId": "create_user_api_admin_users_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/admin/users/{user_id}/role": {
@@ -1776,6 +1821,50 @@
                   },
                   "type": "array",
                   "title": "Response All Products Api Admin Products Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Администрирование"
+        ],
+        "summary": "Create Product",
+        "operationId": "create_product_api_admin_products_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -3628,6 +3717,104 @@
         ],
         "title": "OfferRequest"
       },
+      "ProductCreate": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{1,31}$",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name"
+          },
+          "short_description": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Short Description"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "min_amount": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Min Amount"
+          },
+          "max_amount": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Max Amount"
+          },
+          "min_term_months": {
+            "type": "integer",
+            "maximum": 120.0,
+            "minimum": 1.0,
+            "title": "Min Term Months"
+          },
+          "max_term_months": {
+            "type": "integer",
+            "maximum": 120.0,
+            "minimum": 1.0,
+            "title": "Max Term Months"
+          },
+          "rate": {
+            "type": "number",
+            "maximum": 100.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Rate"
+          },
+          "min_business_age_months": {
+            "type": "integer",
+            "maximum": 120.0,
+            "minimum": 0.0,
+            "title": "Min Business Age Months",
+            "default": 0
+          },
+          "requires_collateral": {
+            "type": "boolean",
+            "title": "Requires Collateral",
+            "default": false
+          },
+          "revenue_limit_ratio": {
+            "type": "number",
+            "maximum": 1.5,
+            "exclusiveMinimum": 0.0,
+            "title": "Revenue Limit Ratio",
+            "default": 0.4
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          },
+          "purposes": {
+            "items": {
+              "$ref": "#/components/schemas/PurposeIn"
+            },
+            "type": "array",
+            "title": "Purposes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "short_description",
+          "min_amount",
+          "max_amount",
+          "min_term_months",
+          "max_term_months",
+          "rate",
+          "purposes"
+        ],
+        "title": "ProductCreate"
+      },
       "ProductOut": {
         "properties": {
           "id": {
@@ -3868,10 +4055,45 @@
               }
             ],
             "title": "Is Active"
+          },
+          "purposes": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PurposeIn"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purposes"
           }
         },
         "type": "object",
         "title": "ProductUpdate"
+      },
+      "PurposeIn": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{1,39}$",
+            "title": "Code"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "label"
+        ],
+        "title": "PurposeIn"
       },
       "RespondInfoRequest": {
         "properties": {
@@ -4052,6 +4274,58 @@
           "user"
         ],
         "title": "TokenResponse"
+      },
+      "UserCreate": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "pattern": "^[A-Za-z0-9_.-]+$",
+            "title": "Username"
+          },
+          "full_name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 2,
+            "title": "Full Name"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Password"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "client",
+              "employee"
+            ],
+            "title": "Role",
+            "default": "client"
+          },
+          "company_inn": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 12,
+                "minLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Inn"
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "full_name",
+          "password"
+        ],
+        "title": "UserCreate"
       },
       "UserOut": {
         "properties": {

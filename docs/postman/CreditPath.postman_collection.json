@@ -5,12 +5,30 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "clientToken", "value": "" },
-    { "key": "employeeToken", "value": "" },
-    { "key": "adminToken", "value": "" },
-    { "key": "clientApplicationId", "value": "" },
-    { "key": "employeeApplicationId", "value": "" },
-    { "key": "draftApplicationId", "value": "" }
+    {
+      "key": "clientToken",
+      "value": ""
+    },
+    {
+      "key": "employeeToken",
+      "value": ""
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "clientApplicationId",
+      "value": ""
+    },
+    {
+      "key": "employeeApplicationId",
+      "value": ""
+    },
+    {
+      "key": "draftApplicationId",
+      "value": ""
+    }
   ],
   "item": [
     {
@@ -20,12 +38,26 @@
           "name": "Вход клиента",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"username\": \"{{clientUsername}}\",\n  \"password\": \"{{demoPassword}}\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
           },
           "event": [
             {
@@ -43,9 +75,26 @@
           "name": "Вход сотрудника",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"username\": \"employee1\",\n  \"password\": \"{{demoPassword}}\"\n}" },
-            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"employee1\",\n  \"password\": \"{{demoPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
           },
           "event": [
             {
@@ -63,9 +112,26 @@
           "name": "Вход администратора",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"{{demoPassword}}\"\n}" },
-            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"{{demoPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
           },
           "event": [
             {
@@ -88,7 +154,16 @@
           "name": "Каталог продуктов",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/public/products", "host": ["{{baseUrl}}"], "path": ["public", "products"] }
+            "url": {
+              "raw": "{{baseUrl}}/public/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "products"
+              ]
+            }
           }
         },
         {
@@ -97,8 +172,14 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/public/registry/9900000017",
-              "host": ["{{baseUrl}}"],
-              "path": ["public", "registry", "9900000017"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "registry",
+                "9900000017"
+              ]
             }
           }
         },
@@ -108,8 +189,14 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/public/registry/9900000088",
-              "host": ["{{baseUrl}}"],
-              "path": ["public", "registry", "9900000088"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "registry",
+                "9900000088"
+              ]
             }
           }
         }
@@ -123,14 +210,29 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{clientToken}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clientToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"product_id\": 1,\n  \"amount\": 3000000,\n  \"term_months\": 24,\n  \"purpose\": \"working_capital\",\n  \"company_inn\": \"9900000017\",\n  \"company_name\": \"ООО «Северный Ветер»\",\n  \"collateral\": false\n}"
             },
-            "url": { "raw": "{{baseUrl}}/client/applications", "host": ["{{baseUrl}}"], "path": ["client", "applications"] }
+            "url": {
+              "raw": "{{baseUrl}}/client/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "client",
+                "applications"
+              ]
+            }
           },
           "event": [
             {
@@ -149,9 +251,18 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{clientToken}}" },
-              { "key": "Idempotency-Key", "value": "{{$guid}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clientToken}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -159,8 +270,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/client/applications/{{clientApplicationId}}/submit",
-              "host": ["{{baseUrl}}"],
-              "path": ["client", "applications", "{{clientApplicationId}}", "submit"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "client",
+                "applications",
+                "{{clientApplicationId}}",
+                "submit"
+              ]
             }
           }
         },
@@ -168,11 +286,22 @@
           "name": "Статус заявки",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{clientToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clientToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/client/applications/{{clientApplicationId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["client", "applications", "{{clientApplicationId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "client",
+                "applications",
+                "{{clientApplicationId}}"
+              ]
             }
           }
         },
@@ -180,11 +309,62 @@
           "name": "Удалить черновик (204; отправленную заявку удалить нельзя — 409)",
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "Authorization", "value": "Bearer {{clientToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clientToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/client/applications/{{draftApplicationId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["client", "applications", "{{draftApplicationId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "client",
+                "applications",
+                "{{draftApplicationId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Загрузить доверенность (МЧД) для чужой компании",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clientToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/client/applications/{{clientApplicationId}}/documents?purpose=power_of_attorney",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "client",
+                "applications",
+                "{{clientApplicationId}}",
+                "documents"
+              ],
+              "query": [
+                {
+                  "key": "purpose",
+                  "value": "power_of_attorney"
+                }
+              ]
             }
           }
         }
@@ -197,12 +377,27 @@
           "name": "Мои назначенные заявки",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{employeeToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/employee/applications?scope=queue",
-              "host": ["{{baseUrl}}"],
-              "path": ["employee", "applications"],
-              "query": [{ "key": "scope", "value": "queue" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employee",
+                "applications"
+              ],
+              "query": [
+                {
+                  "key": "scope",
+                  "value": "queue"
+                }
+              ]
             }
           },
           "event": [
@@ -221,11 +416,22 @@
           "name": "Карточка заявки",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{employeeToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/employee/applications/{{employeeApplicationId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["employee", "applications", "{{employeeApplicationId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employee",
+                "applications",
+                "{{employeeApplicationId}}"
+              ]
             }
           }
         },
@@ -234,8 +440,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{employeeToken}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -243,8 +455,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/employee/applications/{{employeeApplicationId}}/decision",
-              "host": ["{{baseUrl}}"],
-              "path": ["employee", "applications", "{{employeeApplicationId}}", "decision"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employee",
+                "applications",
+                "{{employeeApplicationId}}",
+                "decision"
+              ]
             }
           }
         },
@@ -252,8 +471,22 @@
           "name": "Клиентский кабинет сотрудника",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{employeeToken}}" }],
-            "url": { "raw": "{{baseUrl}}/client/dashboard", "host": ["{{baseUrl}}"], "path": ["client", "dashboard"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/client/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "client",
+                "dashboard"
+              ]
+            }
           }
         }
       ]
@@ -265,36 +498,93 @@
           "name": "Клиентский кабинет администратора",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "url": { "raw": "{{baseUrl}}/client/dashboard", "host": ["{{baseUrl}}"], "path": ["client", "dashboard"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/client/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "client",
+                "dashboard"
+              ]
+            }
           }
         },
         {
           "name": "Пользователи",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "url": { "raw": "{{baseUrl}}/admin/users", "host": ["{{baseUrl}}"], "path": ["admin", "users"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ]
+            }
           }
         },
         {
           "name": "Все заявки",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
-            "url": { "raw": "{{baseUrl}}/admin/applications", "host": ["{{baseUrl}}"], "path": ["admin", "applications"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "applications"
+              ]
+            }
           }
         },
         {
           "name": "Журнал аудита",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/admin/audit?limit=50",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "audit"],
-              "query": [{ "key": "limit", "value": "50" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "audit"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
             }
           }
         },
@@ -302,11 +592,135 @@
           "name": "Проверить целостность аудита",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/admin/audit/verify",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "audit", "verify"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "audit",
+                "verify"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Все продукты",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "products"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Создать продукт с целями",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"LEASING\",\n  \"name\": \"Лизинг техники\",\n  \"short_description\": \"Техника в лизинг\",\n  \"min_amount\": 500000,\n  \"max_amount\": 5000000,\n  \"min_term_months\": 6,\n  \"max_term_months\": 48,\n  \"rate\": 15.5,\n  \"purposes\": [\n    {\n      \"code\": \"trucks\",\n      \"label\": \"Грузовой транспорт\"\n    },\n    {\n      \"code\": \"tools\",\n      \"label\": \"Станки\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "products"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Изменить цели продукта (409, если по цели есть незавершённые заявки)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"purposes\": [\n    {\n      \"code\": \"working_capital\",\n      \"label\": \"Пополнение оборотных средств\"\n    },\n    {\n      \"code\": \"seasonal\",\n      \"label\": \"Сезонные закупки\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/products/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "products",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Создать клиента с ИНН профиля",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"newclient\",\n  \"full_name\": \"Иванов Иван Иванович\",\n  \"password\": \"Secret123\",\n  \"role\": \"client\",\n  \"company_inn\": \"9900000017\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ]
             }
           }
         }
