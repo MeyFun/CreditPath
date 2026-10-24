@@ -15,7 +15,8 @@ import {
   X
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
+import { flushSync } from "react-dom";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { SiteFooter } from "./Footer";
@@ -97,6 +98,14 @@ export function AppShell({ role }: { role: Area }) {
   const groups: NavGroup[] = [{ items: NAV_BY_AREA[role] }];
   const notificationPath = role === "client" ? "/app/notifications" : role === "employee" ? "/staff/notifications" : "/admin/notifications";
 
+  // Плавная смена страницы через View Transitions API; без поддержки — обычный переход ссылки.
+  function softNavigate(event: MouseEvent<HTMLAnchorElement>, to: string) {
+    if (!document.startViewTransition || event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    event.preventDefault();
+    document.startViewTransition(() => flushSync(() => navigate(to)));
+  }
+
   function handleLogout() {
     logout();
     navigate("/login");
@@ -133,7 +142,7 @@ export function AppShell({ role }: { role: Area }) {
                 const Icon = item.icon;
                 const active = isNavActive(item, location.pathname, location.search);
                 return (
-                  <Link key={`${groupIndex}-${item.to}`} to={item.to} className={active ? "active" : ""}>
+                  <Link key={`${groupIndex}-${item.to}`} to={item.to} className={active ? "active" : ""} onClick={(event) => softNavigate(event, item.to)}>
                     <Icon size={19} />
                     <span>{item.label}</span>
                   </Link>

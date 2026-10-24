@@ -82,7 +82,7 @@ export default function AdminAudit() {
       </Card>
 
       {query.isLoading ? (
-        <LoadingBlock />
+        <LoadingBlock variant="list" />
       ) : query.isError ? (
         <ErrorState title="Не удалось загрузить журнал" onRetry={() => query.refetch()} />
       ) : (

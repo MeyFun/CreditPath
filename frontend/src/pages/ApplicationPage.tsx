@@ -16,6 +16,7 @@ import { useAuth } from "../auth";
 import {
   Alert,
   applicationPollInterval,
+  useStatusChange,
   applicationProgress,
   Badge,
   Card,
@@ -78,6 +79,7 @@ export default function ApplicationPage() {
     queryFn: () => api.client.application(applicationId),
     refetchInterval: (data) => applicationPollInterval(data?.state.data?.status)
   });
+  const statusFlash = useStatusChange(query.data?.status);
 
   if (query.isLoading) return <LoadingBlock label="Загружаем заявку…" />;
   if (query.isError || !query.data) {
@@ -125,7 +127,7 @@ export default function ApplicationPage() {
 
       {searchParams.get("submitted") && stage < 3 && <Alert tone="success" title="Заявка отправлена">Автоматические проверки запущены. Статус обновляется автоматически.</Alert>}
 
-      <Card className={`status-banner ${app.status === "NEED_INFO" ? "status-banner-warning" : app.status === "REJECTED" ? "status-banner-danger" : ""}`}>
+      <Card className={`status-banner ${statusFlash ? "status-flash" : ""} ${app.status === "NEED_INFO" ? "status-banner-warning" : app.status === "REJECTED" ? "status-banner-danger" : ""}`}>
         <div className="status-banner-icon">{app.status === "NEED_INFO" ? <Clock3 size={24} /> : app.status === "REJECTED" ? <XCircle size={24} /> : stage === 3 ? <CheckCircle2 size={24} /> : <ShieldCheck size={24} />}</div>
         <div className="status-banner-copy">
           <span className="eyebrow">Текущий статус</span>

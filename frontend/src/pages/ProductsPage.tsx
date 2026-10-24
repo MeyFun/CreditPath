@@ -15,7 +15,7 @@ export default function ProductsPage() {
         description="Выберите продукт под задачу бизнеса. Условия можно рассчитать до подачи заявки."
       />
       {query.isLoading ? (
-        <LoadingBlock />
+        <LoadingBlock variant="list" />
       ) : (
         <div className="product-page-grid">
           {query.data?.map((product, index) => {

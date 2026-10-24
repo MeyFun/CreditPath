@@ -74,7 +74,7 @@ export default function ApplicationsPage() {
       </Card>
 
       {query.isLoading ? (
-        <LoadingBlock />
+        <LoadingBlock variant="list" />
       ) : query.isError ? (
         <Card><EmptyState title="Не удалось загрузить заявки" description="Проверьте соединение и попробуйте ещё раз." action={<Button onClick={() => query.refetch()}>Повторить</Button>} /></Card>
       ) : query.data?.length === 0 ? (

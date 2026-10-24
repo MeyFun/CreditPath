@@ -79,7 +79,7 @@ function AdminApplicationsList() {
         </div>
       </Card>
       {query.isLoading ? (
-        <LoadingBlock />
+        <LoadingBlock variant="list" />
       ) : query.isError ? (
         <ErrorState title="Не удалось загрузить заявки" onRetry={() => query.refetch()} />
       ) : query.data?.length === 0 ? (

@@ -29,6 +29,9 @@ import {
   Modal,
   StatusBadge,
   applicationPollInterval,
+  useStatusChange,
+  AnimatedCheck,
+  CountUp,
   useToast
 } from "../components/ui";
 import type { ApplicationDetail } from "../types";
@@ -101,6 +104,7 @@ export default function ResultPage() {
     queryFn: () => api.client.application(applicationId),
     refetchInterval: (data) => applicationPollInterval(data?.state.data?.status)
   });
+  useStatusChange(query.data?.status);
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["client-application", applicationId] });
@@ -278,7 +282,7 @@ export default function ResultPage() {
         <div className="result-grid">
           <Card className={`result-main ${declined ? "" : app.status === "APPROVED_CHANGED" ? "result-changed" : "result-approved"}`}>
             <div className="offered-banner">
-              <span className={`result-icon ${declined ? "result-icon-warning" : "result-icon-success"}`}>{declined ? <XCircle size={30} /> : <CheckCircle2 size={30} />}</span>
+              <span className={`result-icon ${declined ? "result-icon-warning" : "result-icon-success"}`}>{declined ? <XCircle size={30} /> : <AnimatedCheck />}</span>
               <div>
                 <span className="eyebrow">{app.status === "DISBURSED" ? "Сделка завершена" : "Решение банка"}</span>
                 <h2>{declined ? "Вы отклонили предложение" : app.final_outcome === "approve_changed" ? "Одобрено на других условиях" : "Одобрено"}</h2>
@@ -295,7 +299,7 @@ export default function ResultPage() {
             {app.offer_expires_at && active && <div className="offer-deadline"><Clock3 size={15} /> Оферта действует до {formatDate(app.offer_expires_at)}</div>}
 
             <div className="offer-metrics">
-              <div><span>Сумма кредита</span><strong>{formatMoney(amount)}</strong><small>{amount === app.amount ? "100% запроса" : `Запрошено ${formatMoney(app.amount)}`}</small></div>
+              <div><span>Сумма кредита</span><strong><CountUp value={amount} /></strong><small>{amount === app.amount ? "100% запроса" : `Запрошено ${formatMoney(app.amount)}`}</small></div>
               <div><span>Срок</span><strong>{term} мес.</strong><small>Аннуитетный график</small></div>
               <div><span>Ставка</span><strong>{rate.toFixed(1).replace(".", ",")}%</strong><small>Фиксированная</small></div>
               <div><span>Платёж</span><strong className="accent-text">{formatMoney(payment)}</strong><small>в месяц</small></div>

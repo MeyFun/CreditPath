@@ -35,7 +35,7 @@ export default function NotificationsPage() {
         actions={<Button variant="secondary" icon={<CheckCheck size={17} />} loading={readAll.isPending} onClick={() => readAll.mutate()} disabled={!query.data?.unread}>Прочитать все</Button>}
       />
       {query.isLoading ? (
-        <LoadingBlock />
+        <LoadingBlock variant="list" />
       ) : query.data?.items.length === 0 ? (
         <Card><EmptyState icon={<Bell size={26} />} title="Уведомлений пока нет" description="Здесь появятся статусы заявок и запросы уточнений." /></Card>
       ) : (

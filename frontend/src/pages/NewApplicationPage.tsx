@@ -136,6 +136,9 @@ export default function NewApplicationPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [problem, setProblem] = useState<StepProblem | null>(null);
+  // Направление перехода: шаг въезжает справа при «Продолжить» и слева при «Назад».
+  const [direction, setDirection] = useState<"forward" | "back">("forward");
+  const mainRef = useRef<HTMLDivElement>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const errorRef = useRef<HTMLDivElement>(null);
@@ -194,6 +197,12 @@ export default function NewApplicationPage() {
     setAutoVerify(false);
     void verifyInn();
   }, [autoVerify, inn]);
+
+  // Новый шаг начинается с заголовка: если карточка уехала вверх, возвращаем её в кадр.
+  useEffect(() => {
+    const top = mainRef.current?.getBoundingClientRect().top ?? 0;
+    if (top < 0) mainRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [step]);
 
   const payment = useMemo(() => (product ? annuity(amount, product.rate, term) : 0), [product, amount, term]);
 
@@ -319,6 +328,7 @@ export default function NewApplicationPage() {
   function back() {
     setError("");
     setProblem(null);
+    setDirection("back");
     setStep((value) => Math.max(0, value - 1));
   }
 
@@ -350,6 +360,7 @@ export default function NewApplicationPage() {
     setSaving(true);
     try {
       await persist();
+      setDirection("forward");
       setStep((current) => Math.min(current + 1, STEPS.length - 1));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Не удалось сохранить шаг");
@@ -438,9 +449,9 @@ export default function NewApplicationPage() {
       </div>
 
       <div className="wizard-grid">
-        <Card className="wizard-main">
+        <div className="card wizard-main" ref={mainRef}>
           {step === 0 && (
-            <div className="wizard-step">
+            <div className={`wizard-step step-${direction}`}>
               <div className="step-heading"><span className="step-chip">Шаг 1 из 5</span><h2>Выберите условия и цель кредитования</h2><p>Мы подстроим расчёт под продукт и цель.</p></div>
               <h3 className="subheading">Кредитный продукт</h3>
               <div className="wizard-products">
@@ -464,7 +475,7 @@ export default function NewApplicationPage() {
           )}
 
           {step === 1 && (
-            <div className="wizard-step">
+            <div className={`wizard-step step-${direction}`}>
               <div className="step-heading"><span className="step-chip">Шаг 2 из 5</span><h2>Сведения о компании</h2><p>Введите ИНН — реквизиты заполнятся автоматически.</p></div>
               <Field label="ИНН организации (10 цифр) или ИП (12 цифр)" required error={company ? "" : registryError || (problem?.field === "inn" ? problem.message : "")}>
                 <div className="inn-row">
@@ -510,7 +521,7 @@ export default function NewApplicationPage() {
           )}
 
           {step === 2 && (
-            <div className="wizard-step">
+            <div className={`wizard-step step-${direction}`}>
               <div className="step-heading"><span className="step-chip">Шаг 3 из 5</span><h2>Параметры кредита</h2><p>Диапазоны ограничены выбранным продуктом.</p></div>
               <div className="amount-display">
                 <label htmlFor="wizard-amount">Сумма кредита</label>
@@ -541,7 +552,7 @@ export default function NewApplicationPage() {
           )}
 
           {step === 3 && (
-            <div className="wizard-step">
+            <div className={`wizard-step step-${direction}`}>
               <div className="step-heading"><span className="step-chip">Шаг 4 из 5</span><h2>Документы компании</h2><p>Необязательный шаг. PDF, JPEG или PNG, до 10 МБ.</p></div>
               <button type="button" className="upload-zone" onClick={() => fileInput.current?.click()} disabled={uploading}>
                 {uploading ? <LoaderCircle className="spin" size={28} /> : <UploadCloud size={30} />}
@@ -566,7 +577,7 @@ export default function NewApplicationPage() {
           )}
 
           {step === 4 && (
-            <div className="wizard-step">
+            <div className={`wizard-step step-${direction}`}>
               <div className="step-heading"><span className="step-chip">Шаг 5 из 5</span><h2>Проверьте заявку</h2><p>После отправки начнутся автоматические проверки. До отправки можно вернуться и всё изменить.</p></div>
               <div className="review-grid">
                 <div><span>Продукт</span><strong>{product.name}</strong></div>
@@ -609,7 +620,7 @@ export default function NewApplicationPage() {
               <Button onClick={submit} loading={submitting} disabled={!consentsGiven} icon={<ShieldCheck size={17} />}>Отправить заявку</Button>
             )}
           </div>
-        </Card>
+        </div>
 
         <aside className="wizard-aside">
           <Card className="calc-panel">

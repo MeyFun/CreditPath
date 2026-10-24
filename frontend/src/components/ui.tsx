@@ -16,6 +16,7 @@ import {
   useContext,
   useEffect,
   useId,
+  useRef,
   useState,
   type ButtonHTMLAttributes,
   type InputHTMLAttributes,
@@ -233,11 +234,42 @@ export function FullPageLoader({ label = "Загружаем данные…" }:
   );
 }
 
-export function LoadingBlock({ label = "Загружаем данные…" }: { label?: string }) {
+/**
+ * Скелетон повторяет форму будущего контента: страница не прыгает,
+ * а пользователь сразу видит, где появятся данные.
+ */
+export function LoadingBlock({ label = "Загружаем данные…", variant = "page" }: { label?: string; variant?: "page" | "list" }) {
+  if (variant === "list") {
+    return (
+      <div className="card skeleton-list" role="status" aria-label={label}>
+        {[0, 1, 2, 3, 4].map((row) => (
+          <div className="skeleton-row" key={row} style={{ animationDelay: `${row * 60}ms` }}>
+            <span className="sk sk-circle" />
+            <span className="skeleton-stack"><span className="sk" style={{ width: `${62 - row * 6}%` }} /><span className="sk sk-thin" style={{ width: "38%" }} /></span>
+            <span className="sk" style={{ width: "70%" }} />
+            <span className="sk sk-pill" />
+          </div>
+        ))}
+      </div>
+    );
+  }
   return (
-    <div className="loading-block">
-      <Spinner />
-      <span>{label}</span>
+    <div className="skeleton-page" role="status" aria-label={label}>
+      <span className="sk sk-title" />
+      <span className="sk sk-thin" style={{ width: "34%" }} />
+      <div className="skeleton-grid">
+        <div className="card skeleton-card">
+          <span className="sk" style={{ width: "40%" }} />
+          <span className="sk sk-block" />
+          <span className="sk sk-thin" style={{ width: "86%" }} />
+          <span className="sk sk-thin" style={{ width: "64%" }} />
+        </div>
+        <div className="card skeleton-card">
+          <span className="sk" style={{ width: "55%" }} />
+          <span className="sk sk-thin" style={{ width: "90%" }} />
+          <span className="sk sk-thin" style={{ width: "72%" }} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -385,11 +417,40 @@ const EVENT_LABELS: Record<string, string> = {
   RESUBMITTED_DRAFT: "Повторная заявка"
 };
 
+/** Подписи переходов статуса в истории: клиент и сотрудник видят шаг процесса, а не код статуса. */
+const TRANSITION_LABELS: Record<string, string> = {
+  SUBMITTED: "Заявка отправлена",
+  VALIDATION: "Проверка данных",
+  ENRICHMENT: "Запрос в реестр и бюро кредитных историй",
+  SCORING: "Расчёт скоринговой оценки",
+  DECISION_DRAFT: "Применение кредитных правил",
+  IN_REVIEW: "Передано сотруднику банка",
+  NEED_INFO: "Запрошены уточнения",
+  APPROVED: "Заявка одобрена",
+  APPROVED_CHANGED: "Одобрено на других условиях",
+  REJECTED: "Принят отказ",
+  OFFER_ACCEPTED: "Оферта принята",
+  OFFER_DECLINED: "Оферта отклонена",
+  SIGNED: "Договор подписан",
+  DISBURSED: "Средства зачислены"
+};
+
 export function eventTitle(event: Event): string {
-  return EVENT_LABELS[event.event_type] ?? event.status_to ?? event.event_type;
+  return EVENT_LABELS[event.event_type]
+    ?? (event.status_to ? TRANSITION_LABELS[event.status_to] ?? STATUS_MAP[event.status_to]?.label : undefined)
+    ?? "Событие по заявке";
 }
 
 export function Timeline({ events, compact = false }: { events: Event[]; compact?: boolean }) {
+  // Запоминаем, когда событие впервые появилось на экране. То, что было при открытии, не подсвечиваем;
+  // пришедшее с опросом — проявляется с подсветкой, чтобы было видно, что изменилось.
+  const firstSeen = useRef(new Map<number, number>());
+  const loaded = useRef(false);
+  const now = Date.now();
+  events.forEach((event) => {
+    if (!firstSeen.current.has(event.id)) firstSeen.current.set(event.id, loaded.current ? now : 0);
+  });
+  if (events.length) loaded.current = true;
   if (!events.length) {
     return <p className="muted">События появятся после начала работы с заявкой.</p>;
   }
@@ -399,7 +460,7 @@ export function Timeline({ events, compact = false }: { events: Event[]; compact
   return (
     <ol className={`timeline ${compact ? "timeline-compact" : ""}`}>
       {ordered.map((event) => (
-        <li key={event.id}>
+        <li key={event.id} className={now - (firstSeen.current.get(event.id) || 0) < 2500 ? "timeline-new" : undefined}>
           <span className="timeline-dot" />
           <div className="timeline-body">
             <div className="timeline-head">
@@ -421,6 +482,70 @@ export function Timeline({ events, compact = false }: { events: Event[]; compact
       ))}
     </ol>
   );
+}
+
+function prefersReducedMotion(): boolean {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/** Галочка одобрения рисуется штрихом: сначала круг, затем сама отметка. */
+export function AnimatedCheck({ size = 34 }: { size?: number }) {
+  return (
+    <svg className="animated-check" width={size} height={size} viewBox="0 0 52 52" aria-hidden="true">
+      <circle className="animated-check-circle" cx="26" cy="26" r="23" fill="none" />
+      <path className="animated-check-mark" fill="none" d="M15 27 l7.5 7.5 L37.5 19" />
+    </svg>
+  );
+}
+
+/** Сумма «докручивается» до значения: взгляд цепляется за главное число решения. */
+export function CountUp({ value, duration = 900 }: { value: number; duration?: number }) {
+  const [shown, setShown] = useState(() => (prefersReducedMotion() ? value : 0));
+  useEffect(() => {
+    if (prefersReducedMotion()) {
+      setShown(value);
+      return;
+    }
+    let frame = 0;
+    const start = performance.now();
+    const tick = (time: number) => {
+      const progress = Math.min(1, (time - start) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setShown(Math.round(value * eased));
+      if (progress < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [value, duration]);
+  return <>{formatMoney(shown)}</>;
+}
+
+/**
+ * Статус сменился сам (проверки, решение сотрудника) — сообщаем тостом и даём странице
+ * короткий флаг для подсветки. Переходы после действий клиента не озвучиваем: о них уже сказал свой тост.
+ */
+const AUTOMATIC_FROM = ["SUBMITTED", "VALIDATION", "ENRICHMENT", "SCORING", "DECISION_DRAFT", "IN_REVIEW"];
+
+export function useStatusChange(status: string | undefined): boolean {
+  const { push } = useToast();
+  const previous = useRef(status);
+  const [flash, setFlash] = useState(false);
+  useEffect(() => {
+    const before = previous.current;
+    previous.current = status;
+    if (!before || !status || before === status || !AUTOMATIC_FROM.includes(before)) return;
+    const item = STATUS_MAP[status];
+    if (item && STATUS_MAP[before]?.label !== item.label) {
+      push(`Статус обновлён: ${item.label}`, item.tone === "danger" ? "danger" : item.tone === "success" ? "success" : "info");
+    }
+    setFlash(true);
+    const timer = window.setTimeout(() => setFlash(false), 1600);
+    return () => {
+      window.clearTimeout(timer);
+      setFlash(false);
+    };
+  }, [status, push]);
+  return flash;
 }
 
 export function Modal({

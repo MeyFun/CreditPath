@@ -69,7 +69,7 @@ export default function StaffQueuePage() {
       </div>
 
       {applications.isLoading ? (
-        <LoadingBlock label="Загружаем очередь…" />
+        <LoadingBlock variant="list" label="Загружаем очередь…" />
       ) : applications.isError ? (
         <Card><EmptyState title="Не удалось загрузить очередь" description="Повторите попытку." /></Card>
       ) : filtered.length === 0 ? (

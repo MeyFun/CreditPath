@@ -18,7 +18,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api";
 import { SiteFooter } from "../components/Footer";
 import { useAuth } from "../auth";
-import { Card, formatMoney, Logo, Spinner } from "../components/ui";
+import { Card, formatMoney, Logo } from "../components/ui";
 import type { Product } from "../types";
 
 const PRODUCT_ICONS = [WalletCards, Banknote, CreditCard];
@@ -62,6 +62,88 @@ function annuity(amount: number, rate: number, months: number): number {
   if (!months) return 0;
   if (monthly === 0) return amount / months;
   return (amount * monthly) / (1 - Math.pow(1 + monthly, -months));
+}
+
+/** Шаги демонстрации в hero: та же лестница статусов, что видит клиент в кабинете. */
+const HERO_STAGES = [
+  { label: "Заявка", badge: "Заявка отправлена", tone: "info", progress: 16, event: "Заявка CP-2026-7F3A принята" },
+  { label: "Проверки", badge: "Идут проверки", tone: "info", progress: 44, event: "ИНН, реестр и кредитная история проверены" },
+  { label: "Решение", badge: "У сотрудника банка", tone: "warning", progress: 72, event: "Скоринг 82 из 100 — рекомендовано одобрить" },
+  { label: "Оферта", badge: "Одобрено", tone: "success", progress: 100, event: "Оферта готова: 5 млн ₽ на 24 месяца" }
+] as const;
+
+const STAGE_MS = 2600;
+const ROUTE = "M24 410 C 10 300, 30 170, 60 96 S 220 8, 330 22 S 510 90, 500 230";
+const ROUTE_NODES = [[24, 410], [60, 96], [330, 22], [500, 230]];
+
+function HeroDemo() {
+  const reduced = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const [stage, setStage] = useState(reduced ? HERO_STAGES.length - 1 : 0);
+
+  useEffect(() => {
+    if (reduced) return;
+    // На одобрении задерживаемся дольше: это главный момент сцены.
+    const delay = stage === HERO_STAGES.length - 1 ? STAGE_MS * 1.8 : STAGE_MS;
+    const timer = window.setTimeout(() => setStage((value) => (value + 1) % HERO_STAGES.length), delay);
+    return () => window.clearTimeout(timer);
+  }, [stage, reduced]);
+
+  const current = HERO_STAGES[stage];
+  const approved = stage === HERO_STAGES.length - 1;
+
+  return (
+    <div className="hero-visual" aria-hidden="true">
+      <svg className="hero-route" viewBox="0 0 520 440" preserveAspectRatio="none">
+        <path className="hero-route-base" d={ROUTE} />
+        <path className="hero-route-flow" d={ROUTE} />
+        {ROUTE_NODES.map(([x, y], index) => (
+          <g key={index} className={`hero-node ${index <= stage ? "on" : ""} ${index === stage ? "now" : ""}`} transform={`translate(${x} ${y})`}>
+            <circle r="13" className="hero-node-halo" />
+            <circle r="6" className="hero-node-dot" />
+          </g>
+        ))}
+      </svg>
+      <div className="hero-card hero-card-main">
+        <div className="hero-card-head">
+          <span className="mini-icon"><ShieldCheck size={18} /></span>
+          <span>Заявка CP-2026-7F3A</span>
+          <span key={current.badge} className={`badge badge-${current.tone} hero-badge`}><span className="badge-dot" />{current.badge}</span>
+        </div>
+        <div className={`hero-offer ${approved ? "hero-offer-approved" : ""}`}>
+          <span>{approved ? "Одобрено банком" : "Запрошено"}</span>
+          <strong>5 000 000 ₽</strong>
+          <div className="hero-offer-meta">
+            <span>Срок <b>24 мес.</b></span>
+            <span>Ставка <b>14,5%</b></span>
+            <span>Платёж <b>{formatMoney(annuity(5_000_000, 14.5, 24))}</b></span>
+          </div>
+          {approved && <span className="hero-offer-check"><CheckCircle2 size={22} /></span>}
+        </div>
+        <div className="hero-progress">
+          <div className="hero-progress-line"><span style={{ width: `${current.progress}%` }} /></div>
+          <div className="hero-stages">
+            {HERO_STAGES.map((item, index) => {
+              const done = index < stage || approved;
+              return (
+                <span key={item.label} className={done ? "done" : index === stage ? "active" : ""}>
+                  {done ? <CheckCircle2 size={14} /> : index === stage ? <Clock3 size={14} /> : null} {item.label}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+        <div className="hero-event" key={stage}>
+          <span className="hero-event-dot" />
+          <span>{current.event}</span>
+          <small>только что</small>
+        </div>
+      </div>
+      <div className={`hero-card hero-card-float ${stage >= 2 ? "visible" : ""}`}>
+        <span className="mini-icon mini-icon-dark"><Landmark size={18} /></span>
+        <div><small>Предварительная оценка</small><strong>82 из 100 · низкий риск</strong></div>
+      </div>
+    </div>
+  );
 }
 
 export default function HomePage() {
@@ -138,38 +220,7 @@ export default function HomePage() {
               <div><strong>~10 минут</strong><span>на подачу заявки</span></div>
             </div>
           </div>
-          <div className="hero-visual" aria-hidden="true">
-            <div className="hero-card hero-card-main">
-              <div className="hero-card-head">
-                <span className="mini-icon"><ShieldCheck size={18} /></span>
-                <span>Статус заявки</span>
-                <span className="badge badge-success"><span className="badge-dot" />Проверки пройдены</span>
-              </div>
-              <div className="hero-offer">
-                <span>Предварительный лимит</span>
-                <strong>5 млн ₽</strong>
-                <div className="hero-offer-meta">
-                  <span>Срок <b>24 мес.</b></span>
-                  <span>Ставка <b>14,5%</b></span>
-                  <span>Платёж <b>{formatMoney(annuity(5_000_000, 14.5, 24))}</b></span>
-                </div>
-              </div>
-              <div className="hero-progress">
-                <div className="hero-progress-line"><span /></div>
-                <div className="hero-stages">
-                  <span><CheckCircle2 size={14} /> Заявка</span>
-                  <span><CheckCircle2 size={14} /> Проверки</span>
-                  <span className="active"><Clock3 size={14} /> Решение</span>
-                  <span>Оферта</span>
-                </div>
-              </div>
-            </div>
-            <div className="hero-card hero-card-float">
-              <span className="mini-icon mini-icon-dark"><Landmark size={18} /></span>
-              <div><small>Решение сотрудника</small><strong>Понятные причины</strong></div>
-            </div>
-            <div className="hero-orbit" />
-          </div>
+          <HeroDemo />
         </section>
 
         <section className="section" id="products">
@@ -179,7 +230,16 @@ export default function HomePage() {
             <p>Три сценария финансирования с разными требованиями и условиями.</p>
           </div>
           {productsQuery.isLoading ? (
-            <div className="center"><Spinner /><span>Загружаем продукты…</span></div>
+            <div className="product-grid" role="status" aria-label="Загружаем продукты…">
+              {[0, 1, 2].map((item) => (
+                <div className="card skeleton-card" key={item}>
+                  <span className="sk sk-circle" />
+                  <span className="sk" style={{ width: "60%" }} />
+                  <span className="sk sk-thin" style={{ width: "90%" }} />
+                  <span className="sk sk-block" />
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="product-grid">
               {products.map((product, index) => {

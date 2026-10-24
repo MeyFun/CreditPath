@@ -68,7 +68,7 @@ export default function AdminUsers() {
         <span className="muted small">Найдено: {query.data?.length ?? 0}</span>
       </Card>
       {query.isLoading ? (
-        <LoadingBlock />
+        <LoadingBlock variant="list" />
       ) : query.isError ? (
         <ErrorState title="Не удалось загрузить пользователей" onRetry={() => query.refetch()} />
       ) : query.data?.length === 0 ? (
