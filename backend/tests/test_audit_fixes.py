@@ -152,3 +152,14 @@ def test_expired_offer_is_not_counted_as_approved(client, db):
 
     assert after["counts"]["approved"] == before["counts"]["approved"]
     assert after["total_approved_amount"] == before["total_approved_amount"]
+
+
+def test_static_openapi_matches_application():
+    """Обновить файл: python -c "import json; from app.main import app; open('../docs/openapi.json', 'w', encoding='utf-8', newline='\n').write(json.dumps(app.openapi(), ensure_ascii=False, indent=2) + '\n')"."""
+    import json
+    from pathlib import Path
+
+    from app.main import app
+
+    published = json.loads((Path(__file__).resolve().parents[2] / "docs" / "openapi.json").read_text(encoding="utf-8"))
+    assert published == app.openapi(), "docs/openapi.json устарел: перегенерируйте его командой из docstring"

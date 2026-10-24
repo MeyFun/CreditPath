@@ -33,6 +33,8 @@ erDiagram
         int id PK
         string code UK
         string name
+        string short_description
+        text description
         numeric min_amount
         numeric max_amount
         int min_term_months
@@ -77,6 +79,8 @@ erDiagram
         text client_comment
         datetime offer_expires_at
         datetime submitted_at
+        datetime accepted_at
+        datetime declined_at
         datetime signed_at
         datetime disbursed_at
         datetime created_at

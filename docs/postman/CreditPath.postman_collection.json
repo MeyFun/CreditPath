@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "CreditPath API",
-    "description": "Демонстрационная коллекция полного сценария CreditPath: вход, проверка ИНН, заявка, мок-проверки, решение сотрудника, аудит. Пароль демо-пользователей — DemoPass123!.",
+    "description": "Демонстрационная коллекция полного сценария CreditPath: вход, проверка ИНН, заявка, мок-проверки, решение сотрудника, аудит. Пароль демо-пользователей — DemoPass123!. Папки идут по порядку сквозного сценария; описание ручек — docs/api.md.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -27,6 +27,10 @@
     },
     {
       "key": "draftApplicationId",
+      "value": ""
+    },
+    {
+      "key": "scoringConfig",
       "value": ""
     }
   ],
@@ -180,7 +184,13 @@
                 "registry",
                 "9900000017"
               ]
-            }
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clientToken}}"
+              }
+            ]
           }
         },
         {
@@ -197,8 +207,83 @@
                 "registry",
                 "9900000088"
               ]
-            }
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clientToken}}"
+              }
+            ]
           }
+        },
+        {
+          "name": "Расчёт платежа (калькулятор)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/public/payment-schedule?amount=3000000&rate=14.5&term_months=24",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "payment-schedule"
+              ],
+              "query": [
+                {
+                  "key": "amount",
+                  "value": "3000000"
+                },
+                {
+                  "key": "rate",
+                  "value": "14.5"
+                },
+                {
+                  "key": "term_months",
+                  "value": "24"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Платёж рассчитан', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Проверка ИНН без входа (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/public/registry/9900000017",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "registry",
+                "9900000017"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Нужен вход', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -241,6 +326,47 @@
                 "exec": [
                   "pm.test('Черновик создан', () => pm.response.to.have.status(201));",
                   "pm.collectionVariables.set('clientApplicationId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Изменить черновик",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clientToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/client/applications/{{clientApplicationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "client",
+                "applications",
+                "{{clientApplicationId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 3000000,\n  \"term_months\": 24\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Черновик обновлён', () => pm.response.to.have.status(200));"
                 ]
               }
             }
@@ -367,12 +493,182 @@
               ]
             }
           }
+        },
+        {
+          "name": "Дашборд клиента",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clientToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/client/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "client",
+                "dashboard"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Дашборд', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Мои заявки (в работе)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clientToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/client/applications?status_group=active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "client",
+                "applications"
+              ],
+              "query": [
+                {
+                  "key": "status_group",
+                  "value": "active"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Профиль компании",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clientToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/client/company",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "client",
+                "company"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Ответ на запрос уточнений (409, если заявка не в NEED_INFO)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clientToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/client/applications/{{clientApplicationId}}/respond",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "client",
+                "applications",
+                "{{clientApplicationId}}",
+                "respond"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"Выручка и прибыль за прошлый год\",\n  \"declared_revenue\": 6000000,\n  \"declared_profit\": 800000\n}"
+            }
+          }
+        },
+        {
+          "name": "Повторная подача отклонённой (409, если заявка не отклонена)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clientToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/client/applications/{{clientApplicationId}}/resubmit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "client",
+                "applications",
+                "{{clientApplicationId}}",
+                "resubmit"
+              ]
+            }
+          }
         }
       ]
     },
     {
       "name": "04 · Рабочее место сотрудника",
       "item": [
+        {
+          "name": "Статистика сотрудника",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employee/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employee",
+                "stats"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статистика', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
         {
           "name": "Мои назначенные заявки",
           "request": {
@@ -406,7 +702,9 @@
               "script": {
                 "exec": [
                   "const list = pm.response.json();",
-                  "if (Array.isArray(list) && list.length) { pm.collectionVariables.set('employeeApplicationId', list[0].id); }"
+                  "// Берём заявку клиента из папки 03, если она назначена этому сотруднику.",
+                  "const mine = Array.isArray(list) ? list.find((a) => String(a.id) === String(pm.collectionVariables.get('clientApplicationId'))) : null;",
+                  "if (mine || (Array.isArray(list) && list.length)) { pm.collectionVariables.set('employeeApplicationId', (mine || list[0]).id); }"
                 ]
               }
             }
@@ -720,6 +1018,395 @@
               "path": [
                 "admin",
                 "users"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Активные параметры скоринга",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/scoring-config",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "scoring-config"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Конфиг', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('scoringConfig', JSON.stringify(pm.response.json().config));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "История версий скоринга",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/scoring-config/history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "scoring-config",
+                "history"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Битая версия скоринга (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/scoring-config",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "scoring-config"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"config\": {\n    \"base_score\": 50,\n    \"age\": {},\n    \"amount_to_revenue\": {},\n    \"profit\": {},\n    \"bki\": {},\n    \"debt_load\": {},\n    \"okved\": {\n      \"risky_prefixes\": []\n    },\n    \"collateral\": {},\n    \"decision\": {\n      \"approve_threshold\": 70,\n      \"changed_threshold\": 40,\n      \"offer_valid_days\": 5\n    }\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Отклонено до сохранения', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Заявки без сотрудника",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/applications?unassigned=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "applications"
+              ],
+              "query": [
+                {
+                  "key": "unassigned",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Назначить сотрудника (409/422 по правилам назначения)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/applications/{{employeeApplicationId}}/assign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "applications",
+                "{{employeeApplicationId}}",
+                "assign"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": 5\n}"
+            }
+          }
+        },
+        {
+          "name": "Сменить роль клиента на сотрудника",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/3/role",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "3",
+                "role"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"employee\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Вернуть роль клиента",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/3/role",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "3",
+                "role"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"client\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 · Оферта, подписание, выдача",
+      "item": [
+        {
+          "name": "Принять оферту",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clientToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/client/applications/{{employeeApplicationId}}/offer",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "client",
+                "applications",
+                "{{employeeApplicationId}}",
+                "offer"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accept\": true\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Оферта принята', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Подписать договор (демо)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clientToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/client/applications/{{employeeApplicationId}}/sign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "client",
+                "applications",
+                "{{employeeApplicationId}}",
+                "sign"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Получить средства (демо)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clientToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/client/applications/{{employeeApplicationId}}/disburse",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "client",
+                "applications",
+                "{{employeeApplicationId}}",
+                "disburse"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Средства перечислены', () => pm.expect(pm.response.json().status).to.eql('DISBURSED'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07 · Уведомления",
+      "item": [
+        {
+          "name": "Мои уведомления",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clientToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications?limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Уведомления', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Прочитать все",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clientToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "read-all"
               ]
             }
           }

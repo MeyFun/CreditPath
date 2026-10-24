@@ -36,7 +36,7 @@ stateDiagram-v2
 | Переход | Кто выполняет | Дополнительно |
 |---|---|---|
 | DRAFT → SUBMITTED | Клиент | Только владелец; Idempotency-Key; валидация продукта и ИНН |
-| SUBMITTED → VALIDATION → ENRICHMENT → SCORING → DECISION_DRAFT | Система | Фоновый конвейер, каждый этап сохраняется |
+| SUBMITTED → VALIDATION → ENRICHMENT → SCORING → DECISION_DRAFT | Система | Фоновый конвейер, каждый этап сохраняется; после перезапуска backend незавершённые заявки продолжают с сохранённого этапа |
 | DECISION_DRAFT → IN_REVIEW | Система | Назначение по нагрузке и правилу «свежего взгляда» |
 | DECISION_DRAFT → NEED_INFO | Система | Нет финансовых показателей или источник временно недоступен |
 | IN_REVIEW → APPROVED / APPROVED_CHANGED / REJECTED / NEED_INFO | Сотрудник банка | Только назначенный сотрудник, не автор заявки, не участник цепочки; отказ и запрос данных требуют комментария |
