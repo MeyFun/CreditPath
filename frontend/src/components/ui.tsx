@@ -18,6 +18,7 @@ import {
   useContext,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ButtonHTMLAttributes,
@@ -500,11 +501,58 @@ export function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-/** Цвет плитки продукта: один и тот же на главной, в каталоге и в мастере заявки. */
-export function productTone(code: string | undefined): "lilac" | "cyan" | "lemon" {
-  if (code === "EQUIPMENT") return "cyan";
-  if (code === "OVERDRAFT") return "lemon";
-  return "lilac";
+/** Сегментный переключатель: выбранный вариант подсвечивает плашка, которая плавно переезжает к нему. */
+export function SegmentedControl<T extends string | number>({
+  options,
+  value,
+  onChange,
+  label,
+  className = ""
+}: {
+  options: { value: T; label: ReactNode }[];
+  value: T;
+  onChange: (value: T) => void;
+  label: string;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [indicator, setIndicator] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    const measure = () => {
+      const active = root.querySelector<HTMLElement>("[aria-checked=\"true\"]");
+      setIndicator(active ? { x: active.offsetLeft, y: active.offsetTop, width: active.offsetWidth, height: active.offsetHeight } : null);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, [value, options.length]);
+
+  return (
+    <div ref={ref} className={`segmented ${className}`} role="radiogroup" aria-label={label}>
+      {indicator && (
+        <span
+          className="segmented-indicator"
+          aria-hidden="true"
+          style={{ width: indicator.width, height: indicator.height, transform: `translate(${indicator.x}px, ${indicator.y}px)` }}
+        />
+      )}
+      {options.map((option) => (
+        <button
+          key={String(option.value)}
+          type="button"
+          role="radio"
+          aria-checked={option.value === value}
+          onClick={() => onChange(option.value)}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 type Theme = "light" | "dark";

@@ -1,23 +1,29 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
-  ArrowUpRight,
   BadgeCheck,
+  Banknote,
+  Building2,
   CheckCircle2,
   ChevronDown,
   Clock3,
-  Landmark,
+  CreditCard,
+  FileSignature,
   LineChart,
   MousePointerClick,
-  ShieldCheck
+  Route,
+  ShieldCheck,
+  WalletCards
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import { SiteFooter } from "../components/Footer";
 import { useAuth } from "../auth";
-import { formatMoney, Logo, prefersReducedMotion, productTone, ThemeToggle } from "../components/ui";
+import { formatMoney, Logo, prefersReducedMotion, SegmentedControl, ThemeToggle } from "../components/ui";
 import type { Product } from "../types";
+
+const PRODUCT_ICONS: Record<string, typeof WalletCards> = { OBOROT: WalletCards, EQUIPMENT: Banknote, OVERDRAFT: CreditCard };
 
 const FAQ = [
   {
@@ -47,17 +53,13 @@ const FAQ = [
 ];
 
 const STEPS = [
-  { icon: MousePointerClick, title: "Заявка онлайн", text: "Выберите продукт, укажите ИНН и параметры. Данные компании подтянутся автоматически." },
-  { icon: LineChart, title: "Автоматические проверки", text: "Реестр, кредитная история и скоринг формируют предварительное решение." },
+  { icon: MousePointerClick, title: "Заявка онлайн", text: "Компания уже подставлена из профиля — остаётся выбрать продукт, сумму и срок." },
+  { icon: LineChart, title: "Автоматические проверки", text: "Реестр, кредитная история и скоринг формируют предварительное решение за секунды." },
   { icon: BadgeCheck, title: "Решение сотрудника", text: "Заявку проверяет сотрудник банка. Вы видите статус и историю в кабинете." },
   { icon: CheckCircle2, title: "Оферта и выдача", text: "Примите условия, подпишите договор и получите средства — всё в кабинете." }
 ];
 
-/** «Кредит на оборудование» → «Оборудование»: во вкладке калькулятора хватает сути. */
-function shortName(name: string): string {
-  const short = name.replace("Кредит на ", "");
-  return short.charAt(0).toUpperCase() + short.slice(1);
-}
+const TERMS = [6, 12, 24, 36];
 
 function annuity(amount: number, rate: number, months: number): number {
   const monthly = rate / 100 / 12;
@@ -66,18 +68,41 @@ function annuity(amount: number, rate: number, months: number): number {
   return (amount * monthly) / (1 - Math.pow(1 + monthly, -months));
 }
 
+/** Первые платежи по аннуитету: сколько уходит на проценты, а сколько — на сам долг. */
+function firstPayments(amount: number, rate: number, months: number, count = 3) {
+  const payment = annuity(amount, rate, months);
+  const rows: { month: number; interest: number; principal: number }[] = [];
+  let balance = amount;
+  for (let month = 1; month <= Math.min(count, months); month += 1) {
+    const interest = balance * (rate / 100 / 12);
+    rows.push({ month, interest, principal: payment - interest });
+    balance -= payment - interest;
+  }
+  return rows;
+}
+
+/** «Кредит на оборудование» → «Оборудование»: во вкладке калькулятора хватает сути. */
+function shortName(name: string): string {
+  const short = name.replace("Кредит на ", "");
+  return short.charAt(0).toUpperCase() + short.slice(1);
+}
+
+function compactMoney(value: number): string {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toLocaleString("ru-RU", { maximumFractionDigits: 1 })} млн ₽`;
+  return `${Math.round(value / 1000).toLocaleString("ru-RU")} тыс. ₽`;
+}
+
 /** Шаги демонстрации в hero: та же лестница статусов, что видит клиент в кабинете. */
 const HERO_STAGES = [
-  { label: "Заявка", badge: "Заявка отправлена", tone: "info", progress: 16, event: "Заявка CP-2026-7F3A принята" },
-  { label: "Проверки", badge: "Идут проверки", tone: "info", progress: 44, event: "ИНН, реестр и кредитная история проверены" },
-  { label: "Решение", badge: "У сотрудника банка", tone: "warning", progress: 72, event: "Скоринг 82 из 100 — рекомендовано одобрить" },
-  { label: "Оферта", badge: "Одобрено", tone: "success", progress: 100, event: "Оферта готова: 5 млн ₽ на 24 месяца" }
+  { label: "Заявка", badge: "Заявка отправлена", tone: "info", event: "Заявка CP-2026-7F3A принята" },
+  { label: "Проверки", badge: "Идут проверки", tone: "info", event: "Реестр и кредитная история проверены" },
+  { label: "Решение", badge: "У сотрудника банка", tone: "warning", event: "Скоринг 82 из 100 — рекомендовано одобрить" },
+  { label: "Оферта", badge: "Одобрено", tone: "success", event: "Оферта готова: 5 млн ₽ на 24 месяца" }
 ] as const;
 
 const STAGE_MS = 2600;
-const ROUTE = "M24 410 C 10 300, 30 170, 60 96 S 220 8, 330 22 S 510 90, 500 230";
-const ROUTE_NODES = [[24, 410], [60, 96], [330, 22], [500, 230]];
 
+/** Окно кабинета в hero: заявка сама проходит путь от отправки до одобрения. */
 function HeroDemo() {
   const reduced = prefersReducedMotion();
   const [stage, setStage] = useState(reduced ? HERO_STAGES.length - 1 : 0);
@@ -94,55 +119,175 @@ function HeroDemo() {
   const approved = stage === HERO_STAGES.length - 1;
 
   return (
-    <div className="hero-visual" aria-hidden="true">
-      <svg className="hero-route" viewBox="0 0 520 440" preserveAspectRatio="none">
-        <path className="hero-route-base" d={ROUTE} />
-        <path className="hero-route-flow" d={ROUTE} />
-        {ROUTE_NODES.map(([x, y], index) => (
-          <g key={index} className={`hero-node ${index <= stage ? "on" : ""} ${index === stage ? "now" : ""}`} transform={`translate(${x} ${y})`}>
-            <circle r="13" className="hero-node-halo" />
-            <circle r="6" className="hero-node-dot" />
-          </g>
-        ))}
-      </svg>
-      <div className="hero-card hero-card-main">
-        <div className="hero-card-head">
-          <span className="mini-icon"><ShieldCheck size={18} /></span>
-          <span>Заявка CP-2026-7F3A</span>
-          <span key={current.badge} className={`badge badge-${current.tone} hero-badge`}><span className="badge-dot" />{current.badge}</span>
+    <div className="app-window" aria-hidden="true">
+      <div className="app-window-bar">
+        <span className="app-window-mark"><Route size={14} strokeWidth={2.6} /></span>
+        <span>Кабинет предпринимателя</span>
+        <span className="app-window-user">СА</span>
+      </div>
+      <div className="app-window-body">
+        <div className="mini-nav">
+          {["Главная", "Мои заявки", "Новая заявка", "Уведомления"].map((item, index) => (
+            <span key={item} className={index === 1 ? "active" : ""}><i />{item}</span>
+          ))}
         </div>
-        <div className={`hero-offer ${approved ? "hero-offer-approved" : ""}`}>
-          <span>{approved ? "Одобрено банком" : "Запрошено"}</span>
-          <strong>5 000 000 ₽</strong>
-          <div className="hero-offer-meta">
-            <span>Срок <b>24 мес.</b></span>
-            <span>Ставка <b>14,5%</b></span>
-            <span>Платёж <b>{formatMoney(annuity(5_000_000, 14.5, 24))}</b></span>
+        <div className="mini-main">
+          <div className="mini-head">
+            <div>
+              <small>Заявка CP-2026-7F3A</small>
+              <strong>Оборотный кредит</strong>
+            </div>
+            <span key={current.badge} className={`badge badge-${current.tone} hero-badge`}><span className="badge-dot" />{current.badge}</span>
           </div>
-          {approved && <span className="hero-offer-check"><CheckCircle2 size={22} /></span>}
-        </div>
-        <div className="hero-progress">
-          <div className="hero-progress-line"><span style={{ width: `${current.progress}%` }} /></div>
-          <div className="hero-stages">
+          <div className={`mini-offer ${approved ? "approved" : ""}`}>
+            <small>{approved ? "Одобрено банком" : "Запрошено"}</small>
+            <strong>5 000 000 ₽</strong>
+            <div className="mini-offer-meta">
+              <span>Срок <b>24 мес.</b></span>
+              <span>Ставка <b>14,5%</b></span>
+              <span>Платёж <b>{formatMoney(annuity(5_000_000, 14.5, 24))}</b></span>
+            </div>
+            {approved && <span className="mini-offer-check"><CheckCircle2 size={22} /></span>}
+          </div>
+          <ol className="mini-track" style={{ ["--progress" as string]: `${(stage / (HERO_STAGES.length - 1)) * 100}%` }}>
             {HERO_STAGES.map((item, index) => {
               const done = index < stage || approved;
               return (
-                <span key={item.label} className={done ? "done" : index === stage ? "active" : ""}>
-                  {done ? <CheckCircle2 size={14} /> : index === stage ? <Clock3 size={14} /> : null} {item.label}
-                </span>
+                <li key={item.label} className={done ? "done" : index === stage ? "now" : ""}>
+                  <span className="mini-track-dot">{done ? <CheckCircle2 size={14} /> : index === stage ? <Clock3 size={13} /> : null}</span>
+                  {item.label}
+                </li>
               );
             })}
+          </ol>
+          <div className="mini-event" key={stage}>
+            <span className="mini-event-dot" />
+            <span>{current.event}</span>
+            <small>только что</small>
           </div>
         </div>
-        <div className="hero-event" key={stage}>
-          <span className="hero-event-dot" />
-          <span>{current.event}</span>
-          <small>только что</small>
+      </div>
+      <div className={`mini-float ${stage >= 2 ? "visible" : ""}`}>
+        <span className="mini-float-score">82</span>
+        <div><small>Предварительная оценка</small><strong>низкий риск</strong></div>
+      </div>
+    </div>
+  );
+}
+
+/** Экраны тура: упрощённые фрагменты настоящих страниц кабинета. */
+function TourScreen({ index }: { index: number }) {
+  if (index === 0) {
+    return (
+      <div className="tour-card">
+        <span className="tour-card-label">Новая заявка, шаг 2 из 5</span>
+        <h3>Сведения о компании</h3>
+        <div className="tour-company">
+          <span className="tour-company-icon"><Building2 size={20} /></span>
+          <div><small>Компания из профиля</small><strong>ООО «Северный Ветер»</strong><span>ИНН 9900000017</span></div>
+        </div>
+        <div className="tour-ok"><ShieldCheck size={18} /> Полномочия подтверждены автоматически</div>
+        <span className="btn btn-primary tour-fake-btn">Продолжить <ArrowRight size={16} /></span>
+      </div>
+    );
+  }
+  if (index === 1) {
+    const checks = [
+      ["Реестр ЕГРЮЛ", "Компания действует с 2012 года"],
+      ["Бюро кредитных историй", "Просрочек нет, долговая нагрузка в норме"],
+      ["Скоринг", "82 из 100 — низкий риск"],
+      ["Кредитные правила", "Рекомендовано одобрить"]
+    ];
+    return (
+      <div className="tour-card">
+        <span className="tour-card-label">Заявка CP-2026-7F3A</span>
+        <h3>Автоматические проверки</h3>
+        <ul className="tour-checks">
+          {checks.map(([title, text], position) => (
+            <li key={title} style={{ animationDelay: `${position * 0.18}s` }}>
+              <CheckCircle2 size={18} />
+              <div><strong>{title}</strong><span>{text}</span></div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+  if (index === 2) {
+    return (
+      <div className="tour-card">
+        <span className="tour-card-label">Рабочее место сотрудника</span>
+        <h3>Решение принимает человек</h3>
+        <div className="tour-score">
+          <strong>82</strong><span>из 100</span>
+          <div className="tour-score-bar"><span style={{ width: "82%" }} /></div>
+        </div>
+        <div className="tour-decisions">
+          <span className="selected"><CheckCircle2 size={16} /> Одобрить</span>
+          <span>Другие условия</span>
+          <span>Запросить данные</span>
+          <span>Отказать</span>
         </div>
       </div>
-      <div className={`hero-card hero-card-float ${stage >= 2 ? "visible" : ""}`}>
-        <span className="mini-icon mini-icon-dark"><Landmark size={18} /></span>
-        <div><small>Предварительная оценка</small><strong>82 из 100 · низкий риск</strong></div>
+    );
+  }
+  return (
+    <div className="tour-card">
+      <span className="tour-card-label">Решение по заявке</span>
+      <h3>Банк одобрил заявку</h3>
+      <div className="tour-offer">
+        <div><small>Сумма</small><strong>5 000 000 ₽</strong></div>
+        <div><small>Срок</small><strong>24 мес.</strong></div>
+        <div><small>Ставка</small><strong>14,5%</strong></div>
+      </div>
+      <span className="btn btn-primary tour-fake-btn"><FileSignature size={16} /> Принять и подписать</span>
+    </div>
+  );
+}
+
+const TOUR_MS = 6000;
+
+/** Тур по этапам: слева шаги, справа экран кабинета. Сам листается, пока посетитель не взаимодействует. */
+function ProcessTour() {
+  const reduced = prefersReducedMotion();
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  return (
+    <div
+      className="tour"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocusCapture={() => setPaused(true)}
+      onBlurCapture={() => setPaused(false)}
+    >
+      <ol className="tour-steps" role="tablist" aria-label="Этапы заявки">
+        {STEPS.map((step, index) => (
+          <li key={step.title}>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={index === active}
+              aria-controls="tour-panel"
+              className={`tour-step ${index === active ? "active" : ""}`}
+              onClick={() => setActive(index)}
+            >
+              <span className="tour-index">{index + 1}</span>
+              <span className="tour-copy"><strong>{step.title}</strong><span>{step.text}</span></span>
+              {index === active && !reduced && (
+                <span
+                  key={active}
+                  className="tour-progress"
+                  style={{ animationDuration: `${TOUR_MS}ms`, animationPlayState: paused ? "paused" : "running" }}
+                  onAnimationEnd={() => setActive((value) => (value + 1) % STEPS.length)}
+                />
+              )}
+            </button>
+          </li>
+        ))}
+      </ol>
+      <div className="tour-screen" id="tour-panel" role="tabpanel">
+        <div className="tour-screen-inner" key={active}><TourScreen index={active} /></div>
       </div>
     </div>
   );
@@ -157,6 +302,7 @@ export default function HomePage() {
   const [amount, setAmount] = useState(5_000_000);
   const [term, setTerm] = useState(24);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const applyPath = user ? "/app/applications/new" : "/login";
 
   useEffect(() => {
     if (!activeProduct) return;
@@ -164,33 +310,35 @@ export default function HomePage() {
     setTerm(Math.min(Math.max(term, activeProduct.min_term_months), activeProduct.max_term_months));
   }, [activeCode, products.length]);
 
-  const payment = useMemo(() => {
-    if (!activeProduct) return 0;
-    return annuity(amount, activeProduct.rate, term);
-  }, [activeProduct, amount, term]);
+  const payment = useMemo(() => (activeProduct ? annuity(amount, activeProduct.rate, term) : 0), [activeProduct, amount, term]);
+  const schedule = useMemo(() => (activeProduct ? firstPayments(amount, activeProduct.rate, term) : []), [activeProduct, amount, term]);
+  const overpayment = Math.max(0, payment * term - amount);
+  const principalShare = payment > 0 ? (amount / (payment * term)) * 100 : 100;
+  const terms = activeProduct ? TERMS.filter((value) => value >= activeProduct.min_term_months && value <= activeProduct.max_term_months) : TERMS;
+  const fill = activeProduct ? ((amount - activeProduct.min_amount) / (activeProduct.max_amount - activeProduct.min_amount)) * 100 : 0;
 
   function selectProduct(product: Product) {
     setActiveCode(product.code);
     setAmount(Math.min(Math.max(3_000_000, product.min_amount), product.max_amount));
     setTerm(Math.min(24, product.max_term_months));
-    document.getElementById("calculator")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    document.getElementById("calculator")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   return (
     <div className="public-page">
-      <header className="public-header-bar">
-        <div className="public-header">
-          <Link to="/" className="public-logo">
+      <header className="site-header">
+        <div className="site-header-inner">
+          <Link to="/" className="public-logo" aria-label="CreditPath — на главную">
             <Logo />
           </Link>
           <nav className="public-nav" aria-label="Навигация">
+            <a href="#how">Как это работает</a>
             <a href="#products">Продукты</a>
             <a href="#calculator">Калькулятор</a>
-            <a href="#how">Как это работает</a>
             <a href="#faq">Вопросы</a>
           </nav>
           <div className="public-actions">
-            <ThemeToggle className="theme-toggle-on-dark" />
+            <ThemeToggle />
             {user ? (
               <Link className="btn btn-primary" to={user.role === "client" ? "/app" : user.role === "employee" ? "/staff" : "/admin/users"}>
                 Открыть кабинет <ArrowRight size={17} />
@@ -202,88 +350,146 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main className="landing">
-        <section className="bento bento-hero">
-          <div className="tile tile-rose hero-tile">
-            <h1>Кредит для бизнеса без&nbsp;визита в&nbsp;банк</h1>
-            <p>
-              До 50 млн ₽ на оборот, оборудование или овердрафт. Реквизиты подтянутся по ИНН,
-              предварительная оценка — сразу после отправки, решение сотрудника — в кабинете.
-            </p>
-            <div className="hero-actions">
-              <Link className="btn btn-dark btn-lg" to={user ? "/app/applications/new" : "/login"} state={{ from: "/app/applications/new" }}>
-                Подать заявку <ArrowRight size={18} />
-              </Link>
-              <a className="btn btn-outline-dark btn-lg" href="#calculator">Рассчитать платёж</a>
+      <main>
+        <section className="hero-v2">
+          <div className="hero-v2-inner">
+            <div className="hero-v2-copy">
+              <h1>Кредит для бизнеса без визита в банк</h1>
+              <p>
+                До 50 млн ₽ на оборот, оборудование или овердрафт. Компания подставится из профиля,
+                предварительная оценка появится сразу после отправки, а решение сотрудника — в кабинете.
+              </p>
+              <div className="hero-actions">
+                <Link className="btn btn-primary btn-lg" to={applyPath} state={{ from: "/app/applications/new" }}>
+                  Подать заявку <ArrowRight size={18} />
+                </Link>
+                <a className="btn btn-secondary btn-lg" href="#calculator">Рассчитать платёж</a>
+              </div>
+              <dl className="hero-v2-facts">
+                <div><dt>Лимит</dt><dd>до 50 млн ₽</dd></div>
+                <div><dt>Ставка</dt><dd>от 13,8%</dd></div>
+                <div><dt>Заявка</dt><dd>~10 минут</dd></div>
+              </dl>
             </div>
-            <dl className="hero-facts">
-              <div><dt>Лимит</dt><dd>до 50 млн ₽</dd></div>
-              <div><dt>Ставка</dt><dd>от 13,8%</dd></div>
-              <div><dt>Заявка</dt><dd>~10 минут</dd></div>
-            </dl>
-          </div>
-          <div className="tile tile-graphite demo-tile">
-            <p className="demo-tile-caption">Так выглядит заявка в кабинете</p>
             <HeroDemo />
           </div>
         </section>
 
-        <section className="bento-section" id="products">
-          <div className="section-heading">
+        <section className="landing-section" id="how">
+          <div className="landing-heading">
+            <h2>Путь заявки — от ИНН до денег на счёте</h2>
+            <p>На каждом этапе видно, что происходит с заявкой и что нужно от вас.</p>
+          </div>
+          <ProcessTour />
+        </section>
+
+        <section className="landing-section" id="products">
+          <div className="landing-heading">
             <h2>Три продукта под разные задачи</h2>
-            <p>Цвет продукта сохраняется в калькуляторе, заявке и кабинете — так его легко узнать.</p>
+            <p>Условия рядом — сравните и сразу посчитайте платёж.</p>
           </div>
           {productsQuery.isLoading ? (
-            <div className="product-row" role="status" aria-label="Загружаем продукты…">
-              {[0, 1, 2].map((item) => (
-                <div className="tile skeleton-card" key={item}>
-                  <span className="sk" style={{ width: "60%" }} />
-                  <span className="sk sk-title" />
-                  <span className="sk sk-block" />
-                </div>
-              ))}
+            <div className="compare-loading card" role="status" aria-label="Загружаем продукты…">
+              <span className="sk sk-title" />
+              <span className="sk sk-block" />
+              <span className="sk sk-block" />
             </div>
           ) : (
-            <div className="product-row">
-              {products.map((product) => (
-                <button type="button" className={`tile tile-${productTone(product.code)} product-promo`} key={product.code} onClick={() => selectProduct(product)}>
-                  <span className="product-promo-head">
-                    <strong>{product.name}</strong>
-                    <span>{product.requires_collateral ? "Залог — приобретаемое оборудование" : "Без залога"}</span>
-                  </span>
-                  <span className="product-promo-rate">от {product.rate.toFixed(1).replace(".", ",")}%</span>
-                  <span className="product-promo-terms">
-                    <span>до {formatMoney(product.max_amount)}</span>
-                    <span>до {product.max_term_months} мес.</span>
-                  </span>
-                  <span className="product-promo-desc">{product.short_description}</span>
-                  <span className="tile-arrow" aria-hidden="true"><ArrowUpRight size={22} /></span>
-                </button>
-              ))}
-            </div>
+            <>
+              <div className="compare card" role="table" aria-label="Сравнение продуктов">
+                <div className="compare-row compare-head" role="row">
+                  <span role="columnheader" />
+                  {products.map((product) => {
+                    const Icon = PRODUCT_ICONS[product.code] ?? WalletCards;
+                    return (
+                      <span role="columnheader" key={product.code} className="compare-product">
+                        <span className="compare-icon"><Icon size={20} /></span>
+                        <strong>{product.name}</strong>
+                        <small>{product.short_description}</small>
+                      </span>
+                    );
+                  })}
+                </div>
+                <div className="compare-row compare-rate" role="row">
+                  <span role="rowheader">Ставка</span>
+                  {products.map((product) => <span role="cell" key={product.code}>от {product.rate.toFixed(1).replace(".", ",")}%</span>)}
+                </div>
+                <div className="compare-row" role="row">
+                  <span role="rowheader">Сумма</span>
+                  {products.map((product) => <span role="cell" key={product.code}>{compactMoney(product.min_amount)} — {compactMoney(product.max_amount)}</span>)}
+                </div>
+                <div className="compare-row" role="row">
+                  <span role="rowheader">Срок</span>
+                  {products.map((product) => <span role="cell" key={product.code}>{product.min_term_months}–{product.max_term_months} мес.</span>)}
+                </div>
+                <div className="compare-row" role="row">
+                  <span role="rowheader">Обеспечение</span>
+                  {products.map((product) => <span role="cell" key={product.code}>{product.requires_collateral ? "Залог — приобретаемое оборудование" : "Без залога"}</span>)}
+                </div>
+                <div className="compare-row" role="row">
+                  <span role="rowheader">Возраст бизнеса</span>
+                  {products.map((product) => <span role="cell" key={product.code}>от {product.min_business_age_months} мес.</span>)}
+                </div>
+                <div className="compare-row" role="row">
+                  <span role="rowheader">Подходит для</span>
+                  {products.map((product) => (
+                    <span role="cell" key={product.code}>
+                      <ul className="compare-purposes">{product.purposes.map((purpose) => <li key={purpose.code}>{purpose.label}</li>)}</ul>
+                    </span>
+                  ))}
+                </div>
+                <div className="compare-row compare-foot" role="row">
+                  <span role="cell" />
+                  {products.map((product) => (
+                    <span role="cell" key={product.code}>
+                      <button type="button" className="btn btn-secondary btn-full" onClick={() => selectProduct(product)}>Рассчитать платёж</button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="compare-cards">
+                {products.map((product) => {
+                  const Icon = PRODUCT_ICONS[product.code] ?? WalletCards;
+                  return (
+                    <article className="card compare-card" key={product.code}>
+                      <div className="compare-product">
+                        <span className="compare-icon"><Icon size={20} /></span>
+                        <strong>{product.name}</strong>
+                        <small>{product.short_description}</small>
+                      </div>
+                      <p className="compare-card-rate">от {product.rate.toFixed(1).replace(".", ",")}%</p>
+                      <dl>
+                        <div><dt>Сумма</dt><dd>{compactMoney(product.min_amount)} — {compactMoney(product.max_amount)}</dd></div>
+                        <div><dt>Срок</dt><dd>{product.min_term_months}–{product.max_term_months} мес.</dd></div>
+                        <div><dt>Обеспечение</dt><dd>{product.requires_collateral ? "Залог" : "Без залога"}</dd></div>
+                        <div><dt>Возраст бизнеса</dt><dd>от {product.min_business_age_months} мес.</dd></div>
+                      </dl>
+                      <button type="button" className="btn btn-secondary btn-full" onClick={() => selectProduct(product)}>Рассчитать платёж</button>
+                    </article>
+                  );
+                })}
+              </div>
+            </>
           )}
         </section>
 
-        <section className="bento-section" id="calculator">
-          <div className="section-heading">
+        <section className="landing-section" id="calculator">
+          <div className="landing-heading">
             <h2>Сколько платить в месяц</h2>
             <p>Предварительный расчёт. Итоговые условия — после проверок и решения сотрудника.</p>
           </div>
-          <div className={`tile calc-tile calc-tone-${productTone(activeProduct?.code)}`}>
-            <div className="calculator">
-              <div className="calc-tabs" role="tablist">
-                {products.map((product) => (
-                  <button
-                    key={product.code}
-                    role="tab"
-                    aria-selected={activeProduct?.code === product.code}
-                    className={`calc-tab-${productTone(product.code)} ${activeProduct?.code === product.code ? "active" : ""}`}
-                    onClick={() => setActiveCode(product.code)}
-                  >
-                    {shortName(product.name)}
-                  </button>
-                ))}
-              </div>
+          <div className="card calc-v2">
+            <div className="calc-v2-params">
+              {products.length > 0 && (
+                <SegmentedControl
+                  label="Продукт"
+                  className="segmented-full"
+                  options={products.map((product) => ({ value: product.code, label: shortName(product.name) }))}
+                  value={activeProduct?.code ?? activeCode}
+                  onChange={(code) => setActiveCode(code)}
+                />
+              )}
               {activeProduct && (
                 <>
                   <div className="calc-row">
@@ -291,12 +497,13 @@ export default function HomePage() {
                     <div className="calc-value"><input id="calc-amount" type="number" value={amount} min={activeProduct.min_amount} max={activeProduct.max_amount} step={100000} onChange={(event) => setAmount(Number(event.target.value))} /><span>₽</span></div>
                   </div>
                   <input
-                    className="range"
+                    className="range range-fill"
                     type="range"
                     min={activeProduct.min_amount}
                     max={activeProduct.max_amount}
                     step={100000}
                     value={amount}
+                    style={{ ["--fill" as string]: `${Math.min(100, Math.max(0, fill))}%` }}
                     onChange={(event) => setAmount(Number(event.target.value))}
                     aria-label="Сумма кредита"
                   />
@@ -305,25 +512,42 @@ export default function HomePage() {
                     <span className="calc-label">Срок кредитования</span>
                     <strong>{term} мес.</strong>
                   </div>
-                  <div className="term-buttons">
-                    {[6, 12, 24, 36].filter((value) => value >= activeProduct.min_term_months && value <= activeProduct.max_term_months).map((value) => (
-                      <button key={value} className={term === value ? "active" : ""} onClick={() => setTerm(value)}>{value} мес.</button>
-                    ))}
+                  <SegmentedControl
+                    label="Срок кредитования"
+                    options={terms.map((value) => ({ value, label: `${value} мес.` }))}
+                    value={term}
+                    onChange={setTerm}
+                  />
+                  <div className="calc-schedule">
+                    <div className="calc-split">
+                      <div className="calc-split-bar" aria-hidden="true"><span style={{ width: `${principalShare}%` }} /></div>
+                      <div className="calc-split-legend">
+                        <span><i className="principal" /> Долг {formatMoney(amount)}</span>
+                        <span><i className="interest" /> Проценты {formatMoney(overpayment)}</span>
+                      </div>
+                    </div>
+                    <table className="calc-months">
+                      <thead><tr><th>Месяц</th><th>Платёж</th><th>В счёт долга</th><th>Проценты</th></tr></thead>
+                      <tbody>
+                        {schedule.map((row) => (
+                          <tr key={row.month}><td>{row.month}-й</td><td>{formatMoney(payment)}</td><td>{formatMoney(row.principal)}</td><td>{formatMoney(row.interest)}</td></tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                  {!([6, 12, 24, 36].some((v) => v === term)) && <p className="muted small">Выбранный срок: {term} мес.</p>}
                 </>
               )}
             </div>
-            <div className="calc-result">
+            <div className="calc-v2-result">
               <span className="calc-result-label">Ежемесячный платёж</span>
               <div className="calc-payment">{formatMoney(payment)}<small>/ мес.</small></div>
               <div className="calc-lines">
                 <div><span>Продукт</span><strong>{activeProduct?.name}</strong></div>
                 <div><span>Ставка</span><strong>{activeProduct?.rate.toFixed(1).replace(".", ",")}% годовых</strong></div>
                 <div><span>Сумма</span><strong>{formatMoney(amount)}</strong></div>
-                <div><span>Переплата</span><strong>{formatMoney(payment * term - amount)}</strong></div>
+                <div><span>Переплата</span><strong>{formatMoney(overpayment)}</strong></div>
               </div>
-              <Link className="btn btn-primary btn-full btn-lg" to={user ? "/app/applications/new" : "/login"} state={{ from: "/app/applications/new" }}>
+              <Link className="btn btn-primary btn-full btn-lg" to={applyPath} state={{ from: "/app/applications/new" }}>
                 Перейти к заявке <ArrowRight size={17} />
               </Link>
               <p className="calc-note"><ShieldCheck size={16} /> Без скрытых комиссий. Расчёт не является офертой.</p>
@@ -331,28 +555,8 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="bento-section" id="how">
-          <div className="section-heading">
-            <h2>Путь заявки — от ИНН до денег на счёте</h2>
-            <p>На каждом этапе видно, что происходит с заявкой и что нужно от вас.</p>
-          </div>
-          <ol className="tile journey">
-            {STEPS.map((step, index) => {
-              const Icon = step.icon;
-              return (
-                <li className="journey-step" key={step.title}>
-                  <span className="journey-index">{index + 1}</span>
-                  <span className="journey-icon"><Icon size={22} /></span>
-                  <h3>{step.title}</h3>
-                  <p>{step.text}</p>
-                </li>
-              );
-            })}
-          </ol>
-        </section>
-
-        <section className="bento-section faq-layout" id="faq">
-          <div className="section-heading faq-heading">
+        <section className="landing-section faq-layout" id="faq">
+          <div className="landing-heading faq-heading">
             <h2>Вопросы и ответы</h2>
             <p>Требования, документы, сроки и что значит каждое решение банка.</p>
           </div>
@@ -369,12 +573,12 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="tile tile-accent cta-tile">
-          <div>
-            <h2>Узнайте предварительное решение уже сегодня</h2>
-            <p>Статус, вопросы банка и оферта придут в кабинет — без звонков и визитов.</p>
-          </div>
-          <div className="cta-actions">
+        <section className="landing-section">
+          <div className="cta-band">
+            <div>
+              <h2>Узнайте предварительное решение уже сегодня</h2>
+              <p>Статус, вопросы банка и оферта придут в кабинет — без звонков и визитов.</p>
+            </div>
             <Link className="btn btn-light btn-lg" to={user ? "/app" : "/login"}>{user ? "Открыть кабинет" : "Войти в кабинет"} <ArrowRight size={18} /></Link>
           </div>
         </section>
